@@ -54,30 +54,27 @@
 
 ## Features
 
-- **Your music, wherever it is:** local folders, Plex, and Subsonic or Navidrome servers
+- **Your music:** Use local files or custom providers for music.
 - **Synced lyrics** from many providers, with karaoke highlighting and romanization
-- **Made for handhelds:** full gamepad support with the right button glyphs for your controller
-- **Dual screens:** both screens of the AYN Thor, or a second window for the bottom screen on PC
+- **Made for handhelds:** full gamepad support for the best console experience
+- **Dual screens:** For dual-screen handheld devices, or just multi monitors
 - **Themes** that change colors, fonts, icons and animated backgrounds, with a [theme editor](https://narimusic.com/theme-editor/)
 - **Plugins** in Lua that add music sources, lyrics, visualizers and more
-- **Colors that follow the album art** of the song that's playing
-- **Sound effects:** speed and pitch, 8-bit, radio, gramophone, acapella and more
+- **Sound effects:** speed and pitch, 8-bit, radio, gramophone, acapella and more, everything live.
 - **Soundboard** to play your own sounds over the music
-- **Visualizers** for Now Playing
-- **Play on** Chromecast and other speakers on your network
-- **Offline downloads** from your servers
+- **Visualizers** to see your music in fancy ways
+- **Chromecast support** to available devices.
+- **Offline downloads** for available music sources.
 - **Gapless playback** and volume normalization
 - **Tracker and MIDI files**, with your own SoundFonts
 - **Scrobbling** to Last.fm and ListenBrainz
 - **Discord Rich Presence**, media controls and the system tray
-- **Android, Linux, Windows and macOS**
 
 ## Download
 
 ### [Get the latest release](https://github.com/NaviVani-dev/Nari/releases/latest)
 
-Builds for Android, Linux (x64 and arm64), Windows and macOS are on the releases page. Nari is on its way to
-Flathub, F-Droid and Google Play too.
+Builds for Android, Linux (x64 and arm64), Windows and macOS are on the releases page.
 
 Themes and plugins are installed from Nari itself, or from [narimusic.com](https://narimusic.com).
 
@@ -96,8 +93,7 @@ Nari is made with [Godot 4.7](https://godotengine.org). The native libraries are
 so opening the project in Godot is enough to run it.
 
 Android exports use a Gradle build, so set up the Android SDK and JDK in Godot first. Godot's
-[Exporting for Android](https://docs.godotengine.org/en/stable/tutorials/export/exporting_for_android.html) guide walks
-through it.
+[Exporting for Android](https://docs.godotengine.org/en/stable/tutorials/export/exporting_for_android.html) guide walks you through it.
 
 Everything else runs with [just](https://github.com/casey/just) and Python 3:
 
@@ -122,7 +118,7 @@ way F-Droid does, and `flatpak/` has the Flathub manifest.
   and [libopenmpt](https://lib.openmpt.org)
 - The [Jost](https://github.com/indestructible-type/Jost) font and Google's
   [Material Symbols](https://fonts.google.com/icons)
-- Everyone in the Discord who tested Nari and made themes and plugins for it
+- Everyone in the Discord who tested Nari and made themes and plugins for it, THANK YOU SO MUCH!
 
 ## Support
 
