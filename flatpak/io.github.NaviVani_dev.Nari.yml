@@ -88,6 +88,7 @@ modules:
       - type: git
         url: https://github.com/NaviVani-dev/Nari.git
         tag: v1.0.0
+        commit: d8a79bd367170ab7e2d4f2eb240d5453c099f901
       - cargo-sources.json
       - type: archive
         url: https://lib.openmpt.org/files/libopenmpt/src/libopenmpt-0.8.9+release.makefile.tar.gz
