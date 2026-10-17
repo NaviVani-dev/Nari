@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.NaviVani_dev.Nari</id>
+  <name>Nari</name>
+  <summary>Beautiful feature-rich music player</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <developer id="io.github.navivani_dev">
+    <name>NaviVani</name>
+  </developer>
+
+  <description>
+    <p>A beautiful music player with a retro console experience in mind, made for handheld consoles, phones and desktops alike.</p>
+    <ul>
+      <li>Plays your local music library</li>
+      <li>Synced lyrics, fetched online</li>
+      <li>Full gamepad support</li>
+    </ul>
+  </description>
+
+  <launchable type="desktop-id">io.github.NaviVani_dev.Nari.desktop</launchable>
+  <url type="homepage">https://github.com/NaviVani-dev/Nari</url>
+  <url type="bugtracker">https://github.com/NaviVani-dev/Nari/issues</url>
+  <url type="vcs-browser">https://github.com/NaviVani-dev/Nari</url>
+
+  <screenshots>
+    <screenshot type="default">
+      <image>https://raw.githubusercontent.com/NaviVani-dev/Nari/v1.0.0/metadata/screenshots/pc/1.png</image>
+      <caption>Home</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/NaviVani-dev/Nari/v1.0.0/metadata/screenshots/pc/2.png</image>
+      <caption>Now playing</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/NaviVani-dev/Nari/v1.0.0/metadata/screenshots/pc/3.png</image>
+      <caption>Synced lyrics</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/NaviVani-dev/Nari/v1.0.0/metadata/screenshots/pc/4.png</image>
+      <caption>Your albums</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/NaviVani-dev/Nari/v1.0.0/metadata/screenshots/pc/5.png</image>
+      <caption>Album details</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/NaviVani-dev/Nari/v1.0.0/metadata/screenshots/pc/6.png</image>
+      <caption>All your songs</caption>
+    </screenshot>
+    <screenshot environment="plasma-mobile">
+      <image>https://raw.githubusercontent.com/NaviVani-dev/Nari/v1.0.0/metadata/screenshots/phone/1.png</image>
+      <caption>Home</caption>
+    </screenshot>
+    <screenshot environment="plasma-mobile">
+      <image>https://raw.githubusercontent.com/NaviVani-dev/Nari/v1.0.0/metadata/screenshots/phone/2.png</image>
+      <caption>Now playing</caption>
+    </screenshot>
+    <screenshot environment="plasma-mobile">
+      <image>https://raw.githubusercontent.com/NaviVani-dev/Nari/v1.0.0/metadata/screenshots/phone/3.png</image>
+      <caption>Synced lyrics</caption>
+    </screenshot>
+    <screenshot environment="plasma-mobile">
+      <image>https://raw.githubusercontent.com/NaviVani-dev/Nari/v1.0.0/metadata/screenshots/phone/4.png</image>
+      <caption>Your albums</caption>
+    </screenshot>
+    <screenshot environment="plasma-mobile">
+      <image>https://raw.githubusercontent.com/NaviVani-dev/Nari/v1.0.0/metadata/screenshots/phone/5.png</image>
+      <caption>Album details</caption>
+    </screenshot>
+    <screenshot environment="plasma-mobile">
+      <image>https://raw.githubusercontent.com/NaviVani-dev/Nari/v1.0.0/metadata/screenshots/phone/6.png</image>
+      <caption>All your songs</caption>
+    </screenshot>
+  </screenshots>
+
+  <branding>
+    <color type="primary" scheme_preference="light">#f5d9e6</color>
+    <color type="primary" scheme_preference="dark">#5a2a44</color>
+  </branding>
+
+  <requires>
+    <display_length compare="ge">360</display_length>
+  </requires>
+  <supports>
+    <control>pointing</control>
+    <control>keyboard</control>
+    <control>gamepad</control>
+    <control>touch</control>
+  </supports>
+
+  <content_rating type="oars-1.1">
+    <content_attribute id="social-info">intense</content_attribute>
+  </content_rating>
+
+  <releases>
+    <release version="1.0.0" date="2026-09-26">
+      <description>
+        <p>First release.</p>
+      </description>
+    </release>
+  </releases>
+</component>

@@ -1,0 +1,43 @@
+[gd_scene format=3 uid="uid://eukl3uqx134m"]
+
+[ext_resource type="Script" uid="uid://cam6qhlbnef4d" path="res://ui/shared/info_line.gd" id="1_line"]
+[ext_resource type="Script" uid="uid://b0etlamb18c2f" path="res://ui/components/icon.gd" id="2_icon"]
+[ext_resource type="Script" uid="uid://emohg8k7r26n" path="res://ui/components/label.gd" id="3_label"]
+[ext_resource type="Texture2D" uid="uid://8ig0pu84pjn4" path="res://assets/icons/music_note.svg" id="4_note"]
+
+[sub_resource type="FontVariation" id="FontVariation_uk5m7"]
+variation_opentype = {
+2003265652: 600
+}
+
+[node name="InfoLine" type="HBoxContainer" unique_id=1053042456]
+mouse_filter = 2
+theme_override_constants/separation = 24
+script = ExtResource("1_line")
+
+[node name="Glyph" type="TextureRect" parent="." unique_id=2127984701]
+unique_name_in_owner = true
+modulate = Color(1, 1, 1, 0.75)
+self_modulate = Color(0.06666667, 0.15686275, 0.3254902, 1)
+custom_minimum_size = Vector2(60, 60)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+texture = ExtResource("4_note")
+expand_mode = 1
+stretch_mode = 5
+script = ExtResource("2_icon")
+
+[node name="Label" type="Label" parent="." unique_id=1654062326]
+unique_name_in_owner = true
+modulate = Color(1, 1, 1, 0.75)
+self_modulate = Color(0.06666667, 0.15686275, 0.3254902, 1)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_uk5m7")
+theme_override_font_sizes/font_size = 52
+text = "Line"
+vertical_alignment = 1
+script = ExtResource("3_label")
+weight = 600
+font_size = 52

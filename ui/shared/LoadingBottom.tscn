@@ -1,0 +1,91 @@
+[gd_scene format=3 uid="uid://l4uguynw622"]
+
+[ext_resource type="Script" uid="uid://d2bl8q5uffx2" path="res://ui/shared/loading_screen.gd" id="1_loading"]
+[ext_resource type="Script" uid="uid://ctbpcejv6a7ua" path="res://ui/components/panel_container.gd" id="2_panel"]
+[ext_resource type="Shader" uid="uid://ctaeuvi424wmk" path="res://assets/shaders/panel.gdshader" id="2_xuo3w"]
+[ext_resource type="Script" uid="uid://cuxjrkpvldf8h" path="res://ui/components/progress_slider.gd" id="3_slider"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_xuo3w"]
+shader = ExtResource("2_xuo3w")
+shader_parameter/corner_radius = Vector4(36, 36, 36, 36)
+shader_parameter/panel_size = Vector2(1680, 74)
+shader_parameter/fill_color = Color(0.06666667, 0.15686275, 0.3254902, 1)
+shader_parameter/gradient_color = Color(0.31764707, 0.45882353, 0.7254902, 0.75)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bge62"]
+content_margin_left = 16.0
+content_margin_top = 16.0
+content_margin_right = 16.0
+content_margin_bottom = 16.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[sub_resource type="Image" id="Image_k8088"]
+data = {
+"data": PackedByteArray(255, 255, 255, 0),
+"format": "RGBA8",
+"height": 1,
+"mipmaps": false,
+"width": 1
+}
+
+[sub_resource type="ImageTexture" id="ImageTexture_yw6xd"]
+image = SubResource("Image_k8088")
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_6m0qk"]
+
+[node name="LoadingBottom" type="Control" unique_id=525048486]
+z_index = 20
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_loading")
+
+[node name="Margins" type="MarginContainer" parent="." unique_id=1203203269]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 120
+theme_override_constants/margin_right = 120
+
+[node name="Panel" type="PanelContainer" parent="Margins" unique_id=1287480042]
+material = SubResource("ShaderMaterial_xuo3w")
+custom_minimum_size = Vector2(0, 72)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_bge62")
+script = ExtResource("2_panel")
+corner_radius = 36.0
+corner_top_left = 36.0
+corner_top_right = 36.0
+corner_bottom_right = 36.0
+corner_bottom_left = 36.0
+
+[node name="Bar" type="HSlider" parent="Margins/Panel" unique_id=198540312]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+size_flags_vertical = 4
+focus_mode = 0
+mouse_filter = 2
+mouse_default_cursor_shape = 2
+theme_override_icons/grabber = SubResource("ImageTexture_yw6xd")
+theme_override_icons/grabber_highlight = SubResource("ImageTexture_yw6xd")
+theme_override_icons/grabber_disabled = SubResource("ImageTexture_yw6xd")
+theme_override_styles/slider = SubResource("StyleBoxEmpty_6m0qk")
+theme_override_styles/grabber_area = SubResource("StyleBoxEmpty_6m0qk")
+theme_override_styles/grabber_area_highlight = SubResource("StyleBoxEmpty_6m0qk")
+max_value = 1000.0
+editable = false
+script = ExtResource("3_slider")
+show_grabber = false

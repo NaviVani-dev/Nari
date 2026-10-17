@@ -1,0 +1,131 @@
+[gd_scene format=3 uid="uid://bsvi2l5u7372y"]
+
+[ext_resource type="Script" uid="uid://br1igb8os6lwf" path="res://ui/screens/dual/home.gd" id="1_page"]
+[ext_resource type="Script" uid="uid://bx061v3rndvy7" path="res://ui/components/circle_carrousel.gd" id="2_carrousel"]
+[ext_resource type="Script" uid="uid://emohg8k7r26n" path="res://ui/components/label.gd" id="4_label"]
+[ext_resource type="Script" uid="uid://vw0enjm8k5e3" path="res://ui/components/stair_scroll.gd" id="5_scroll"]
+[ext_resource type="Script" uid="uid://b7h0k2h2qwlqv" path="res://addons/SmoothScroll/scroll_damper/expo_scroll_damper.gd" id="7_mfhlk"]
+
+[sub_resource type="FontVariation" id="FontVariation_dty87"]
+variation_opentype = {
+2003265652: 700
+}
+
+[sub_resource type="FontVariation" id="FontVariation_mayo7"]
+variation_opentype = {
+2003265652: 500
+}
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_0ua1i"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+
+[sub_resource type="Resource" id="Resource_tjrux"]
+script = ExtResource("7_mfhlk")
+
+[sub_resource type="Resource" id="Resource_n6d08"]
+script = ExtResource("7_mfhlk")
+
+[node name="Home" type="Node" unique_id=1528598023 node_paths=PackedStringArray("top", "bottom")]
+script = ExtResource("1_page")
+top = NodePath("Top")
+bottom = NodePath("Bottom")
+
+[node name="Top" type="Control" parent="." unique_id=1899609751 groups=["full_bleed"]]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Carrousel" type="Control" parent="Top" unique_id=1763083145 node_paths=PackedStringArray("caption")]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("2_carrousel")
+fade_with_distance = true
+caption = NodePath("../Caption")
+
+[node name="Caption" type="VBoxContainer" parent="Top" unique_id=1763083146]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.534375
+anchor_top = 0.6675926
+anchor_right = 0.9432292
+anchor_bottom = 0.6675926
+grow_horizontal = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Title" type="Label" parent="Top/Caption" unique_id=1763083147]
+unique_name_in_owner = true
+self_modulate = Color(0.06666667, 0.15686275, 0.3254902, 1)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_dty87")
+theme_override_font_sizes/font_size = 77
+clip_text = true
+max_lines_visible = 1
+script = ExtResource("4_label")
+weight = 700
+font_size = 77
+marquee = true
+
+[node name="Subtitle" type="Label" parent="Top/Caption" unique_id=1763083148]
+unique_name_in_owner = true
+modulate = Color(1, 1, 1, 0.75)
+self_modulate = Color(0.06666667, 0.15686275, 0.3254902, 1)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_mayo7")
+theme_override_font_sizes/font_size = 64
+clip_text = true
+max_lines_visible = 1
+script = ExtResource("4_label")
+font_size = 64
+marquee = true
+
+[node name="Bottom" type="Control" parent="." unique_id=1991714103]
+layout_mode = 3
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 2.0
+grow_horizontal = 2
+grow_vertical = 2
+metadata/_edit_use_anchors_ = true
+
+[node name="MarginContainer" type="MarginContainer" parent="Bottom" unique_id=1573532785]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_vertical = 3
+theme_override_constants/margin_left = 0
+theme_override_constants/margin_top = 0
+theme_override_constants/margin_right = 0
+theme_override_constants/margin_bottom = 0
+
+[node name="List" type="ScrollContainer" parent="Bottom/MarginContainer" unique_id=1361511908]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/scrollbar_h_separation = 0
+theme_override_styles/panel = SubResource("StyleBoxEmpty_0ua1i")
+follow_focus = true
+horizontal_scroll_mode = 0
+script = ExtResource("5_scroll")
+step = 0.0
+separation = 32.0
+distance_unfocused = true
+wheel_scroll_damper = SubResource("Resource_tjrux")
+dragging_scroll_damper = SubResource("Resource_n6d08")
+allow_horizontal_scroll = false

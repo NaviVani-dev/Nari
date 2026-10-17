@@ -1,0 +1,232 @@
+[gd_scene format=3 uid="uid://pohv6f08cvc0"]
+
+[ext_resource type="Script" uid="uid://cuos2wh4jvviw" path="res://ui/screens/dual/welcome.gd" id="1_welcome"]
+[ext_resource type="Script" uid="uid://emohg8k7r26n" path="res://ui/components/label.gd" id="2_label"]
+[ext_resource type="Script" uid="uid://djk4e68d3it8a" path="res://ui/components/button.gd" id="3_button"]
+[ext_resource type="Shader" uid="uid://ctaeuvi424wmk" path="res://assets/shaders/panel.gdshader" id="3_xsw2a"]
+[ext_resource type="Script" uid="uid://vw0enjm8k5e3" path="res://ui/components/stair_scroll.gd" id="4_scroll"]
+[ext_resource type="Script" uid="uid://b7h0k2h2qwlqv" path="res://addons/SmoothScroll/scroll_damper/expo_scroll_damper.gd" id="5_damper"]
+
+[sub_resource type="FontVariation" id="FontVariation_dty87"]
+variation_opentype = {
+2003265652: 700
+}
+
+[sub_resource type="FontVariation" id="FontVariation_mayo7"]
+variation_opentype = {
+2003265652: 500
+}
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_xsw2a"]
+shader = ExtResource("3_xsw2a")
+shader_parameter/corner_radius = Vector4(64, 64, 64, 64)
+shader_parameter/panel_size = Vector2(640, 180)
+shader_parameter/fill_color = Color(0.06666667, 0.15686275, 0.3254902, 1)
+shader_parameter/gradient_color = Color(0.31764707, 0.45882353, 0.7254902, 0.75)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_3ck8x"]
+content_margin_left = 24.0
+content_margin_top = 24.0
+content_margin_right = 24.0
+content_margin_bottom = 24.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_2rw0x"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+
+[sub_resource type="Resource" id="Resource_wheel"]
+script = ExtResource("5_damper")
+
+[sub_resource type="Resource" id="Resource_drag"]
+script = ExtResource("5_damper")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_7dflx"]
+shader = ExtResource("3_xsw2a")
+shader_parameter/corner_radius = Vector4(64, 64, 64, 64)
+shader_parameter/panel_size = Vector2(1736, 164)
+shader_parameter/fill_color = Color(0.06666667, 0.15686275, 0.3254902, 1)
+shader_parameter/gradient_color = Color(0.31764707, 0.45882353, 0.7254902, 0.75)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_rwpv8"]
+content_margin_left = 24.0
+content_margin_top = 24.0
+content_margin_right = 24.0
+content_margin_bottom = 24.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[node name="Welcome" type="Node" unique_id=1480374950 node_paths=PackedStringArray("top", "bottom")]
+script = ExtResource("1_welcome")
+top = NodePath("Top")
+bottom = NodePath("Bottom")
+
+[node name="Top" type="Control" parent="." unique_id=667592283 groups=["full_bleed"]]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Caption" type="VBoxContainer" parent="Top" unique_id=698150817]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.1
+anchor_top = 0.5
+anchor_right = 0.9
+anchor_bottom = 0.5
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 16
+
+[node name="Title" type="Label" parent="Top/Caption" unique_id=1940348128]
+unique_name_in_owner = true
+self_modulate = Color(0.06666667, 0.15686275, 0.3254902, 1)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_dty87")
+theme_override_font_sizes/font_size = 120
+text = "Welcome"
+horizontal_alignment = 1
+autowrap_mode = 3
+script = ExtResource("2_label")
+weight = 700
+font_size = 120
+
+[node name="Description" type="Label" parent="Top/Caption" unique_id=258070964]
+unique_name_in_owner = true
+modulate = Color(1, 1, 1, 0.75)
+self_modulate = Color(0.06666667, 0.15686275, 0.3254902, 1)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_mayo7")
+theme_override_font_sizes/font_size = 64
+text = "Description"
+horizontal_alignment = 1
+autowrap_mode = 3
+script = ExtResource("2_label")
+font_size = 64
+
+[node name="Name" type="HBoxContainer" parent="Top" unique_id=275025143]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+alignment = 1
+
+[node name="Bottom" type="Control" parent="." unique_id=247695640 groups=["full_bleed"]]
+layout_mode = 3
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 2.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Start" type="CenterContainer" parent="Bottom" unique_id=746464128]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="GetStarted" type="PanelContainer" parent="Bottom/Start" unique_id=2133609815]
+unique_name_in_owner = true
+material = SubResource("ShaderMaterial_xsw2a")
+custom_minimum_size = Vector2(640, 180)
+layout_mode = 2
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_3ck8x")
+script = ExtResource("3_button")
+text = "Get Started"
+font_weight = 700
+font_size = 64
+corner_radius = 64.0
+corner_top_left = 64.0
+corner_top_right = 64.0
+corner_bottom_right = 64.0
+corner_bottom_left = 64.0
+padding = 24
+padding_left = 24
+padding_top = 24
+padding_right = 24
+padding_bottom = 24
+
+[node name="Options" type="VBoxContainer" parent="Bottom" unique_id=1432180399]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
+
+[node name="ListArea" type="MarginContainer" parent="Bottom/Options" unique_id=2060076323]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/margin_top = 32
+theme_override_constants/margin_bottom = 32
+
+[node name="List" type="ScrollContainer" parent="Bottom/Options/ListArea" unique_id=819987837]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/scrollbar_h_separation = 0
+theme_override_styles/panel = SubResource("StyleBoxEmpty_2rw0x")
+follow_focus = true
+horizontal_scroll_mode = 0
+script = ExtResource("4_scroll")
+step = 0.0
+separation = 32.0
+distance_unfocused = true
+wheel_scroll_damper = SubResource("Resource_wheel")
+dragging_scroll_damper = SubResource("Resource_drag")
+allow_horizontal_scroll = false
+
+[node name="Footer" type="MarginContainer" parent="Bottom/Options" unique_id=1311531627]
+layout_mode = 2
+theme_override_constants/margin_left = 92
+theme_override_constants/margin_right = 92
+theme_override_constants/margin_bottom = 48
+
+[node name="Continue" type="PanelContainer" parent="Bottom/Options/Footer" unique_id=1538821442]
+unique_name_in_owner = true
+material = SubResource("ShaderMaterial_7dflx")
+custom_minimum_size = Vector2(0, 164)
+layout_mode = 2
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_rwpv8")
+script = ExtResource("3_button")
+text = "Continue"
+font_weight = 700
+font_size = 60
+corner_radius = 64.0
+corner_top_left = 64.0
+corner_top_right = 64.0
+corner_bottom_right = 64.0
+corner_bottom_left = 64.0
+padding = 24
+padding_left = 24
+padding_top = 24
+padding_right = 24
+padding_bottom = 24

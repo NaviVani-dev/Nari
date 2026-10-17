@@ -1,0 +1,11 @@
+[env]
+CXXSTDLIB_x86_64_pc_windows_gnu = ""
+
+[target.x86_64-pc-windows-gnu]
+rustflags = ["-C", "link-args=-static-libgcc -Wl,--start-group -Wl,-Bstatic -lstdc++ -lgcc -lgcc_eh -lpthread -lmingwex -Wl,-Bdynamic -lmsvcrt -lkernel32 -Wl,--end-group"]
+
+[target.x86_64-unknown-linux-gnu]
+rustflags = ["-C", "link-args=-Wl,-rpath,$ORIGIN"]
+
+[target.aarch64-unknown-linux-gnu]
+rustflags = ["-C", "link-args=-Wl,-rpath,$ORIGIN"]

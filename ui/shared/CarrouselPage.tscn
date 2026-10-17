@@ -1,0 +1,33 @@
+[gd_scene format=3 uid="uid://b34t0mlv61odq"]
+
+[node name="Page" type="Node" unique_id=2110424859]
+
+[node name="Top" type="Control" parent="." unique_id=1353368701]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Bottom" type="Control" parent="." unique_id=1026303762]
+layout_mode = 3
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 2.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Content" type="VBoxContainer" parent="Bottom" unique_id=675987677]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
+
+[node name="ListArea" type="MarginContainer" parent="Bottom/Content" unique_id=1845491777]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/margin_bottom = 0

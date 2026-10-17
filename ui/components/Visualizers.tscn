@@ -1,0 +1,176 @@
+[gd_scene format=4 uid="uid://brmi13bpmf7no"]
+
+[ext_resource type="Script" uid="uid://xuqlrq24ak7e" path="res://ui/components/visualizers.gd" id="1_viz"]
+[ext_resource type="Shader" uid="uid://bo06w6f55p1nv" path="res://assets/shaders/viz_blocks.gdshader" id="2_blocks"]
+[ext_resource type="Shader" uid="uid://cy0ascp7okrdc" path="res://assets/shaders/viz_scope.gdshader" id="3_scope"]
+[ext_resource type="Shader" uid="uid://b6k3yw8n2uqcv" path="res://assets/shaders/viz_ring.gdshader" id="4_ring"]
+[ext_resource type="Shader" uid="uid://cl2dmuvxupado" path="res://assets/shaders/viz_tunnel.gdshader" id="5_tunnel"]
+[ext_resource type="Shader" uid="uid://bxol8e1r5rb13" path="res://assets/shaders/viz_mesh.gdshader" id="6_mesh"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_blocks"]
+resource_local_to_scene = true
+shader = ExtResource("2_blocks")
+shader_parameter/bands = PackedVector4Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+shader_parameter/peaks = PackedVector4Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+shader_parameter/color_1 = Color(0.2, 0.4, 0.9, 1)
+shader_parameter/color_2 = Color(0.9, 0.3, 0.6, 1)
+shader_parameter/color_3 = Color(1, 1, 1, 1)
+shader_parameter/rect_size = Vector2(1920, 1080)
+shader_parameter/columns = 32
+shader_parameter/block_aspect = 1.2222
+shader_parameter/idle = 0.06
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_scope"]
+resource_local_to_scene = true
+shader = ExtResource("3_scope")
+shader_parameter/wave = PackedVector4Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+shader_parameter/color_1 = Color(0.2, 0.4, 0.9, 1)
+shader_parameter/color_2 = Color(0.9, 0.3, 0.6, 1)
+shader_parameter/color_3 = Color(1, 1, 1, 1)
+shader_parameter/rect_size = Vector2(1920, 1080)
+shader_parameter/amplitude = 0.34
+shader_parameter/thickness = 7.0
+shader_parameter/glow = 0.35
+shader_parameter/level = 0.0
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ring"]
+resource_local_to_scene = true
+shader = ExtResource("4_ring")
+shader_parameter/bands = PackedVector4Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+shader_parameter/peaks = PackedVector4Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+shader_parameter/color_1 = Color(0.2, 0.4, 0.9, 1)
+shader_parameter/color_2 = Color(0.9, 0.3, 0.6, 1)
+shader_parameter/color_3 = Color(1, 1, 1, 1)
+shader_parameter/rect_size = Vector2(1920, 1080)
+shader_parameter/bass = 0.0
+shader_parameter/reach = 0.52
+shader_parameter/centre_size = 12.0
+shader_parameter/spokes = 32
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_tunnel"]
+resource_local_to_scene = true
+shader = ExtResource("5_tunnel")
+shader_parameter/bands = PackedVector4Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+shader_parameter/color_1 = Color(0, 1, 0.92, 1)
+shader_parameter/color_2 = Color(1, 0, 0.92, 1)
+shader_parameter/color_3 = Color(0.53, 0.82, 1, 1)
+shader_parameter/rect_size = Vector2(1920, 1080)
+shader_parameter/travel = 0.0
+shader_parameter/bass = 0.0
+shader_parameter/ribs = 14
+shader_parameter/mouth = 1.6
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_mesh"]
+resource_local_to_scene = true
+shader = ExtResource("6_mesh")
+shader_parameter/bands = PackedVector4Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+shader_parameter/color_1 = Color(0, 1, 0.92, 1)
+shader_parameter/color_2 = Color(1, 0, 0.92, 1)
+shader_parameter/color_3 = Color(0.53, 0.82, 1, 1)
+shader_parameter/rect_size = Vector2(1920, 1080)
+shader_parameter/direction = Vector2(-1.5, 1)
+shader_parameter/travel = 0.0
+shader_parameter/bass = 0.0
+shader_parameter/level = 0.0
+shader_parameter/drift_scale = 95.0
+shader_parameter/cell_size = 215.0
+shader_parameter/line_width = 4.5
+shader_parameter/warp = 20.0
+shader_parameter/dot_size = 12.0
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_custom"]
+resource_local_to_scene = true
+
+[node name="Visualizers" type="Control" unique_id=2008406642]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_viz")
+
+[node name="Blocks" type="ColorRect" parent="." unique_id=2120860961]
+unique_name_in_owner = true
+visible = false
+texture_filter = 1
+material = SubResource("ShaderMaterial_blocks")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Scope" type="ColorRect" parent="." unique_id=207482983]
+unique_name_in_owner = true
+visible = false
+material = SubResource("ShaderMaterial_scope")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Ring" type="ColorRect" parent="." unique_id=765742344]
+unique_name_in_owner = true
+visible = false
+material = SubResource("ShaderMaterial_ring")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Tunnel" type="ColorRect" parent="." unique_id=1823355694]
+unique_name_in_owner = true
+visible = false
+material = SubResource("ShaderMaterial_tunnel")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Mesh" type="ColorRect" parent="." unique_id=550682787]
+unique_name_in_owner = true
+visible = false
+material = SubResource("ShaderMaterial_mesh")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Custom" type="ColorRect" parent="." unique_id=6165155]
+unique_name_in_owner = true
+visible = false
+material = SubResource("ShaderMaterial_custom")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Canvas" type="Control" parent="." unique_id=1730441822]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2

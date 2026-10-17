@@ -1,0 +1,31 @@
+[gd_scene format=3 uid="uid://p37qo4tlvtvt"]
+
+[ext_resource type="Script" uid="uid://vw0enjm8k5e3" path="res://ui/components/stair_scroll.gd" id="1_list"]
+[ext_resource type="Script" uid="uid://b7h0k2h2qwlqv" path="res://addons/SmoothScroll/scroll_damper/expo_scroll_damper.gd" id="2_damper"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_dqnec"]
+content_margin_left = 92.0
+content_margin_top = 0.0
+content_margin_right = 92.0
+content_margin_bottom = 0.0
+
+[sub_resource type="Resource" id="Resource_wheel"]
+script = ExtResource("2_damper")
+
+[sub_resource type="Resource" id="Resource_drag"]
+script = ExtResource("2_damper")
+
+[node name="List" type="ScrollContainer" unique_id=1401167799]
+theme_override_constants/scrollbar_h_separation = 0
+theme_override_styles/panel = SubResource("StyleBoxEmpty_dqnec")
+follow_focus = true
+horizontal_scroll_mode = 0
+script = ExtResource("1_list")
+step = 16.0
+separation = 8.0
+distance_unfocused = true
+padding_left = 92
+padding_right = 92
+wheel_scroll_damper = SubResource("Resource_wheel")
+dragging_scroll_damper = SubResource("Resource_drag")
+allow_horizontal_scroll = false

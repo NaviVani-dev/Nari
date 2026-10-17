@@ -1,0 +1,45 @@
+[gd_scene format=3 uid="uid://cvp228kuna4aa"]
+
+[ext_resource type="Shader" uid="uid://ctaeuvi424wmk" path="res://assets/shaders/panel.gdshader" id="1_4etwj"]
+[ext_resource type="Script" uid="uid://dfo5mlgc5kp6h" path="res://ui/shared/hint_button.gd" id="1_hint"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_6nuj4"]
+shader = ExtResource("1_4etwj")
+shader_parameter/corner_radius = Vector4(30, 30, 30, 30)
+shader_parameter/panel_size = Vector2(56, 96)
+shader_parameter/fill_color = Color(0.06666667, 0.15686275, 0.3254902, 1)
+shader_parameter/gradient_color = Color(0.31764707, 0.45882353, 0.7254902, 0.75)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_wrwhr"]
+content_margin_left = 28.0
+content_margin_top = 12.0
+content_margin_right = 28.0
+content_margin_bottom = 12.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[node name="ActionButton" type="PanelContainer" unique_id=510278788]
+material = SubResource("ShaderMaterial_6nuj4")
+custom_minimum_size = Vector2(0, 96)
+size_flags_vertical = 4
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_wrwhr")
+script = ExtResource("1_hint")
+solid = true
+font_weight = 700
+font_size = 38
+icon_size = Vector2(52, 52)
+separation = 12
+accent_on_focus = true
+corner_radius = 30.0
+corner_top_left = 30.0
+corner_top_right = 30.0
+corner_bottom_right = 30.0
+corner_bottom_left = 30.0
+padding = 12
+padding_left = 28
+padding_top = 12
+padding_right = 28
+padding_bottom = 12

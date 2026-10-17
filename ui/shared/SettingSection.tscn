@@ -1,0 +1,26 @@
+[gd_scene format=3 uid="uid://c2xp662qp8l0k"]
+
+[ext_resource type="Script" uid="uid://emohg8k7r26n" path="res://ui/components/label.gd" id="1_label"]
+
+[node name="SettingSection" type="MarginContainer"]
+custom_minimum_size = Vector2(0, 104)
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_top = 40
+theme_override_constants/margin_right = 40
+theme_override_constants/margin_bottom = 0
+
+[node name="Title" type="Label" parent="."]
+unique_name_in_owner = true
+modulate = Color(1, 1, 1, 0.75)
+layout_mode = 2
+size_flags_vertical = 8
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 44
+text = "Section"
+clip_text = true
+script = ExtResource("1_label")
+weight = 700
+font_size = 44
+marquee = true

@@ -1,0 +1,285 @@
+[gd_scene format=3 uid="uid://r5sm4fytpink"]
+
+[ext_resource type="Script" uid="uid://cw4sd7rl5oo2k" path="res://ui/shared/server_login.gd" id="1_login"]
+[ext_resource type="Script" uid="uid://djk4e68d3it8a" path="res://ui/components/button.gd" id="2_button"]
+[ext_resource type="Script" uid="uid://dw5rfxgt1dbw" path="res://ui/components/line_edit.gd" id="3_line_edit"]
+[ext_resource type="Shader" uid="uid://ctaeuvi424wmk" path="res://assets/shaders/panel.gdshader" id="4_5j6sl"]
+[ext_resource type="Script" uid="uid://emohg8k7r26n" path="res://ui/components/label.gd" id="4_label"]
+
+[sub_resource type="FontVariation" id="FontVariation_dty87"]
+variation_opentype = {
+2003265652: 700
+}
+
+[sub_resource type="FontVariation" id="FontVariation_rmreg"]
+variation_opentype = {
+2003265652: 400
+}
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_5j6sl"]
+content_margin_left = 36.0
+content_margin_top = 16.0
+content_margin_right = 36.0
+content_margin_bottom = 16.0
+bg_color = Color(0.06666667, 0.15686275, 0.3254902, 1)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0.06666667, 0.15686275, 0.3254902, 1)
+corner_radius_top_left = 32
+corner_radius_top_right = 32
+corner_radius_bottom_right = 32
+corner_radius_bottom_left = 32
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_06el2"]
+content_margin_left = 36.0
+content_margin_top = 16.0
+content_margin_right = 36.0
+content_margin_bottom = 16.0
+draw_center = false
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0, 0.6117647, 1, 1)
+corner_radius_top_left = 32
+corner_radius_top_right = 32
+corner_radius_bottom_right = 32
+corner_radius_bottom_left = 32
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_0dbx2"]
+content_margin_left = 36.0
+content_margin_top = 16.0
+content_margin_right = 36.0
+content_margin_bottom = 16.0
+bg_color = Color(0.06666667, 0.15686275, 0.3254902, 1)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0.06666667, 0.15686275, 0.3254902, 1)
+corner_radius_top_left = 32
+corner_radius_top_right = 32
+corner_radius_bottom_right = 32
+corner_radius_bottom_left = 32
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_fpqfw"]
+content_margin_left = 36.0
+content_margin_top = 16.0
+content_margin_right = 36.0
+content_margin_bottom = 16.0
+draw_center = false
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0, 0.6117647, 1, 1)
+corner_radius_top_left = 32
+corner_radius_top_right = 32
+corner_radius_bottom_right = 32
+corner_radius_bottom_left = 32
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_iot1l"]
+content_margin_left = 36.0
+content_margin_top = 16.0
+content_margin_right = 36.0
+content_margin_bottom = 16.0
+bg_color = Color(0.06666667, 0.15686275, 0.3254902, 1)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0.06666667, 0.15686275, 0.3254902, 1)
+corner_radius_top_left = 32
+corner_radius_top_right = 32
+corner_radius_bottom_right = 32
+corner_radius_bottom_left = 32
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hmxsj"]
+content_margin_left = 36.0
+content_margin_top = 16.0
+content_margin_right = 36.0
+content_margin_bottom = 16.0
+draw_center = false
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0, 0.6117647, 1, 1)
+corner_radius_top_left = 32
+corner_radius_top_right = 32
+corner_radius_bottom_right = 32
+corner_radius_bottom_left = 32
+anti_aliasing = false
+
+[sub_resource type="FontVariation" id="FontVariation_mayo7"]
+variation_opentype = {
+2003265652: 500
+}
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_4hu7y"]
+shader = ExtResource("4_5j6sl")
+shader_parameter/corner_radius = Vector4(32, 32, 32, 32)
+shader_parameter/panel_size = Vector2(360, 116)
+shader_parameter/fill_color = Color(0.06666667, 0.15686275, 0.3254902, 1)
+shader_parameter/gradient_color = Color(0.31764707, 0.45882353, 0.7254902, 0.75)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_xmgdy"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[node name="ServerLogin" type="VBoxContainer" unique_id=454803745]
+theme_override_constants/separation = 32
+alignment = 1
+script = ExtResource("1_login")
+
+[node name="Title" type="Label" parent="." unique_id=678444197]
+self_modulate = Color(0.06666667, 0.15686275, 0.3254902, 1)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_dty87")
+theme_override_font_sizes/font_size = 56
+text = "Connect to your server"
+horizontal_alignment = 1
+script = ExtResource("4_label")
+weight = 700
+font_size = 56
+
+[node name="UrlEdit" type="LineEdit" parent="." unique_id=1412693277]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 112)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 0.6)
+theme_override_colors/font_selected_color = Color(1, 1, 1, 1)
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 0.5)
+theme_override_colors/caret_color = Color(0, 0.6117647, 1, 1)
+theme_override_colors/selection_color = Color(0, 0.6117647, 1, 0.35)
+theme_override_colors/clear_button_color = Color(1, 1, 1, 0.6)
+theme_override_colors/clear_button_color_pressed = Color(0, 0.6117647, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_rmreg")
+theme_override_font_sizes/font_size = 40
+theme_override_styles/normal = SubResource("StyleBoxFlat_5j6sl")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_5j6sl")
+theme_override_styles/focus = SubResource("StyleBoxFlat_06el2")
+placeholder_text = "Server address (https://music.example.com)"
+virtual_keyboard_type = 7
+script = ExtResource("3_line_edit")
+bg_color = 5
+fg_color = 6
+font_size = 40
+corner_radius = 32
+corner_top_left = 32
+corner_top_right = 32
+corner_bottom_right = 32
+corner_bottom_left = 32
+horizontal_padding = 36
+
+[node name="UserEdit" type="LineEdit" parent="." unique_id=1412122159]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 112)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 0.6)
+theme_override_colors/font_selected_color = Color(1, 1, 1, 1)
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 0.5)
+theme_override_colors/caret_color = Color(0, 0.6117647, 1, 1)
+theme_override_colors/selection_color = Color(0, 0.6117647, 1, 0.35)
+theme_override_colors/clear_button_color = Color(1, 1, 1, 0.6)
+theme_override_colors/clear_button_color_pressed = Color(0, 0.6117647, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_rmreg")
+theme_override_font_sizes/font_size = 40
+theme_override_styles/normal = SubResource("StyleBoxFlat_0dbx2")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_0dbx2")
+theme_override_styles/focus = SubResource("StyleBoxFlat_fpqfw")
+placeholder_text = "Username"
+script = ExtResource("3_line_edit")
+bg_color = 5
+fg_color = 6
+font_size = 40
+corner_radius = 32
+corner_top_left = 32
+corner_top_right = 32
+corner_bottom_right = 32
+corner_bottom_left = 32
+horizontal_padding = 36
+
+[node name="PasswordEdit" type="LineEdit" parent="." unique_id=85109991]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 112)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_uneditable_color = Color(1, 1, 1, 0.6)
+theme_override_colors/font_selected_color = Color(1, 1, 1, 1)
+theme_override_colors/font_placeholder_color = Color(1, 1, 1, 0.5)
+theme_override_colors/caret_color = Color(0, 0.6117647, 1, 1)
+theme_override_colors/selection_color = Color(0, 0.6117647, 1, 0.35)
+theme_override_colors/clear_button_color = Color(1, 1, 1, 0.6)
+theme_override_colors/clear_button_color_pressed = Color(0, 0.6117647, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_rmreg")
+theme_override_font_sizes/font_size = 40
+theme_override_styles/normal = SubResource("StyleBoxFlat_iot1l")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_iot1l")
+theme_override_styles/focus = SubResource("StyleBoxFlat_hmxsj")
+placeholder_text = "Password"
+virtual_keyboard_type = 6
+secret = true
+script = ExtResource("3_line_edit")
+bg_color = 5
+fg_color = 6
+font_size = 40
+corner_radius = 32
+corner_top_left = 32
+corner_top_right = 32
+corner_bottom_right = 32
+corner_bottom_left = 32
+horizontal_padding = 36
+
+[node name="Status" type="Label" parent="." unique_id=2029791253]
+unique_name_in_owner = true
+visible = false
+modulate = Color(1, 1, 1, 0.75)
+self_modulate = Color(0.06666667, 0.15686275, 0.3254902, 1)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_mayo7")
+theme_override_font_sizes/font_size = 40
+horizontal_alignment = 1
+autowrap_mode = 3
+script = ExtResource("4_label")
+font_size = 40
+
+[node name="AcceptButton" type="PanelContainer" parent="." unique_id=691121884]
+unique_name_in_owner = true
+material = SubResource("ShaderMaterial_4hu7y")
+custom_minimum_size = Vector2(360, 116)
+layout_mode = 2
+size_flags_horizontal = 4
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_xmgdy")
+script = ExtResource("2_button")
+text = "Sign in"
+font_weight = 600
+font_size = 46
+corner_radius = 32.0
+corner_top_left = 32.0
+corner_top_right = 32.0
+corner_bottom_right = 32.0
+corner_bottom_left = 32.0
+padding = 12
+padding_left = 12
+padding_top = 12
+padding_right = 12
+padding_bottom = 12

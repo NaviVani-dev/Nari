@@ -1,0 +1,116 @@
+[gd_scene format=3 uid="uid://cims1n5datghw"]
+
+[ext_resource type="Script" uid="uid://d2bl8q5uffx2" path="res://ui/shared/loading_screen.gd" id="1_loading"]
+[ext_resource type="Script" uid="uid://emohg8k7r26n" path="res://ui/components/label.gd" id="2_label"]
+[ext_resource type="Script" uid="uid://ctbpcejv6a7ua" path="res://ui/components/panel_container.gd" id="3_panel"]
+[ext_resource type="Shader" uid="uid://ctaeuvi424wmk" path="res://assets/shaders/panel.gdshader" id="3_vbx65"]
+[ext_resource type="Script" uid="uid://cuxjrkpvldf8h" path="res://ui/components/progress_slider.gd" id="4_slider"]
+
+[sub_resource type="FontVariation" id="FontVariation_dty87"]
+variation_opentype = {
+2003265652: 700
+}
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_vbx65"]
+shader = ExtResource("3_vbx65")
+shader_parameter/corner_radius = Vector4(36, 36, 36, 36)
+shader_parameter/panel_size = Vector2(1680, 74)
+shader_parameter/fill_color = Color(0.06666667, 0.15686275, 0.3254902, 1)
+shader_parameter/gradient_color = Color(0.31764707, 0.45882353, 0.7254902, 0.75)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_yp45b"]
+content_margin_left = 16.0
+content_margin_top = 16.0
+content_margin_right = 16.0
+content_margin_bottom = 16.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[sub_resource type="Image" id="Image_dpi70"]
+data = {
+"data": PackedByteArray(255, 255, 255, 0),
+"format": "RGBA8",
+"height": 1,
+"mipmaps": false,
+"width": 1
+}
+
+[sub_resource type="ImageTexture" id="ImageTexture_cuwjp"]
+image = SubResource("Image_dpi70")
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_84i4l"]
+
+[node name="LoadingTop" type="Control" unique_id=669170659]
+z_index = 20
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_loading")
+
+[node name="Content" type="VBoxContainer" parent="." unique_id=372034]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 48
+alignment = 1
+
+[node name="Message" type="Label" parent="Content" unique_id=667548810]
+self_modulate = Color(0.06666667, 0.15686275, 0.3254902, 1)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_dty87")
+theme_override_font_sizes/font_size = 96
+text = "Loading your music!"
+horizontal_alignment = 1
+autowrap_mode = 3
+script = ExtResource("2_label")
+weight = 700
+font_size = 96
+
+[node name="BarArea" type="MarginContainer" parent="Content" unique_id=1625735767]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 120
+theme_override_constants/margin_right = 120
+
+[node name="Panel" type="PanelContainer" parent="Content/BarArea" unique_id=425911511]
+material = SubResource("ShaderMaterial_vbx65")
+custom_minimum_size = Vector2(0, 72)
+layout_mode = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_yp45b")
+script = ExtResource("3_panel")
+corner_radius = 36.0
+corner_top_left = 36.0
+corner_top_right = 36.0
+corner_bottom_right = 36.0
+corner_bottom_left = 36.0
+
+[node name="Bar" type="HSlider" parent="Content/BarArea/Panel" unique_id=589098974]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+size_flags_vertical = 4
+focus_mode = 0
+mouse_filter = 2
+mouse_default_cursor_shape = 2
+theme_override_icons/grabber = SubResource("ImageTexture_cuwjp")
+theme_override_icons/grabber_highlight = SubResource("ImageTexture_cuwjp")
+theme_override_icons/grabber_disabled = SubResource("ImageTexture_cuwjp")
+theme_override_styles/slider = SubResource("StyleBoxEmpty_84i4l")
+theme_override_styles/grabber_area = SubResource("StyleBoxEmpty_84i4l")
+theme_override_styles/grabber_area_highlight = SubResource("StyleBoxEmpty_84i4l")
+max_value = 1000.0
+editable = false
+script = ExtResource("4_slider")
+show_grabber = false

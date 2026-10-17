@@ -1,0 +1,138 @@
+[gd_scene format=3 uid="uid://btb1jrg0aww0c"]
+
+[ext_resource type="Shader" uid="uid://ctaeuvi424wmk" path="res://assets/shaders/panel.gdshader" id="1_3ani7"]
+[ext_resource type="Script" uid="uid://c2x47mita0ri1" path="res://ui/shared/song_item_compact.gd" id="1_item"]
+[ext_resource type="Script" uid="uid://b0etlamb18c2f" path="res://ui/components/icon.gd" id="2_icon"]
+[ext_resource type="Script" uid="uid://emohg8k7r26n" path="res://ui/components/label.gd" id="3_label"]
+[ext_resource type="Texture2D" uid="uid://8ig0pu84pjn4" path="res://assets/icons/music_note.svg" id="4_note"]
+[ext_resource type="Texture2D" uid="uid://2jinijyk2qwk" path="res://assets/icons/offline_download.svg" id="icon_dl_tex"]
+[ext_resource type="Texture2D" uid="uid://8xbge2qku816" path="res://assets/icons/like_on.svg" id="like_tex"]
+[ext_resource type="Script" uid="uid://02b3f6ptg8q3" path="res://ui/components/title_row.gd" id="title_row"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_jey5q"]
+shader = ExtResource("1_3ani7")
+shader_parameter/corner_radius = Vector4(28, 28, 28, 28)
+shader_parameter/panel_size = Vector2(192, 120)
+shader_parameter/fill_color = Color(1, 1, 1, 0)
+shader_parameter/gradient_color = Color(1, 1, 1, 0)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_qotwi"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[sub_resource type="FontVariation" id="FontVariation_dty87"]
+variation_opentype = {
+2003265652: 700
+}
+
+[node name="SongItemCompact" type="PanelContainer" unique_id=658268446]
+material = SubResource("ShaderMaterial_jey5q")
+custom_minimum_size = Vector2(0, 120)
+size_flags_horizontal = 3
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_qotwi")
+script = ExtResource("1_item")
+flat = true
+corner_radius = 28.0
+corner_top_left = 28.0
+corner_top_right = 28.0
+corner_bottom_right = 28.0
+corner_bottom_left = 28.0
+padding = 12
+padding_left = 12
+padding_top = 12
+padding_right = 12
+padding_bottom = 12
+
+[node name="MarginContainer" type="MarginContainer" parent="." unique_id=2030377869]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_right = 32
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer" unique_id=1321501413]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 32
+
+[node name="Glyph" type="TextureRect" parent="MarginContainer/HBoxContainer" unique_id=1545087830]
+unique_name_in_owner = true
+self_modulate = Color(0.06666667, 0.15686275, 0.3254902, 1)
+custom_minimum_size = Vector2(72, 72)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+texture = ExtResource("4_note")
+expand_mode = 1
+stretch_mode = 5
+script = ExtResource("2_icon")
+
+[node name="Number" type="Label" parent="MarginContainer/HBoxContainer" unique_id=2046362543]
+unique_name_in_owner = true
+visible = false
+self_modulate = Color(0.06666667, 0.15686275, 0.3254902, 1)
+custom_minimum_size = Vector2(72, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_dty87")
+theme_override_font_sizes/font_size = 48
+text = "1"
+horizontal_alignment = 1
+vertical_alignment = 1
+script = ExtResource("3_label")
+weight = 700
+font_size = 48
+
+[node name="TitleRow" type="Container" parent="MarginContainer/HBoxContainer" unique_id=296970645]
+layout_mode = 2
+size_flags_horizontal = 3
+script = ExtResource("title_row")
+
+[node name="Title" type="Label" parent="MarginContainer/HBoxContainer/TitleRow" unique_id=254305156]
+unique_name_in_owner = true
+self_modulate = Color(0.06666667, 0.15686275, 0.3254902, 1)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_dty87")
+theme_override_font_sizes/font_size = 48
+text = "Song Title"
+vertical_alignment = 1
+clip_text = true
+text_overrun_behavior = 3
+script = ExtResource("3_label")
+weight = 700
+font_size = 48
+
+[node name="Downloaded" type="TextureRect" parent="MarginContainer/HBoxContainer/TitleRow" unique_id=1397490671]
+unique_name_in_owner = true
+visible = false
+self_modulate = Color(0.06666667, 0.15686275, 0.3254902, 1)
+custom_minimum_size = Vector2(48, 48)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+texture = ExtResource("icon_dl_tex")
+expand_mode = 1
+stretch_mode = 5
+script = ExtResource("2_icon")
+
+[node name="Liked" type="TextureRect" parent="MarginContainer/HBoxContainer" unique_id=1730550912]
+unique_name_in_owner = true
+visible = false
+self_modulate = Color(1, 0.39607844, 0.3372549, 1)
+custom_minimum_size = Vector2(48, 48)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+texture = ExtResource("like_tex")
+expand_mode = 1
+stretch_mode = 5
+script = ExtResource("2_icon")
+color = 30

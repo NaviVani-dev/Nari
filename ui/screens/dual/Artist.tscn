@@ -1,0 +1,67 @@
+[gd_scene format=3 uid="uid://tgvq8fxf8y7a"]
+
+[ext_resource type="Script" uid="uid://btgemn0in37gt" path="res://ui/screens/artist.gd" id="1_page"]
+[ext_resource type="PackedScene" uid="uid://0er1bw0abrrs" path="res://ui/shared/views/InfoTop.tscn" id="2_info"]
+[ext_resource type="Script" uid="uid://bgqglerkcylxx" path="res://addons/SmoothScroll/smooth_scroll_container.gd" id="3_scroll"]
+[ext_resource type="Script" uid="uid://b7h0k2h2qwlqv" path="res://addons/SmoothScroll/scroll_damper/expo_scroll_damper.gd" id="4_damper"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_scroll"]
+
+[sub_resource type="Resource" id="Resource_wheel"]
+script = ExtResource("4_damper")
+
+[sub_resource type="Resource" id="Resource_drag"]
+script = ExtResource("4_damper")
+
+[node name="Artist" type="Node" unique_id=1552164770 node_paths=PackedStringArray("top", "bottom")]
+script = ExtResource("1_page")
+top = NodePath("Top")
+bottom = NodePath("Bottom")
+
+[node name="Top" type="Control" parent="." unique_id=1552164771]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Info" parent="Top" unique_id=1552164772 instance=ExtResource("2_info")]
+unique_name_in_owner = true
+layout_mode = 1
+
+[node name="Bottom" type="Control" parent="." unique_id=1552164773]
+layout_mode = 3
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 2.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Scroll" type="ScrollContainer" parent="Bottom" unique_id=1552164774]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxEmpty_scroll")
+follow_focus = true
+horizontal_scroll_mode = 0
+script = ExtResource("3_scroll")
+wheel_scroll_damper = SubResource("Resource_wheel")
+dragging_scroll_damper = SubResource("Resource_drag")
+allow_horizontal_scroll = false
+
+[node name="Margin" type="MarginContainer" parent="Bottom/Scroll" unique_id=1552164775]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/margin_bottom = 32
+
+[node name="Sections" type="VBoxContainer" parent="Bottom/Scroll/Margin" unique_id=1552164776]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 48

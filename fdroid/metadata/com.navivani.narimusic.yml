@@ -1,0 +1,47 @@
+AntiFeatures:
+  NonFreeNet:
+    en-US: Lyrics and romanization are fetched from third-party services, including
+      Google Translate. Optional Last.fm scrobbling, Discord presence and the plugin
+      and theme marketplace also talk to non-free network services.
+Categories:
+  - Local Media Player
+  - Lyrics
+License: GPL-3.0-or-later
+AuthorName: NaviVani
+WebSite: https://narimusic.com
+SourceCode: https://github.com/NaviVani-dev/Nari
+IssueTracker: https://github.com/NaviVani-dev/Nari/issues
+
+AutoName: Nari
+
+RepoType: git
+Repo: https://github.com/NaviVani-dev/Nari.git
+
+Builds:
+  - versionName: 1.0.0
+    versionCode: 1
+    commit: v1.0.0
+    timeout: 14400
+    sudo:
+      - apt-get update
+      - apt-get install -y openjdk-21-jdk-headless pkg-config scons unzip clang libclang-dev
+        make curl
+    output: nari.apk
+    srclibs:
+      - Godot@4.7.2-stable
+      - godot-cpp@27d9dd23c83871e0619fca5dc2cddfbfd69e926a
+      - FFmpeg@n8.0.1
+    rm:
+      - addons/AynThor/bin
+      - addons/MusicService/bin
+    build:
+      - export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
+      - GODOT_SRC=$$Godot$$ GODOT_CPP=$$godot-cpp$$ FFMPEG_SRC=$$FFmpeg$$ ANDROID_HOME=$$SDK$$
+        python3 scripts/fdroid.py nari.apk
+    ndk: 29.0.14206865
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags
+UpdateCheckData: export_presets.cfg|version/code=(\d+)|.|version/name="([\d.]+)"
+CurrentVersion: 1.0.0
+CurrentVersionCode: 1

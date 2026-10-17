@@ -1,0 +1,18 @@
+import os
+
+godot_cpp_path = os.environ.get("GODOT_CPP_PATH", "../.build/godot-cpp")
+
+env = SConscript(godot_cpp_path + "/SConstruct")
+
+env.Append(CPPPATH=["src"])
+
+if env["platform"] == "android":
+    env.Append(LIBS=["android", "vulkan", "log"])
+
+CacheDir("../.build/scons_cache")
+
+library = env.SharedLibrary(
+    "bin/libaynthor_native{}{}".format(env["suffix"], env["SHLIBSUFFIX"]),
+    Glob("src/*.cpp"),
+)
+Default(library)

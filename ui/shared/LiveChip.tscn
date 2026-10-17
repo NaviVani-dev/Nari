@@ -1,0 +1,59 @@
+[gd_scene format=3 uid="uid://ds1fe8g28iyrb"]
+
+[ext_resource type="Script" uid="uid://btacocpaxnutv" path="res://ui/components/live_chip.gd" id="1_chip"]
+[ext_resource type="Shader" uid="uid://ctaeuvi424wmk" path="res://assets/shaders/panel.gdshader" id="1_k0u62"]
+[ext_resource type="Script" uid="uid://emohg8k7r26n" path="res://ui/components/label.gd" id="2_label"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ihsvb"]
+shader = ExtResource("1_k0u62")
+shader_parameter/corner_radius = Vector4(12, 12, 12, 12)
+shader_parameter/panel_size = Vector2(94, 46)
+shader_parameter/fill_color = Color(1, 0.39607844, 0.3372549, 1)
+shader_parameter/gradient_color = Color(1, 0.56078434, 0.5176471, 0.75)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_2em8n"]
+content_margin_left = 12.0
+content_margin_top = 0.0
+content_margin_right = 12.0
+content_margin_bottom = 0.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[sub_resource type="FontVariation" id="FontVariation_d8k61"]
+variation_opentype = {
+2003265652: 800
+}
+
+[node name="LiveChip" type="PanelContainer" unique_id=1739200411]
+material = SubResource("ShaderMaterial_ihsvb")
+size_flags_horizontal = 0
+size_flags_vertical = 4
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_2em8n")
+script = ExtResource("1_chip")
+bg_color = 30
+gradient_color = 32
+corner_radius = 12.0
+corner_top_left = 12.0
+corner_top_right = 12.0
+corner_bottom_right = 12.0
+corner_bottom_left = 12.0
+padding = 0
+padding_left = 12
+padding_top = 0
+padding_right = 12
+padding_bottom = 0
+
+[node name="Text" type="Label" parent="." unique_id=1739200412]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_d8k61")
+theme_override_font_sizes/font_size = 31
+text = "LIVE"
+horizontal_alignment = 1
+vertical_alignment = 1
+script = ExtResource("2_label")
+color = 31
+weight = 800
+font_size = 31

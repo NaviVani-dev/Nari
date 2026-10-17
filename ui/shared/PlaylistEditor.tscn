@@ -1,0 +1,207 @@
+[gd_scene format=3 uid="uid://dckaav2majjcp"]
+
+[ext_resource type="Script" uid="uid://covxsna85chv3" path="res://ui/shared/playlist_editor.gd" id="1_editor"]
+[ext_resource type="Script" uid="uid://djk4e68d3it8a" path="res://ui/components/button.gd" id="2_button"]
+[ext_resource type="Shader" uid="uid://ctaeuvi424wmk" path="res://assets/shaders/panel.gdshader" id="2_nhq7f"]
+[ext_resource type="PackedScene" uid="uid://dp422ntw15hsk" path="res://ui/shared/Cover.tscn" id="3_cover"]
+[ext_resource type="Texture2D" uid="uid://ctcxqipr42aqp" path="res://assets/icons/add.svg" id="4_add"]
+[ext_resource type="Script" uid="uid://dw5rfxgt1dbw" path="res://ui/components/line_edit.gd" id="5_line_edit"]
+[ext_resource type="Script" uid="uid://b0etlamb18c2f" path="res://ui/components/icon.gd" id="icon_script"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_o0m48"]
+shader = ExtResource("2_nhq7f")
+shader_parameter/corner_radius = Vector4(32, 32, 32, 32)
+shader_parameter/panel_size = Vector2(424, 424)
+shader_parameter/fill_color = Color(1, 1, 1, 0)
+shader_parameter/gradient_color = Color(1, 1, 1, 0)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_6vf5p"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_cku5t"]
+resource_local_to_scene = true
+bg_color = Color(1, 1, 1, 1)
+draw_center = false
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+shadow_color = Color(1, 1, 1, 0)
+shadow_size = 8
+shadow_offset = Vector2(0, 6)
+
+[sub_resource type="FontVariation" id="FontVariation_rmreg"]
+variation_opentype = {
+2003265652: 400
+}
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tpmxe"]
+content_margin_left = 36.0
+content_margin_top = 16.0
+content_margin_right = 36.0
+content_margin_bottom = 16.0
+bg_color = Color(1, 1, 1, 1)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0.06666667, 0.15686275, 0.3254902, 1)
+corner_radius_top_left = 32
+corner_radius_top_right = 32
+corner_radius_bottom_right = 32
+corner_radius_bottom_left = 32
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_jqmpt"]
+content_margin_left = 36.0
+content_margin_top = 16.0
+content_margin_right = 36.0
+content_margin_bottom = 16.0
+draw_center = false
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0, 0.6117647, 1, 1)
+corner_radius_top_left = 32
+corner_radius_top_right = 32
+corner_radius_bottom_right = 32
+corner_radius_bottom_left = 32
+anti_aliasing = false
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_hvvr8"]
+shader = ExtResource("2_nhq7f")
+shader_parameter/corner_radius = Vector4(32, 32, 32, 32)
+shader_parameter/panel_size = Vector2(360, 116)
+shader_parameter/fill_color = Color(0.06666667, 0.15686275, 0.3254902, 1)
+shader_parameter/gradient_color = Color(0.31764707, 0.45882353, 0.7254902, 0.75)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_0ar8l"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[node name="PlaylistEditor" type="VBoxContainer" unique_id=1769482624]
+theme_override_constants/separation = 32
+alignment = 1
+script = ExtResource("1_editor")
+
+[node name="ImageButton" type="PanelContainer" parent="." unique_id=2074582364]
+unique_name_in_owner = true
+material = SubResource("ShaderMaterial_o0m48")
+custom_minimum_size = Vector2(424, 424)
+layout_mode = 2
+size_flags_horizontal = 4
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_6vf5p")
+script = ExtResource("2_button")
+flat = true
+corner_radius = 32.0
+corner_top_left = 32.0
+corner_top_right = 32.0
+corner_bottom_right = 32.0
+corner_bottom_left = 32.0
+padding = 12
+padding_left = 12
+padding_top = 12
+padding_right = 12
+padding_bottom = 12
+
+[node name="Cover" parent="ImageButton" unique_id=1483132661 instance=ExtResource("3_cover")]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_cku5t")
+show_shadow = false
+
+[node name="Shade" type="ColorRect" parent="ImageButton/Cover" unique_id=1189871611]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0.5)
+
+[node name="Icon" type="TextureRect" parent="ImageButton/Cover" unique_id=1633426623]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -80.0
+offset_top = -80.0
+offset_right = 80.0
+offset_bottom = 80.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("4_add")
+expand_mode = 1
+stretch_mode = 5
+script = ExtResource("icon_script")
+themed = false
+
+[node name="NameEdit" type="LineEdit" parent="." unique_id=347663876]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 112)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.06666667, 0.15686275, 0.3254902, 1)
+theme_override_colors/font_uneditable_color = Color(0.06666667, 0.15686275, 0.3254902, 0.6)
+theme_override_colors/font_selected_color = Color(0.06666667, 0.15686275, 0.3254902, 1)
+theme_override_colors/font_placeholder_color = Color(0.06666667, 0.15686275, 0.3254902, 0.5)
+theme_override_colors/caret_color = Color(0, 0.6117647, 1, 1)
+theme_override_colors/selection_color = Color(0, 0.6117647, 1, 0.35)
+theme_override_colors/clear_button_color = Color(0.06666667, 0.15686275, 0.3254902, 0.6)
+theme_override_colors/clear_button_color_pressed = Color(0, 0.6117647, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_rmreg")
+theme_override_font_sizes/font_size = 40
+theme_override_styles/normal = SubResource("StyleBoxFlat_tpmxe")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_tpmxe")
+theme_override_styles/focus = SubResource("StyleBoxFlat_jqmpt")
+placeholder_text = "Playlist name"
+max_length = 60
+script = ExtResource("5_line_edit")
+font_size = 40
+corner_radius = 32
+corner_top_left = 32
+corner_top_right = 32
+corner_bottom_right = 32
+corner_bottom_left = 32
+horizontal_padding = 36
+
+[node name="AcceptButton" type="PanelContainer" parent="." unique_id=540193098]
+unique_name_in_owner = true
+material = SubResource("ShaderMaterial_hvvr8")
+custom_minimum_size = Vector2(360, 116)
+layout_mode = 2
+size_flags_horizontal = 4
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_0ar8l")
+script = ExtResource("2_button")
+text = "Accept"
+font_weight = 600
+font_size = 46
+corner_radius = 32.0
+corner_top_left = 32.0
+corner_top_right = 32.0
+corner_bottom_right = 32.0
+corner_bottom_left = 32.0
+padding = 12
+padding_left = 12
+padding_top = 12
+padding_right = 12
+padding_bottom = 12

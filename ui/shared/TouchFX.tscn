@@ -1,0 +1,9 @@
+[gd_scene format=3 uid="uid://b7cto23kq07vm"]
+
+[ext_resource type="Script" uid="uid://da4bte1lrj4c5" path="res://ui/shared/touch_fx.gd" id="1_tfx"]
+
+[node name="TouchFX" type="CanvasLayer" unique_id=1310052841]
+layer = 10
+
+[node name="Draw" type="Node2D" parent="." unique_id=1310052842]
+script = ExtResource("1_tfx")

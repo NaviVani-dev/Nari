@@ -1,0 +1,43 @@
+[gd_scene format=3 uid="uid://u1fehj74hn16"]
+
+[ext_resource type="Script" uid="uid://bcfr5x60ji32t" path="res://ui/screens/web.gd" id="1_web"]
+[ext_resource type="PackedScene" uid="uid://djd55jdackffg" path="res://ui/shared/EmptyMessage.tscn" id="2_empty"]
+[ext_resource type="Texture2D" uid="uid://bo132g2ippp6c" path="res://assets/icons/artist.svg" id="3_artist"]
+
+[node name="Web" type="Node" unique_id=1460283371 node_paths=PackedStringArray("top", "bottom")]
+script = ExtResource("1_web")
+top = NodePath("Top")
+bottom = NodePath("Bottom")
+
+[node name="Top" type="Control" parent="." unique_id=2073358514]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Message" parent="Top" unique_id=1135928906 instance=ExtResource("2_empty")]
+unique_name_in_owner = true
+layout_mode = 1
+icon = ExtResource("3_artist")
+title = "Login with your account"
+subtitle = "Enter your %s account to start streaming on Nari"
+
+[node name="Bottom" type="Control" parent="." unique_id=605873412]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="View" type="WebView" parent="Bottom" unique_id=1820452203]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2

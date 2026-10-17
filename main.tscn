@@ -1,0 +1,123 @@
+[gd_scene format=3 uid="uid://bx8kvd8ogfd47"]
+
+[ext_resource type="Script" uid="uid://b3wjne1uu1etr" path="res://addons/AynThor/AynThorManager.gd" id="1_0xm2m"]
+[ext_resource type="Script" uid="uid://ikxued14b70s" path="res://main.gd" id="1_h2yge"]
+[ext_resource type="Script" uid="uid://bcx5t1ejdk84k" path="res://addons/AynThor/screen_resource.gd" id="2_h2yge"]
+[ext_resource type="PackedScene" uid="uid://eidylqcp5g1j" path="res://ui/shared/BG.tscn" id="4_7mycd"]
+[ext_resource type="PackedScene" uid="uid://cokdeidti6s21" path="res://ui/shared/AppHints.tscn" id="5_lquwl"]
+[ext_resource type="PackedScene" uid="uid://b7cto23kq07vm" path="res://ui/shared/TouchFX.tscn" id="6_tfx"]
+[ext_resource type="PackedScene" uid="uid://b5eb4mcafsi6u" path="res://ui/shared/BootFade.tscn" id="7_bf"]
+[ext_resource type="Script" uid="uid://dbqtt5exgc8wu" path="res://ui/shared/shader_warmup.gd" id="8_sw"]
+[ext_resource type="PackedScene" uid="uid://cims1n5datghw" path="res://ui/shared/LoadingTop.tscn" id="9_lt"]
+[ext_resource type="PackedScene" uid="uid://l4uguynw622" path="res://ui/shared/LoadingBottom.tscn" id="10_lb"]
+[ext_resource type="PackedScene" uid="uid://cew5iidys5gux" path="res://ui/shared/Snackbar.tscn" id="12_snack"]
+[ext_resource type="PackedScene" uid="uid://pm5josuke8ci" path="res://ui/shared/ThemeOverlays.tscn" id="13_ovr"]
+
+[sub_resource type="Resource" id="Resource_c6nqy"]
+script = ExtResource("2_h2yge")
+container_path = NodePath("../TopScreen")
+viewport_path = NodePath("../TopScreen/TopView")
+metadata/_custom_type_script = "uid://bcx5t1ejdk84k"
+
+[sub_resource type="Resource" id="Resource_cydfj"]
+script = ExtResource("2_h2yge")
+container_path = NodePath("../BottomScreen")
+viewport_path = NodePath("../BottomScreen/BottomView")
+metadata/_custom_type_script = "uid://bcx5t1ejdk84k"
+
+[node name="Node" type="Node" unique_id=1045652121]
+script = ExtResource("1_h2yge")
+
+[node name="DSManager" type="Node" parent="." unique_id=968845099]
+script = ExtResource("1_0xm2m")
+main_screen = SubResource("Resource_c6nqy")
+second_screen = SubResource("Resource_cydfj")
+
+[node name="TopScreen" type="SubViewportContainer" parent="." unique_id=648382435]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TopView" type="SubViewport" parent="TopScreen" unique_id=2009377259]
+unique_name_in_owner = true
+disable_3d = true
+handle_input_locally = false
+size = Vector2i(1920, 1080)
+render_target_update_mode = 4
+
+[node name="BG" parent="TopScreen/TopView" unique_id=791225153 instance=ExtResource("4_7mycd")]
+
+[node name="TopScreenContainer" type="MarginContainer" parent="TopScreen/TopView" unique_id=722080514]
+unique_name_in_owner = true
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_top = 32
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_bottom = 32
+
+[node name="AppHints" parent="TopScreen/TopView" unique_id=1665151752 instance=ExtResource("5_lquwl")]
+z_index = 10
+
+[node name="Snackbar" parent="TopScreen/TopView" unique_id=1757312210 instance=ExtResource("12_snack")]
+
+[node name="TouchFX" parent="TopScreen/TopView" unique_id=1310052901 instance=ExtResource("6_tfx")]
+
+[node name="ShaderWarmup" type="Node2D" parent="TopScreen/TopView" unique_id=1310053201]
+script = ExtResource("8_sw")
+
+[node name="BootFade" parent="TopScreen/TopView" unique_id=1310053101 instance=ExtResource("7_bf")]
+
+[node name="LoadingTop" parent="TopScreen/TopView" unique_id=949061172 instance=ExtResource("9_lt")]
+
+[node name="BottomScreen" type="SubViewportContainer" parent="." unique_id=259169036]
+anchors_preset = -1
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -620.0
+offset_right = 620.0
+offset_bottom = 1080.0
+grow_horizontal = 2
+
+[node name="BottomView" type="SubViewport" parent="BottomScreen" unique_id=1864070387]
+unique_name_in_owner = true
+disable_3d = true
+handle_input_locally = false
+size = Vector2i(1240, 1080)
+render_target_update_mode = 4
+
+[node name="BG" parent="BottomScreen/BottomView" unique_id=421533211 instance=ExtResource("4_7mycd")]
+
+[node name="BottomScreenContainer" type="MarginContainer" parent="BottomScreen/BottomView" unique_id=1181235630]
+unique_name_in_owner = true
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_top = 32
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_bottom = 32
+
+[node name="AppHints" parent="BottomScreen/BottomView" unique_id=1665151753 instance=ExtResource("5_lquwl")]
+z_index = 10
+screen = 1
+
+[node name="TouchFX" parent="BottomScreen/BottomView" unique_id=1310052902 instance=ExtResource("6_tfx")]
+
+[node name="ShaderWarmup" type="Node2D" parent="BottomScreen/BottomView" unique_id=1310053202]
+script = ExtResource("8_sw")
+
+[node name="BootFade" parent="BottomScreen/BottomView" unique_id=1310053102 instance=ExtResource("7_bf")]
+
+[node name="LoadingBottom" parent="BottomScreen/BottomView" unique_id=104877359 instance=ExtResource("10_lb")]
+
+[node name="ThemeOverlays" parent="." unique_id=1310053303 instance=ExtResource("13_ovr")]

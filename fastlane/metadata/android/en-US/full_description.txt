@@ -1,0 +1,6 @@
+<p>A beautiful music player with a retro console experience in mind, made for handheld consoles, phones and desktops alike.</p>
+<ul>
+<li>Plays your local music library</li>
+<li>Synced lyrics, fetched online</li>
+<li>Full gamepad support</li>
+</ul>

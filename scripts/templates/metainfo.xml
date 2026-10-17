@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>$app_id</id>
+  <name>$name</name>
+  <summary>$summary</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <developer id="$developer_id">
+    <name>$developer_name</name>
+  </developer>
+
+  <description>
+$paragraphs
+    <ul>
+$features
+    </ul>
+  </description>
+
+  <launchable type="desktop-id">$app_id.desktop</launchable>
+  <url type="homepage">$repository</url>
+  <url type="bugtracker">$repository/issues</url>
+  <url type="vcs-browser">$repository</url>
+
+  <screenshots>
+$screenshots
+  </screenshots>
+
+  <branding>
+    <color type="primary" scheme_preference="light">$color_light</color>
+    <color type="primary" scheme_preference="dark">$color_dark</color>
+  </branding>
+
+  <requires>
+    <display_length compare="ge">360</display_length>
+  </requires>
+  <supports>
+$controls
+  </supports>
+
+  <content_rating type="oars-1.1">
+$content_rating
+  </content_rating>
+
+  <releases>
+$releases
+  </releases>
+</component>

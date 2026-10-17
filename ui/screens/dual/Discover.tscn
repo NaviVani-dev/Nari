@@ -1,0 +1,74 @@
+[gd_scene format=3 uid="uid://dlti807dbycdj"]
+
+[ext_resource type="Script" uid="uid://burhk60lw0dll" path="res://ui/screens/discover.gd" id="1_page"]
+[ext_resource type="PackedScene" uid="uid://djd55jdackffg" path="res://ui/shared/EmptyMessage.tscn" id="2_empty"]
+[ext_resource type="Texture2D" uid="uid://8xbge2qku816" path="res://assets/icons/like_on.svg" id="3_like"]
+[ext_resource type="PackedScene" uid="uid://0er1bw0abrrs" path="res://ui/shared/views/InfoTop.tscn" id="4_info"]
+[ext_resource type="Script" uid="uid://bgqglerkcylxx" path="res://addons/SmoothScroll/smooth_scroll_container.gd" id="5_scroll"]
+[ext_resource type="Script" uid="uid://b7h0k2h2qwlqv" path="res://addons/SmoothScroll/scroll_damper/expo_scroll_damper.gd" id="6_damper"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_scroll"]
+
+[sub_resource type="Resource" id="Resource_wheel"]
+script = ExtResource("6_damper")
+
+[sub_resource type="Resource" id="Resource_drag"]
+script = ExtResource("6_damper")
+
+[node name="Discover" type="Node" unique_id=1055111125 node_paths=PackedStringArray("top", "bottom")]
+script = ExtResource("1_page")
+top = NodePath("Top")
+bottom = NodePath("Bottom")
+
+[node name="Top" type="Control" parent="." unique_id=1446620682]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Info" parent="Top" unique_id=1446620683 instance=ExtResource("4_info")]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+
+[node name="Empty" parent="Top" unique_id=1446620684 instance=ExtResource("2_empty")]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+icon = ExtResource("3_like")
+title = "Nothing to discover yet"
+subtitle = "Play and like some music and your picks show up here"
+
+[node name="Bottom" type="Control" parent="." unique_id=1446620685]
+layout_mode = 3
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 2.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Scroll" type="ScrollContainer" parent="Bottom" unique_id=1446620686]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxEmpty_scroll")
+follow_focus = true
+horizontal_scroll_mode = 0
+script = ExtResource("5_scroll")
+wheel_scroll_damper = SubResource("Resource_wheel")
+dragging_scroll_damper = SubResource("Resource_drag")
+allow_horizontal_scroll = false
+
+[node name="Sections" type="VBoxContainer" parent="Bottom/Scroll" unique_id=1446620687]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 48

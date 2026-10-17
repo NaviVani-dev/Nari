@@ -1,0 +1,42 @@
+{
+  "name": "Nari",
+  "summary": "Beautiful feature-rich music player",
+  "description": [
+    "A beautiful music player with a retro console experience in mind, made for handheld consoles, phones and desktops alike."
+  ],
+  "features": [
+    "Plays your local music library",
+    "Synced lyrics, fetched online",
+    "Full gamepad support"
+  ],
+  "developer": { "name": "NaviVani", "id": "io.github.navivani_dev" },
+  "ids": { "flatpak": "io.github.NaviVani_dev.Nari", "android": "com.navivani.narimusic" },
+  "repository": "https://github.com/NaviVani-dev/Nari",
+  "desktop_categories": ["AudioVideo", "Audio", "Player", "Music"],
+  "keywords": ["music", "player", "audio"],
+  "mime_types": ["x-scheme-handler/nari", "audio/mpeg", "audio/mp3", "audio/flac", "audio/x-flac", "audio/ogg", "audio/x-vorbis+ogg", "audio/opus", "audio/x-opus+ogg", "audio/wav", "audio/x-wav", "audio/aac", "audio/mp4", "audio/x-m4a", "audio/aiff", "audio/x-aiff", "audio/x-ms-wma", "audio/midi", "audio/x-midi", "audio/x-mod", "audio/x-xm", "audio/x-s3m", "audio/x-it", "audio/prs.sid"],
+  "branding": { "light": "#f5d9e6", "dark": "#5a2a44" },
+  "mobile": true,
+  "content_rating": { "social-info": "intense" },
+  "screenshots": {
+    "pc": [
+      { "file": "1.png", "caption": "Home" },
+      { "file": "2.png", "caption": "Now playing" },
+      { "file": "3.png", "caption": "Synced lyrics" },
+      { "file": "4.png", "caption": "Your albums" },
+      { "file": "5.png", "caption": "Album details" },
+      { "file": "6.png", "caption": "All your songs" }
+    ],
+    "phone": [
+      { "file": "1.png", "caption": "Home" },
+      { "file": "2.png", "caption": "Now playing" },
+      { "file": "3.png", "caption": "Synced lyrics" },
+      { "file": "4.png", "caption": "Your albums" },
+      { "file": "5.png", "caption": "Album details" },
+      { "file": "6.png", "caption": "All your songs" }
+    ]
+  },
+  "releases": [
+    { "version": "1.0.0", "code": 1, "date": "2026-09-26", "notes": ["First release."] }
+  ]
+}

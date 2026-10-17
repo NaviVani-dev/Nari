@@ -1,0 +1,306 @@
+[gd_scene format=3 uid="uid://dqb3twr1euvnw"]
+
+[ext_resource type="Shader" uid="uid://ctaeuvi424wmk" path="res://assets/shaders/panel.gdshader" id="6_vobn4"]
+[ext_resource type="Script" uid="uid://djk4e68d3it8a" path="res://ui/components/button.gd" id="button"]
+[ext_resource type="PackedScene" uid="uid://dp422ntw15hsk" path="res://ui/shared/Cover.tscn" id="cover"]
+[ext_resource type="Texture2D" uid="uid://b6qmg4dx01cuj" path="res://assets/icons/skip_next.svg" id="i_next"]
+[ext_resource type="Texture2D" uid="uid://cskihdubvlftc" path="res://assets/icons/play.svg" id="i_play"]
+[ext_resource type="Texture2D" uid="uid://5f2ydcxodbe4" path="res://assets/icons/skip_previous.svg" id="i_previous"]
+[ext_resource type="Script" uid="uid://emohg8k7r26n" path="res://ui/components/label.gd" id="label"]
+[ext_resource type="Script" uid="uid://bofnixhs5xfpy" path="res://ui/components/note_particles.gd" id="notes"]
+[ext_resource type="Script" uid="uid://6hqainlybad6" path="res://ui/shared/now_playing_pill.gd" id="pill"]
+[ext_resource type="Script" uid="uid://p51md88pyjch" path="res://ui/components/thin_slider.gd" id="thin"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ld060"]
+resource_local_to_scene = true
+bg_color = Color(1, 1, 1, 1)
+draw_center = false
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+shadow_color = Color(1, 1, 1, 0)
+shadow_size = 8
+shadow_offset = Vector2(0, 6)
+
+[sub_resource type="FontVariation" id="FontVariation_dty87"]
+variation_opentype = {
+2003265652: 700
+}
+
+[sub_resource type="FontVariation" id="FontVariation_mayo7"]
+variation_opentype = {
+2003265652: 500
+}
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_b5c3v"]
+shader = ExtResource("6_vobn4")
+shader_parameter/corner_radius = Vector4(23, 23, 23, 23)
+shader_parameter/panel_size = Vector2(92, 92)
+shader_parameter/fill_color = Color(1, 1, 1, 0)
+shader_parameter/gradient_color = Color(1, 1, 1, 0)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_uhtc3"]
+content_margin_left = 8.0
+content_margin_top = 8.0
+content_margin_right = 8.0
+content_margin_bottom = 8.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_jai1p"]
+shader = ExtResource("6_vobn4")
+shader_parameter/corner_radius = Vector4(23, 23, 23, 23)
+shader_parameter/panel_size = Vector2(92, 92)
+shader_parameter/fill_color = Color(1, 1, 1, 0)
+shader_parameter/gradient_color = Color(1, 1, 1, 0)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_i2ppu"]
+content_margin_left = 8.0
+content_margin_top = 8.0
+content_margin_right = 8.0
+content_margin_bottom = 8.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_q565x"]
+shader = ExtResource("6_vobn4")
+shader_parameter/corner_radius = Vector4(23, 23, 23, 23)
+shader_parameter/panel_size = Vector2(92, 92)
+shader_parameter/fill_color = Color(1, 1, 1, 0)
+shader_parameter/gradient_color = Color(1, 1, 1, 0)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_lcow8"]
+content_margin_left = 8.0
+content_margin_top = 8.0
+content_margin_right = 8.0
+content_margin_bottom = 8.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[node name="PillCompact" type="PanelContainer" unique_id=135497110]
+custom_minimum_size = Vector2(960, 140)
+size_flags_horizontal = 3
+size_flags_vertical = 8
+mouse_default_cursor_shape = 2
+script = ExtResource("pill")
+variant = "compact"
+corner_radius = 32.0
+
+[node name="Row" type="HBoxContainer" parent="." unique_id=466368229]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 20
+
+[node name="Cover" parent="Row" unique_id=723373997 instance=ExtResource("cover")]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(108, 108)
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_styles/panel = SubResource("StyleBoxFlat_ld060")
+show_shadow = false
+corner_radius = 18
+thumbnail = true
+
+[node name="Notes" type="Control" parent="Row/Cover" unique_id=1234853680]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("notes")
+
+[node name="Texts" type="VBoxContainer" parent="Row" unique_id=1073932699]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+mouse_filter = 2
+theme_override_constants/separation = 2
+
+[node name="Title" type="Label" parent="Row/Texts" unique_id=878357934]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_dty87")
+theme_override_font_sizes/font_size = 36
+clip_text = true
+text_overrun_behavior = 3
+script = ExtResource("label")
+color = 6
+weight = 700
+font_size = 36
+
+[node name="Artist" type="Label" parent="Row/Texts" unique_id=1755757010]
+unique_name_in_owner = true
+modulate = Color(1, 1, 1, 0.8)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_mayo7")
+theme_override_font_sizes/font_size = 28
+clip_text = true
+text_overrun_behavior = 3
+script = ExtResource("label")
+color = 6
+font_size = 28
+
+[node name="Progress" type="Range" parent="Row/Texts" unique_id=1673229995]
+unique_name_in_owner = true
+process_mode = 0
+process_priority = 0
+process_physics_priority = 0
+process_thread_group = 0
+physics_interpolation_mode = 2
+auto_translate_mode = 0
+editor_description = ""
+visible = true
+modulate = Color(1, 1, 1, 1)
+self_modulate = Color(1, 1, 1, 1)
+show_behind_parent = false
+top_level = false
+clip_children = 0
+oversampling_with_scale = 0
+light_mask = 1
+visibility_layer = 1
+z_index = 0
+z_as_relative = true
+y_sort_enabled = false
+texture_filter = 0
+texture_repeat = 0
+material = null
+use_parent_material = false
+custom_minimum_size = Vector2(0, 16)
+custom_maximum_size = Vector2(-1, -1)
+propagate_maximum_size = false
+clip_contents = false
+layout_mode = 2
+size_flags_horizontal = 1
+size_flags_vertical = 1
+size_flags_stretch_ratio = 1.0
+offset_transform_enabled = false
+offset_transform_position = Vector2(0, 0)
+offset_transform_position_ratio = Vector2(0, 0)
+offset_transform_scale = Vector2(1, 1)
+offset_transform_rotation = 0.0
+offset_transform_pivot = Vector2(0, 0)
+offset_transform_pivot_ratio = Vector2(0.5, 0.5)
+offset_transform_visual_only = true
+localize_numeral_system = true
+layout_direction = 0
+translation_context = &""
+tooltip_text = ""
+tooltip_auto_translate_mode = 0
+focus_neighbor_left = NodePath("")
+focus_neighbor_top = NodePath("")
+focus_neighbor_right = NodePath("")
+focus_neighbor_bottom = NodePath("")
+focus_next = NodePath("")
+focus_previous = NodePath("")
+focus_mode = 0
+focus_behavior_recursive = 0
+mouse_filter = 2
+mouse_behavior_recursive = 0
+mouse_force_pass_scroll_events = true
+mouse_default_cursor_shape = 0
+accessibility_name = ""
+accessibility_description = ""
+accessibility_live = 0
+accessibility_controls_nodes = Array[NodePath]([])
+accessibility_described_by_nodes = Array[NodePath]([])
+accessibility_labeled_by_nodes = Array[NodePath]([])
+accessibility_flow_to_nodes = Array[NodePath]([])
+theme = null
+theme_type_variation = &""
+min_value = 0.0
+max_value = 1.0
+step = 1.0
+page = 0.0
+value = 0.0
+exp_edit = false
+rounded = false
+allow_greater = false
+allow_lesser = false
+script = ExtResource("thin")
+thickness = 6.0
+color = 6
+
+[node name="Previous" type="PanelContainer" parent="Row" unique_id=860327217]
+unique_name_in_owner = true
+visible = false
+material = SubResource("ShaderMaterial_b5c3v")
+custom_minimum_size = Vector2(92, 92)
+layout_mode = 2
+size_flags_vertical = 4
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_uhtc3")
+script = ExtResource("button")
+icon = ExtResource("i_previous")
+flat = true
+icon_size = Vector2(48, 48)
+accent_on_focus = true
+corner_radius = 23.0
+corner_top_left = 23.0
+corner_top_right = 23.0
+corner_bottom_right = 23.0
+corner_bottom_left = 23.0
+padding = 8
+padding_left = 8
+padding_top = 8
+padding_right = 8
+padding_bottom = 8
+
+[node name="Play" type="PanelContainer" parent="Row" unique_id=1751291455]
+unique_name_in_owner = true
+material = SubResource("ShaderMaterial_jai1p")
+custom_minimum_size = Vector2(92, 92)
+layout_mode = 2
+size_flags_vertical = 4
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_i2ppu")
+script = ExtResource("button")
+icon = ExtResource("i_play")
+flat = true
+icon_size = Vector2(52, 52)
+accent_on_focus = true
+corner_radius = 23.0
+corner_top_left = 23.0
+corner_top_right = 23.0
+corner_bottom_right = 23.0
+corner_bottom_left = 23.0
+padding = 8
+padding_left = 8
+padding_top = 8
+padding_right = 8
+padding_bottom = 8
+
+[node name="Next" type="PanelContainer" parent="Row" unique_id=1365320050]
+unique_name_in_owner = true
+material = SubResource("ShaderMaterial_q565x")
+custom_minimum_size = Vector2(92, 92)
+layout_mode = 2
+size_flags_vertical = 4
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_lcow8")
+script = ExtResource("button")
+icon = ExtResource("i_next")
+flat = true
+icon_size = Vector2(48, 48)
+accent_on_focus = true
+corner_radius = 23.0
+corner_top_left = 23.0
+corner_top_right = 23.0
+corner_bottom_right = 23.0
+corner_bottom_left = 23.0
+padding = 8
+padding_left = 8
+padding_top = 8
+padding_right = 8
+padding_bottom = 8

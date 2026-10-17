@@ -1,0 +1,49 @@
+[gd_scene format=3 uid="uid://d3y3skfn51lgp"]
+
+[ext_resource type="Shader" uid="uid://ctaeuvi424wmk" path="res://assets/shaders/panel.gdshader" id="1_8chry"]
+[ext_resource type="Script" uid="uid://djk4e68d3it8a" path="res://ui/components/button.gd" id="1_button"]
+[ext_resource type="Texture2D" uid="uid://dxdsohoqxa4s7" path="res://assets/icons/close.svg" id="2_close"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_0kbam"]
+shader = ExtResource("1_8chry")
+shader_parameter/corner_radius = Vector4(20, 20, 20, 20)
+shader_parameter/panel_size = Vector2(233, 64)
+shader_parameter/fill_color = Color(0, 0.6117647, 1, 1)
+shader_parameter/gradient_color = Color(0.5254902, 0.8156863, 1, 0.75)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_xbbyj"]
+content_margin_left = 20.0
+content_margin_top = 8.0
+content_margin_right = 14.0
+content_margin_bottom = 8.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[node name="SearchTag" type="PanelContainer" unique_id=2061657763]
+material = SubResource("ShaderMaterial_0kbam")
+custom_minimum_size = Vector2(0, 64)
+size_flags_vertical = 4
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_xbbyj")
+script = ExtResource("1_button")
+text = "artist: name"
+icon = ExtResource("2_close")
+font_weight = 700
+font_size = 30
+icon_size = Vector2(28, 28)
+icon_right = true
+fg_color = 10
+bg_color = 9
+gradient_color = 11
+corner_radius = 20.0
+corner_top_left = 20.0
+corner_top_right = 20.0
+corner_bottom_right = 20.0
+corner_bottom_left = 20.0
+padding = 8
+padding_left = 20
+padding_top = 8
+padding_right = 14
+padding_bottom = 8

@@ -1,0 +1,502 @@
+[gd_scene format=3 uid="uid://tm7xg4xlmvfr"]
+
+[ext_resource type="Script" uid="uid://dy4hcf2rsfk04" path="res://ui/shared/soundboard_grid.gd" id="1_grid"]
+[ext_resource type="Script" uid="uid://djk4e68d3it8a" path="res://ui/components/button.gd" id="2_button"]
+[ext_resource type="Shader" uid="uid://ctaeuvi424wmk" path="res://assets/shaders/panel.gdshader" id="2_yoltk"]
+[ext_resource type="Script" uid="uid://bjyckmo8wyc0q" path="res://ui/components/pages_container.gd" id="3_pages"]
+[ext_resource type="Texture2D" uid="uid://dtqyusu0ovbrg" path="res://assets/icons/chevron_left.svg" id="4_left"]
+[ext_resource type="Texture2D" uid="uid://cjxmnwp0o6mcs" path="res://assets/icons/chevron_right.svg" id="5_right"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_yoltk"]
+shader = ExtResource("2_yoltk")
+shader_parameter/corner_radius = Vector4(28, 28, 28, 28)
+shader_parameter/panel_size = Vector2(116, 1080)
+shader_parameter/fill_color = Color(1, 1, 1, 0)
+shader_parameter/gradient_color = Color(1, 1, 1, 0)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_y7l6p"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_1n4uu"]
+shader = ExtResource("2_yoltk")
+shader_parameter/corner_radius = Vector4(28, 28, 28, 28)
+shader_parameter/panel_size = Vector2(116, 1080)
+shader_parameter/fill_color = Color(1, 1, 1, 0)
+shader_parameter/gradient_color = Color(1, 1, 1, 0)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_raw02"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_5sybv"]
+shader = ExtResource("2_yoltk")
+shader_parameter/corner_radius = Vector4(28, 28, 28, 28)
+shader_parameter/panel_size = Vector2(72, 74)
+shader_parameter/fill_color = Color(0.06666667, 0.15686275, 0.3254902, 1)
+shader_parameter/gradient_color = Color(0.31764707, 0.45882353, 0.7254902, 0.75)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_vxq3i"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_62jno"]
+shader = ExtResource("2_yoltk")
+shader_parameter/corner_radius = Vector4(28, 28, 28, 28)
+shader_parameter/panel_size = Vector2(72, 74)
+shader_parameter/fill_color = Color(0.06666667, 0.15686275, 0.3254902, 1)
+shader_parameter/gradient_color = Color(0.31764707, 0.45882353, 0.7254902, 0.75)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tchh4"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_cslq3"]
+shader = ExtResource("2_yoltk")
+shader_parameter/corner_radius = Vector4(28, 28, 28, 28)
+shader_parameter/panel_size = Vector2(72, 74)
+shader_parameter/fill_color = Color(0.06666667, 0.15686275, 0.3254902, 1)
+shader_parameter/gradient_color = Color(0.31764707, 0.45882353, 0.7254902, 0.75)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ivtay"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_cbg8s"]
+shader = ExtResource("2_yoltk")
+shader_parameter/corner_radius = Vector4(28, 28, 28, 28)
+shader_parameter/panel_size = Vector2(72, 74)
+shader_parameter/fill_color = Color(0.06666667, 0.15686275, 0.3254902, 1)
+shader_parameter/gradient_color = Color(0.31764707, 0.45882353, 0.7254902, 0.75)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_0qgy5"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_oeylk"]
+shader = ExtResource("2_yoltk")
+shader_parameter/corner_radius = Vector4(28, 28, 28, 28)
+shader_parameter/panel_size = Vector2(72, 74)
+shader_parameter/fill_color = Color(0.06666667, 0.15686275, 0.3254902, 1)
+shader_parameter/gradient_color = Color(0.31764707, 0.45882353, 0.7254902, 0.75)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_cts8e"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_v6fqu"]
+shader = ExtResource("2_yoltk")
+shader_parameter/corner_radius = Vector4(28, 28, 28, 28)
+shader_parameter/panel_size = Vector2(72, 74)
+shader_parameter/fill_color = Color(0.06666667, 0.15686275, 0.3254902, 1)
+shader_parameter/gradient_color = Color(0.31764707, 0.45882353, 0.7254902, 0.75)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_2pifv"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_2uhtr"]
+shader = ExtResource("2_yoltk")
+shader_parameter/corner_radius = Vector4(28, 28, 28, 28)
+shader_parameter/panel_size = Vector2(72, 74)
+shader_parameter/fill_color = Color(0.06666667, 0.15686275, 0.3254902, 1)
+shader_parameter/gradient_color = Color(0.31764707, 0.45882353, 0.7254902, 0.75)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_5t7t1"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_fhmst"]
+shader = ExtResource("2_yoltk")
+shader_parameter/corner_radius = Vector4(28, 28, 28, 28)
+shader_parameter/panel_size = Vector2(72, 74)
+shader_parameter/fill_color = Color(0.06666667, 0.15686275, 0.3254902, 1)
+shader_parameter/gradient_color = Color(0.31764707, 0.45882353, 0.7254902, 0.75)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_kjqdi"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_g8e62"]
+shader = ExtResource("2_yoltk")
+shader_parameter/corner_radius = Vector4(28, 28, 28, 28)
+shader_parameter/panel_size = Vector2(72, 74)
+shader_parameter/fill_color = Color(0.06666667, 0.15686275, 0.3254902, 1)
+shader_parameter/gradient_color = Color(0.31764707, 0.45882353, 0.7254902, 0.75)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1nap8"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_8030l"]
+shader = ExtResource("2_yoltk")
+shader_parameter/corner_radius = Vector4(28, 28, 28, 28)
+shader_parameter/panel_size = Vector2(72, 74)
+shader_parameter/fill_color = Color(0.06666667, 0.15686275, 0.3254902, 1)
+shader_parameter/gradient_color = Color(0.31764707, 0.45882353, 0.7254902, 0.75)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_lb0tb"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[node name="SoundboardGrid" type="VBoxContainer" unique_id=1363049026]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 24
+script = ExtResource("1_grid")
+
+[node name="Row" type="HBoxContainer" parent="." unique_id=1755149157]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Previous" type="PanelContainer" parent="Row" unique_id=163487288]
+unique_name_in_owner = true
+material = SubResource("ShaderMaterial_yoltk")
+layout_mode = 2
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_y7l6p")
+script = ExtResource("2_button")
+icon = ExtResource("4_left")
+flat = true
+icon_size = Vector2(92, 92)
+fg_color = 5
+accent_on_focus = true
+corner_radius = 28.0
+corner_top_left = 28.0
+corner_top_right = 28.0
+corner_bottom_right = 28.0
+corner_bottom_left = 28.0
+padding = 12
+padding_left = 12
+padding_top = 12
+padding_right = 12
+padding_bottom = 12
+
+[node name="Frame" type="AspectRatioContainer" parent="Row" unique_id=903516989]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+ratio = 2.0
+
+[node name="Pages" type="Container" parent="Row/Frame" unique_id=1331004783]
+unique_name_in_owner = true
+clip_contents = true
+layout_mode = 2
+script = ExtResource("3_pages")
+padding = 64.0
+side_pages = 0
+
+[node name="Next" type="PanelContainer" parent="Row" unique_id=2059458736]
+unique_name_in_owner = true
+material = SubResource("ShaderMaterial_1n4uu")
+layout_mode = 2
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_raw02")
+script = ExtResource("2_button")
+icon = ExtResource("5_right")
+flat = true
+icon_size = Vector2(92, 92)
+fg_color = 5
+accent_on_focus = true
+corner_radius = 28.0
+corner_top_left = 28.0
+corner_top_right = 28.0
+corner_bottom_right = 28.0
+corner_bottom_left = 28.0
+padding = 12
+padding_left = 12
+padding_top = 12
+padding_right = 12
+padding_bottom = 12
+
+[node name="Crumbs" type="HBoxContainer" parent="." unique_id=533837862]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 12
+alignment = 1
+
+[node name="Page1" type="PanelContainer" parent="Crumbs" unique_id=669236209]
+material = SubResource("ShaderMaterial_5sybv")
+custom_minimum_size = Vector2(72, 72)
+layout_mode = 2
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_vxq3i")
+script = ExtResource("2_button")
+text = "1"
+font_weight = 700
+font_size = 34
+corner_radius = 28.0
+corner_top_left = 28.0
+corner_top_right = 28.0
+corner_bottom_right = 28.0
+corner_bottom_left = 28.0
+padding = 12
+padding_left = 12
+padding_top = 12
+padding_right = 12
+padding_bottom = 12
+
+[node name="Page2" type="PanelContainer" parent="Crumbs" unique_id=445678240]
+material = SubResource("ShaderMaterial_62jno")
+custom_minimum_size = Vector2(72, 72)
+layout_mode = 2
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_tchh4")
+script = ExtResource("2_button")
+text = "2"
+font_weight = 700
+font_size = 34
+corner_radius = 28.0
+corner_top_left = 28.0
+corner_top_right = 28.0
+corner_bottom_right = 28.0
+corner_bottom_left = 28.0
+padding = 12
+padding_left = 12
+padding_top = 12
+padding_right = 12
+padding_bottom = 12
+
+[node name="Page3" type="PanelContainer" parent="Crumbs" unique_id=1807127217]
+material = SubResource("ShaderMaterial_cslq3")
+custom_minimum_size = Vector2(72, 72)
+layout_mode = 2
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_ivtay")
+script = ExtResource("2_button")
+text = "3"
+font_weight = 700
+font_size = 34
+corner_radius = 28.0
+corner_top_left = 28.0
+corner_top_right = 28.0
+corner_bottom_right = 28.0
+corner_bottom_left = 28.0
+padding = 12
+padding_left = 12
+padding_top = 12
+padding_right = 12
+padding_bottom = 12
+
+[node name="Page4" type="PanelContainer" parent="Crumbs" unique_id=1133742081]
+material = SubResource("ShaderMaterial_cbg8s")
+custom_minimum_size = Vector2(72, 72)
+layout_mode = 2
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_0qgy5")
+script = ExtResource("2_button")
+text = "4"
+font_weight = 700
+font_size = 34
+corner_radius = 28.0
+corner_top_left = 28.0
+corner_top_right = 28.0
+corner_bottom_right = 28.0
+corner_bottom_left = 28.0
+padding = 12
+padding_left = 12
+padding_top = 12
+padding_right = 12
+padding_bottom = 12
+
+[node name="Page5" type="PanelContainer" parent="Crumbs" unique_id=1831460987]
+material = SubResource("ShaderMaterial_oeylk")
+custom_minimum_size = Vector2(72, 72)
+layout_mode = 2
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_cts8e")
+script = ExtResource("2_button")
+text = "5"
+font_weight = 700
+font_size = 34
+corner_radius = 28.0
+corner_top_left = 28.0
+corner_top_right = 28.0
+corner_bottom_right = 28.0
+corner_bottom_left = 28.0
+padding = 12
+padding_left = 12
+padding_top = 12
+padding_right = 12
+padding_bottom = 12
+
+[node name="Page6" type="PanelContainer" parent="Crumbs" unique_id=65755831]
+material = SubResource("ShaderMaterial_v6fqu")
+custom_minimum_size = Vector2(72, 72)
+layout_mode = 2
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_2pifv")
+script = ExtResource("2_button")
+text = "6"
+font_weight = 700
+font_size = 34
+corner_radius = 28.0
+corner_top_left = 28.0
+corner_top_right = 28.0
+corner_bottom_right = 28.0
+corner_bottom_left = 28.0
+padding = 12
+padding_left = 12
+padding_top = 12
+padding_right = 12
+padding_bottom = 12
+
+[node name="Page7" type="PanelContainer" parent="Crumbs" unique_id=786322021]
+material = SubResource("ShaderMaterial_2uhtr")
+custom_minimum_size = Vector2(72, 72)
+layout_mode = 2
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_5t7t1")
+script = ExtResource("2_button")
+text = "7"
+font_weight = 700
+font_size = 34
+corner_radius = 28.0
+corner_top_left = 28.0
+corner_top_right = 28.0
+corner_bottom_right = 28.0
+corner_bottom_left = 28.0
+padding = 12
+padding_left = 12
+padding_top = 12
+padding_right = 12
+padding_bottom = 12
+
+[node name="Page8" type="PanelContainer" parent="Crumbs" unique_id=1696050197]
+material = SubResource("ShaderMaterial_fhmst")
+custom_minimum_size = Vector2(72, 72)
+layout_mode = 2
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_kjqdi")
+script = ExtResource("2_button")
+text = "8"
+font_weight = 700
+font_size = 34
+corner_radius = 28.0
+corner_top_left = 28.0
+corner_top_right = 28.0
+corner_bottom_right = 28.0
+corner_bottom_left = 28.0
+padding = 12
+padding_left = 12
+padding_top = 12
+padding_right = 12
+padding_bottom = 12
+
+[node name="Page9" type="PanelContainer" parent="Crumbs" unique_id=1976232714]
+material = SubResource("ShaderMaterial_g8e62")
+custom_minimum_size = Vector2(72, 72)
+layout_mode = 2
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_1nap8")
+script = ExtResource("2_button")
+text = "9"
+font_weight = 700
+font_size = 34
+corner_radius = 28.0
+corner_top_left = 28.0
+corner_top_right = 28.0
+corner_bottom_right = 28.0
+corner_bottom_left = 28.0
+padding = 12
+padding_left = 12
+padding_top = 12
+padding_right = 12
+padding_bottom = 12
+
+[node name="Page10" type="PanelContainer" parent="Crumbs" unique_id=1792028523]
+material = SubResource("ShaderMaterial_8030l")
+custom_minimum_size = Vector2(72, 72)
+layout_mode = 2
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_lb0tb")
+script = ExtResource("2_button")
+text = "10"
+font_weight = 700
+font_size = 34
+corner_radius = 28.0
+corner_top_left = 28.0
+corner_top_right = 28.0
+corner_bottom_right = 28.0
+corner_bottom_left = 28.0
+padding = 12
+padding_left = 12
+padding_top = 12
+padding_right = 12
+padding_bottom = 12

@@ -1,0 +1,238 @@
+[gd_scene format=3 uid="uid://bucfqsltmtyhm"]
+
+[ext_resource type="Script" uid="uid://by1w6mdmxytw8" path="res://ui/screens/search.gd" id="1_page"]
+[ext_resource type="Script" uid="uid://dw5rfxgt1dbw" path="res://ui/components/line_edit.gd" id="2_line"]
+[ext_resource type="PackedScene" uid="uid://b7brpqmdc8akw" path="res://ui/shared/views/StairList.tscn" id="5_list"]
+[ext_resource type="Shader" uid="uid://ctaeuvi424wmk" path="res://assets/shaders/panel.gdshader" id="5_qaeny"]
+[ext_resource type="PackedScene" uid="uid://djd55jdackffg" path="res://ui/shared/EmptyMessage.tscn" id="6_empty"]
+[ext_resource type="PackedScene" uid="uid://0er1bw0abrrs" path="res://ui/shared/views/InfoTop.tscn" id="7_info"]
+[ext_resource type="Script" uid="uid://djk4e68d3it8a" path="res://ui/components/button.gd" id="20_button"]
+[ext_resource type="Texture2D" uid="uid://dflxqa8eu3lf3" path="res://assets/icons/search.svg" id="21_search"]
+[ext_resource type="Script" uid="uid://b7h0k2h2qwlqv" path="res://addons/SmoothScroll/scroll_damper/expo_scroll_damper.gd" id="smooth_damper"]
+[ext_resource type="Script" uid="uid://bgqglerkcylxx" path="res://addons/SmoothScroll/smooth_scroll_container.gd" id="smooth_scroll"]
+
+[sub_resource type="FontVariation" id="FontVariation_rmreg"]
+variation_opentype = {
+2003265652: 400
+}
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_kinih"]
+content_margin_left = 36.0
+content_margin_top = 16.0
+content_margin_right = 36.0
+content_margin_bottom = 16.0
+bg_color = Color(1, 1, 1, 1)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0.06666667, 0.15686275, 0.3254902, 1)
+corner_radius_top_left = 32
+corner_radius_top_right = 32
+corner_radius_bottom_right = 32
+corner_radius_bottom_left = 32
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_q40tk"]
+content_margin_left = 36.0
+content_margin_top = 16.0
+content_margin_right = 36.0
+content_margin_bottom = 16.0
+draw_center = false
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0, 0.6117647, 1, 1)
+corner_radius_top_left = 32
+corner_radius_top_right = 32
+corner_radius_bottom_right = 32
+corner_radius_bottom_left = 32
+anti_aliasing = false
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_g0uma"]
+shader = ExtResource("5_qaeny")
+shader_parameter/corner_radius = Vector4(32, 32, 32, 32)
+shader_parameter/panel_size = Vector2(112, 112)
+shader_parameter/fill_color = Color(0, 0.6117647, 1, 1)
+shader_parameter/gradient_color = Color(0.5254902, 0.8156863, 1, 0.75)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tb81g"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[sub_resource type="Resource" id="Resource_smooth_wheel"]
+script = ExtResource("smooth_damper")
+
+[sub_resource type="Resource" id="Resource_smooth_drag"]
+script = ExtResource("smooth_damper")
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_pj6pd"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+
+[node name="Search" type="Node" unique_id=1918946941 node_paths=PackedStringArray("top", "bottom")]
+script = ExtResource("1_page")
+top = NodePath("Top")
+bottom = NodePath("Bottom")
+
+[node name="Top" type="Control" parent="." unique_id=682802371]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Info" parent="Top" unique_id=1205774468 instance=ExtResource("7_info")]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+
+[node name="Idle" parent="Top" unique_id=966781378 instance=ExtResource("6_empty")]
+unique_name_in_owner = true
+layout_mode = 1
+title = "Search your favorite songs"
+subtitle = "Find any song, album or artist in your music"
+
+[node name="Bottom" type="Control" parent="." unique_id=1780652882]
+layout_mode = 3
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 2.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Layout" type="VBoxContainer" parent="Bottom" unique_id=2053639043]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 32
+
+[node name="SearchRow" type="HBoxContainer" parent="Bottom/Layout" unique_id=1934004657]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="SearchBar" type="LineEdit" parent="Bottom/Layout/SearchRow" unique_id=1494947072]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 112)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.06666667, 0.15686275, 0.3254902, 1)
+theme_override_colors/font_uneditable_color = Color(0.06666667, 0.15686275, 0.3254902, 0.6)
+theme_override_colors/font_selected_color = Color(0.06666667, 0.15686275, 0.3254902, 1)
+theme_override_colors/font_placeholder_color = Color(0.06666667, 0.15686275, 0.3254902, 0.5)
+theme_override_colors/caret_color = Color(0, 0.6117647, 1, 1)
+theme_override_colors/selection_color = Color(0, 0.6117647, 1, 0.35)
+theme_override_colors/clear_button_color = Color(0.06666667, 0.15686275, 0.3254902, 0.6)
+theme_override_colors/clear_button_color_pressed = Color(0, 0.6117647, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_rmreg")
+theme_override_font_sizes/font_size = 40
+theme_override_styles/normal = SubResource("StyleBoxFlat_kinih")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_kinih")
+theme_override_styles/focus = SubResource("StyleBoxFlat_q40tk")
+placeholder_text = "Songs, albums or artists"
+clear_button_enabled = true
+script = ExtResource("2_line")
+font_size = 40
+corner_radius = 32
+corner_top_left = 32
+corner_top_right = 32
+corner_bottom_right = 32
+corner_bottom_left = 32
+horizontal_padding = 36
+
+[node name="Tags" type="HBoxContainer" parent="Bottom/Layout/SearchRow/SearchBar" unique_id=1198835976]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = 24.0
+offset_top = -32.0
+offset_bottom = 32.0
+grow_vertical = 2
+theme_override_constants/separation = 8
+
+[node name="SearchButton" type="PanelContainer" parent="Bottom/Layout/SearchRow" unique_id=889762679]
+unique_name_in_owner = true
+material = SubResource("ShaderMaterial_g0uma")
+custom_minimum_size = Vector2(112, 112)
+layout_mode = 2
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_tb81g")
+script = ExtResource("20_button")
+icon = ExtResource("21_search")
+icon_size = Vector2(56, 56)
+fg_color = 10
+bg_color = 9
+gradient_color = 11
+corner_radius = 32.0
+corner_top_left = 32.0
+corner_top_right = 32.0
+corner_bottom_right = 32.0
+corner_bottom_left = 32.0
+padding = 12
+padding_left = 12
+padding_top = 12
+padding_right = 12
+padding_bottom = 12
+
+[node name="Content" type="Control" parent="Bottom/Layout" unique_id=1270837071]
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 2
+
+[node name="GenreScroll" type="ScrollContainer" parent="Bottom/Layout/Content" unique_id=764983640]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+follow_focus = true
+horizontal_scroll_mode = 0
+script = ExtResource("smooth_scroll")
+wheel_scroll_damper = SubResource("Resource_smooth_wheel")
+dragging_scroll_damper = SubResource("Resource_smooth_drag")
+allow_horizontal_scroll = false
+
+[node name="Genres" type="GridContainer" parent="Bottom/Layout/Content/GenreScroll" unique_id=2114098570]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/h_separation = 24
+theme_override_constants/v_separation = 24
+columns = 2
+
+[node name="List" parent="Bottom/Layout/Content" unique_id=1867096366 instance=ExtResource("5_list")]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxEmpty_pj6pd")
+padding_left = 0
+padding_right = 0
+
+[node name="Empty" parent="Bottom/Layout/Content" unique_id=1913580620 instance=ExtResource("6_empty")]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1

@@ -1,0 +1,114 @@
+[gd_scene format=3 uid="uid://t3oe1h3uw23n"]
+
+[ext_resource type="Shader" uid="uid://ctaeuvi424wmk" path="res://assets/shaders/panel.gdshader" id="1_frmac"]
+[ext_resource type="Script" uid="uid://upyup6827ujd" path="res://ui/shared/setting_item.gd" id="1_item"]
+[ext_resource type="Script" uid="uid://emohg8k7r26n" path="res://ui/components/label.gd" id="2_label"]
+[ext_resource type="Script" uid="uid://b0etlamb18c2f" path="res://ui/components/icon.gd" id="3_icon"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_frmac"]
+shader = ExtResource("1_frmac")
+shader_parameter/corner_radius = Vector4(64, 64, 64, 64)
+shader_parameter/panel_size = Vector2(338, 228)
+shader_parameter/fill_color = Color(0.06666667, 0.15686275, 0.3254902, 1)
+shader_parameter/gradient_color = Color(0.31764707, 0.45882353, 0.7254902, 0.75)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_e3pb0"]
+content_margin_left = 40.0
+content_margin_top = 40.0
+content_margin_right = 40.0
+content_margin_bottom = 40.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[sub_resource type="FontVariation" id="FontVariation_dty87"]
+variation_opentype = {
+2003265652: 700
+}
+
+[sub_resource type="FontVariation" id="FontVariation_mayo7"]
+variation_opentype = {
+2003265652: 500
+}
+
+[node name="SettingItem" type="PanelContainer" unique_id=203189578]
+material = SubResource("ShaderMaterial_frmac")
+custom_minimum_size = Vector2(0, 216)
+size_flags_horizontal = 3
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_e3pb0")
+script = ExtResource("1_item")
+corner_radius = 64.0
+corner_top_left = 64.0
+corner_top_right = 64.0
+corner_bottom_right = 64.0
+corner_bottom_left = 64.0
+padding = 40
+padding_left = 40
+padding_top = 40
+padding_right = 40
+padding_bottom = 40
+
+[node name="Row" type="HBoxContainer" parent="." unique_id=1758413268]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 36
+
+[node name="Glyph" type="TextureRect" parent="Row" unique_id=587248444]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(112, 112)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+script = ExtResource("3_icon")
+color = 6
+
+[node name="Texts" type="VBoxContainer" parent="Row" unique_id=1207728338]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_constants/separation = 4
+alignment = 1
+
+[node name="Title" type="Label" parent="Row/Texts" unique_id=524161501]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_dty87")
+theme_override_font_sizes/font_size = 60
+text = "Title"
+clip_text = true
+text_overrun_behavior = 3
+script = ExtResource("2_label")
+color = 6
+weight = 700
+font_size = 60
+
+[node name="Description" type="Label" parent="Row/Texts" unique_id=1570293041]
+unique_name_in_owner = true
+modulate = Color(1, 1, 1, 0.75)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_mayo7")
+theme_override_font_sizes/font_size = 38
+text = "Description"
+clip_text = true
+text_overrun_behavior = 3
+script = ExtResource("2_label")
+color = 6
+font_size = 38
+
+[node name="Value" type="Label" parent="Row" unique_id=1743517967]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_dty87")
+theme_override_font_sizes/font_size = 52
+text = "On"
+script = ExtResource("2_label")
+color = 6
+weight = 700
+font_size = 52

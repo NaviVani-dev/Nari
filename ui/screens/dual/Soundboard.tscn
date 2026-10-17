@@ -1,0 +1,234 @@
+[gd_scene format=3 uid="uid://d27i3h2tiqdxu"]
+
+[ext_resource type="Script" uid="uid://cxtgnjt452xt6" path="res://ui/screens/soundboard.gd" id="1_page"]
+[ext_resource type="PackedScene" uid="uid://brmi13bpmf7no" path="res://ui/components/Visualizers.tscn" id="2_viz"]
+[ext_resource type="Script" uid="uid://djk4e68d3it8a" path="res://ui/components/button.gd" id="3_button"]
+[ext_resource type="Shader" uid="uid://ctaeuvi424wmk" path="res://assets/shaders/panel.gdshader" id="3_nwilq"]
+[ext_resource type="PackedScene" uid="uid://tm7xg4xlmvfr" path="res://ui/shared/SoundboardGrid.tscn" id="4_grid"]
+[ext_resource type="PackedScene" uid="uid://bn0vsynsg4gdn" path="res://ui/shared/SoundEditor.tscn" id="5_editor"]
+[ext_resource type="Texture2D" uid="uid://0oejal6uv6wl" path="res://assets/icons/record.svg" id="9_record"]
+[ext_resource type="Texture2D" uid="uid://u62wmsjr3huc" path="res://assets/icons/upload.svg" id="10_import"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_185y2"]
+shader = ExtResource("3_nwilq")
+shader_parameter/corner_radius = Vector4(32, 32, 32, 32)
+shader_parameter/panel_size = Vector2(408, 294)
+shader_parameter/fill_color = Color(0.06666667, 0.15686275, 0.3254902, 1)
+shader_parameter/gradient_color = Color(0.31764707, 0.45882353, 0.7254902, 0.75)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1warg"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_awxfg"]
+shader = ExtResource("3_nwilq")
+shader_parameter/corner_radius = Vector4(32, 32, 32, 32)
+shader_parameter/panel_size = Vector2(408, 294)
+shader_parameter/fill_color = Color(0.06666667, 0.15686275, 0.3254902, 1)
+shader_parameter/gradient_color = Color(0.31764707, 0.45882353, 0.7254902, 0.75)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_6cqya"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_d6fyn"]
+shader = ExtResource("3_nwilq")
+shader_parameter/corner_radius = Vector4(32, 32, 32, 32)
+shader_parameter/panel_size = Vector2(360, 116)
+shader_parameter/fill_color = Color(0.06666667, 0.15686275, 0.3254902, 1)
+shader_parameter/gradient_color = Color(0.31764707, 0.45882353, 0.7254902, 0.75)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_5fdsg"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[node name="Soundboard" type="Node" unique_id=773071020 node_paths=PackedStringArray("top", "bottom")]
+script = ExtResource("1_page")
+top = NodePath("Top")
+bottom = NodePath("Bottom")
+
+[node name="Top" type="Control" parent="." unique_id=1234910602]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Visualizers" parent="Top" unique_id=1527146884 groups=["full_bleed"] instance=ExtResource("2_viz")]
+layout_mode = 1
+
+[node name="Bottom" type="Control" parent="." unique_id=1563768336]
+layout_mode = 3
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 2.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Bottom" unique_id=495274910]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 24
+
+[node name="Content" type="Control" parent="Bottom/VBoxContainer" unique_id=1587829170]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Board" type="VBoxContainer" parent="Bottom/VBoxContainer/Content" unique_id=1740398898]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 24
+
+[node name="ActionSlot" type="Control" parent="Bottom/VBoxContainer/Content/Board" unique_id=1543035622]
+custom_minimum_size = Vector2(0, 112)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="ActionBar" type="HBoxContainer" parent="Bottom/VBoxContainer/Content/Board/ActionSlot" unique_id=448599645]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 16
+alignment = 1
+
+[node name="Grid" parent="Bottom/VBoxContainer/Content/Board" unique_id=681871933 instance=ExtResource("4_grid")]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Editor" parent="Bottom/VBoxContainer/Content" unique_id=74102469 instance=ExtResource("5_editor")]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+
+[node name="Capture" type="VBoxContainer" parent="Bottom" unique_id=213086850]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 32
+alignment = 1
+
+[node name="Row" type="HBoxContainer" parent="Bottom/Capture" unique_id=1162346691]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_override_constants/separation = 32
+alignment = 1
+
+[node name="RecordButton" type="PanelContainer" parent="Bottom/Capture/Row" unique_id=1010417171]
+unique_name_in_owner = true
+material = SubResource("ShaderMaterial_185y2")
+custom_minimum_size = Vector2(408, 294)
+layout_mode = 2
+size_flags_vertical = 4
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_1warg")
+script = ExtResource("3_button")
+text = "Record"
+icon = ExtResource("9_record")
+font_weight = 600
+font_size = 48
+icon_size = Vector2(88, 88)
+use_icon_color = true
+icon_color = 30
+vertical = true
+separation = 0
+corner_radius = 32.0
+corner_top_left = 32.0
+corner_top_right = 32.0
+corner_bottom_right = 32.0
+corner_bottom_left = 32.0
+padding = 12
+padding_left = 12
+padding_top = 12
+padding_right = 12
+padding_bottom = 12
+
+[node name="ImportButton" type="PanelContainer" parent="Bottom/Capture/Row" unique_id=1981696136]
+unique_name_in_owner = true
+material = SubResource("ShaderMaterial_awxfg")
+custom_minimum_size = Vector2(408, 294)
+layout_mode = 2
+size_flags_vertical = 4
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_6cqya")
+script = ExtResource("3_button")
+text = "Import"
+icon = ExtResource("10_import")
+font_weight = 600
+font_size = 48
+icon_size = Vector2(88, 88)
+vertical = true
+separation = 0
+corner_radius = 32.0
+corner_top_left = 32.0
+corner_top_right = 32.0
+corner_bottom_right = 32.0
+corner_bottom_left = 32.0
+padding = 12
+padding_left = 12
+padding_top = 12
+padding_right = 12
+padding_bottom = 12
+
+[node name="CaptureBack" type="PanelContainer" parent="Bottom/Capture" unique_id=429362929]
+unique_name_in_owner = true
+material = SubResource("ShaderMaterial_d6fyn")
+custom_minimum_size = Vector2(360, 116)
+layout_mode = 2
+size_flags_horizontal = 4
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_5fdsg")
+script = ExtResource("3_button")
+text = "Back"
+font_weight = 600
+font_size = 46
+corner_radius = 32.0
+corner_top_left = 32.0
+corner_top_right = 32.0
+corner_bottom_right = 32.0
+corner_bottom_left = 32.0
+padding = 12
+padding_left = 12
+padding_top = 12
+padding_right = 12
+padding_bottom = 12

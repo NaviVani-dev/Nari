@@ -1,0 +1,99 @@
+[gd_scene format=3 uid="uid://dtnvu7k6xhiun"]
+
+[ext_resource type="Script" uid="uid://cwbnxytjcfujc" path="res://ui/components/vertical_carrousel.gd" id="1_carrousel"]
+[ext_resource type="Script" uid="uid://emohg8k7r26n" path="res://ui/components/label.gd" id="2_label"]
+[ext_resource type="Script" uid="uid://b0etlamb18c2f" path="res://ui/components/icon.gd" id="icon_dl_script"]
+[ext_resource type="Texture2D" uid="uid://2jinijyk2qwk" path="res://assets/icons/offline_download.svg" id="icon_dl_tex"]
+[ext_resource type="Script" uid="uid://02b3f6ptg8q3" path="res://ui/components/title_row.gd" id="title_row"]
+
+[sub_resource type="FontVariation" id="FontVariation_dty87"]
+variation_opentype = {
+2003265652: 700
+}
+
+[sub_resource type="FontVariation" id="FontVariation_mayo7"]
+variation_opentype = {
+2003265652: 500
+}
+
+[node name="VerticalTop" type="Control" unique_id=1334195396]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Carrousel" type="Control" parent="." unique_id=1270260096]
+unique_name_in_owner = true
+layout_mode = 1
+anchor_left = 0.04
+anchor_top = 0.06
+anchor_right = 0.34
+anchor_bottom = 0.94
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_carrousel")
+
+[node name="Caption" type="VBoxContainer" parent="." unique_id=404937918]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.38
+anchor_top = 0.5
+anchor_right = 0.95
+anchor_bottom = 0.5
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="TitleRow" type="Container" parent="Caption" unique_id=2140422224]
+layout_mode = 2
+script = ExtResource("title_row")
+
+[node name="Title" type="Label" parent="Caption/TitleRow" unique_id=1631717355]
+unique_name_in_owner = true
+self_modulate = Color(0.06666667, 0.15686275, 0.3254902, 1)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_dty87")
+theme_override_font_sizes/font_size = 77
+autowrap_mode = 3
+script = ExtResource("2_label")
+weight = 700
+font_size = 77
+
+[node name="Downloaded" type="TextureRect" parent="Caption/TitleRow" unique_id=1667059326]
+unique_name_in_owner = true
+visible = false
+self_modulate = Color(0.06666667, 0.15686275, 0.3254902, 1)
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+texture = ExtResource("icon_dl_tex")
+expand_mode = 1
+stretch_mode = 5
+script = ExtResource("icon_dl_script")
+
+[node name="Artist" type="Label" parent="Caption" unique_id=1389197572]
+unique_name_in_owner = true
+modulate = Color(1, 1, 1, 0.75)
+self_modulate = Color(0.06666667, 0.15686275, 0.3254902, 1)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_mayo7")
+theme_override_font_sizes/font_size = 64
+autowrap_mode = 3
+script = ExtResource("2_label")
+font_size = 64
+
+[node name="ActionBar" type="HBoxContainer" parent="Caption" unique_id=123860278]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(0, 128)
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 16

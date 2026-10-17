@@ -1,0 +1,10 @@
+[gd_scene format=3 uid="uid://qhpjrh77i1gq"]
+
+[ext_resource type="PackedScene" uid="uid://b34t0mlv61odq" path="res://ui/shared/CarrouselPage.tscn" id="1_base"]
+[ext_resource type="Script" uid="uid://c7qe8vw31b8is" path="res://ui/screens/artists.gd" id="2_page"]
+
+[node name="Page" unique_id=370768102 node_paths=PackedStringArray("top", "bottom") instance=ExtResource("1_base")]
+script = ExtResource("2_page")
+page_key = "artists"
+top = NodePath("Top")
+bottom = NodePath("Bottom")

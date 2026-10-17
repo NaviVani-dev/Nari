@@ -1,0 +1,34 @@
+[gd_resource type="Theme" format=3 uid="uid://dj2k8mtssqrdk"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_horizontal_grabber"]
+content_margin_left = 14.0
+content_margin_right = 14.0
+bg_color = Color(0.06666667, 0.15686275, 0.3254902, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+expand_margin_top = 16.0
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_track"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_vertical_grabber"]
+content_margin_top = 14.0
+content_margin_bottom = 14.0
+bg_color = Color(0.06666667, 0.15686275, 0.3254902, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[resource]
+HScrollBar/styles/grabber = SubResource("StyleBoxFlat_horizontal_grabber")
+HScrollBar/styles/grabber_highlight = SubResource("StyleBoxFlat_horizontal_grabber")
+HScrollBar/styles/grabber_pressed = SubResource("StyleBoxFlat_horizontal_grabber")
+HScrollBar/styles/scroll = SubResource("StyleBoxEmpty_track")
+HScrollBar/styles/scroll_focus = SubResource("StyleBoxEmpty_track")
+VScrollBar/styles/grabber = SubResource("StyleBoxFlat_vertical_grabber")
+VScrollBar/styles/grabber_highlight = SubResource("StyleBoxFlat_vertical_grabber")
+VScrollBar/styles/grabber_pressed = SubResource("StyleBoxFlat_vertical_grabber")
+VScrollBar/styles/scroll = SubResource("StyleBoxEmpty_track")
+VScrollBar/styles/scroll_focus = SubResource("StyleBoxEmpty_track")

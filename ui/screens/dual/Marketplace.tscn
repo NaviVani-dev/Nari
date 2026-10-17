@@ -1,0 +1,246 @@
+[gd_scene format=3 uid="uid://cc6m3ale8yxa"]
+
+[ext_resource type="Script" uid="uid://dlohdb40fg2f6" path="res://ui/screens/marketplace.gd" id="1_page"]
+[ext_resource type="Script" uid="uid://dw5rfxgt1dbw" path="res://ui/components/line_edit.gd" id="2_line"]
+[ext_resource type="PackedScene" uid="uid://dt4ie7of415v7" path="res://ui/shared/views/GridList.tscn" id="3_grid"]
+[ext_resource type="PackedScene" uid="uid://djd55jdackffg" path="res://ui/shared/EmptyMessage.tscn" id="4_empty"]
+[ext_resource type="Texture2D" uid="uid://b2wov5oed8a8" path="res://assets/icons/marketplace.svg" id="5_icon"]
+[ext_resource type="Script" uid="uid://emohg8k7r26n" path="res://ui/components/label.gd" id="6_label"]
+[ext_resource type="Script" uid="uid://b0etlamb18c2f" path="res://ui/components/icon.gd" id="7_glyph"]
+[ext_resource type="PackedScene" uid="uid://dp422ntw15hsk" path="res://ui/shared/Cover.tscn" id="8_cover"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_cdbx0"]
+resource_local_to_scene = true
+bg_color = Color(1, 1, 1, 1)
+draw_center = false
+corner_radius_top_left = 48
+corner_radius_top_right = 48
+corner_radius_bottom_right = 48
+corner_radius_bottom_left = 48
+shadow_color = Color(0, 0, 0, 0.15)
+shadow_size = 8
+shadow_offset = Vector2(0, 6)
+
+[sub_resource type="FontVariation" id="FontVariation_dty87"]
+variation_opentype = {
+2003265652: 700
+}
+
+[sub_resource type="FontVariation" id="FontVariation_mayo7"]
+variation_opentype = {
+2003265652: 500
+}
+
+[sub_resource type="FontVariation" id="FontVariation_search"]
+variation_opentype = {
+2003265652: 400
+}
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_normal"]
+content_margin_left = 36.0
+content_margin_top = 16.0
+content_margin_right = 36.0
+content_margin_bottom = 16.0
+bg_color = Color(1, 1, 1, 1)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0.06666667, 0.15686275, 0.3254902, 1)
+corner_radius_top_left = 32
+corner_radius_top_right = 32
+corner_radius_bottom_right = 32
+corner_radius_bottom_left = 32
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_focus"]
+content_margin_left = 36.0
+content_margin_top = 16.0
+content_margin_right = 36.0
+content_margin_bottom = 16.0
+draw_center = false
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0, 0.6117647, 1, 1)
+corner_radius_top_left = 32
+corner_radius_top_right = 32
+corner_radius_bottom_right = 32
+corner_radius_bottom_left = 32
+anti_aliasing = false
+
+[node name="Marketplace" type="Node" unique_id=399655412 node_paths=PackedStringArray("top", "bottom")]
+script = ExtResource("1_page")
+top = NodePath("Top")
+bottom = NodePath("Bottom")
+
+[node name="Top" type="Control" parent="." unique_id=1681559892]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Showcase" type="Control" parent="Top" unique_id=1049]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="GlyphArea" type="Control" parent="Top/Showcase" unique_id=1290]
+layout_mode = 1
+anchor_top = 0.08
+anchor_right = 1.0
+anchor_bottom = 0.66
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Glyph" type="TextureRect" parent="Top/Showcase/GlyphArea" unique_id=1512]
+unique_name_in_owner = true
+self_modulate = Color(0.06666667, 0.15686275, 0.3254902, 1)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -200.0
+offset_top = -200.0
+offset_right = 200.0
+offset_bottom = 200.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+script = ExtResource("7_glyph")
+
+[node name="Picture" parent="Top/Showcase/GlyphArea/Glyph" unique_id=1994 instance=ExtResource("8_cover")]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_cdbx0")
+corner_radius = 48
+
+[node name="Caption" type="VBoxContainer" parent="Top/Showcase" unique_id=2392]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.1
+anchor_top = 0.68
+anchor_right = 0.9
+anchor_bottom = 0.68
+grow_horizontal = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Title" type="Label" parent="Top/Showcase/Caption" unique_id=2666]
+unique_name_in_owner = true
+self_modulate = Color(0.06666667, 0.15686275, 0.3254902, 1)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_dty87")
+theme_override_font_sizes/font_size = 77
+text = "Marketplace"
+horizontal_alignment = 1
+script = ExtResource("6_label")
+weight = 700
+font_size = 77
+
+[node name="Description" type="Label" parent="Top/Showcase/Caption" unique_id=3121]
+unique_name_in_owner = true
+modulate = Color(1, 1, 1, 0.75)
+self_modulate = Color(0.06666667, 0.15686275, 0.3254902, 1)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_mayo7")
+theme_override_font_sizes/font_size = 64
+text = ""
+horizontal_alignment = 1
+autowrap_mode = 3
+script = ExtResource("6_label")
+font_size = 64
+
+[node name="Bottom" type="Control" parent="." unique_id=1553201078]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Layout" type="VBoxContainer" parent="Bottom" unique_id=1690571865]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 32
+
+[node name="SearchBar" type="LineEdit" parent="Bottom/Layout" unique_id=1271165722]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 112)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.06666667, 0.15686275, 0.3254902, 1)
+theme_override_colors/font_uneditable_color = Color(0.06666667, 0.15686275, 0.3254902, 0.6)
+theme_override_colors/font_selected_color = Color(0.06666667, 0.15686275, 0.3254902, 1)
+theme_override_colors/font_placeholder_color = Color(0.06666667, 0.15686275, 0.3254902, 0.5)
+theme_override_colors/caret_color = Color(0, 0.6117647, 1, 1)
+theme_override_colors/selection_color = Color(0, 0.6117647, 1, 0.35)
+theme_override_colors/clear_button_color = Color(0.06666667, 0.15686275, 0.3254902, 0.6)
+theme_override_colors/clear_button_color_pressed = Color(0, 0.6117647, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_search")
+theme_override_font_sizes/font_size = 40
+theme_override_styles/normal = SubResource("StyleBoxFlat_normal")
+theme_override_styles/read_only = SubResource("StyleBoxFlat_normal")
+theme_override_styles/focus = SubResource("StyleBoxFlat_focus")
+placeholder_text = "Search"
+clear_button_enabled = true
+script = ExtResource("2_line")
+font_size = 40
+corner_radius = 32
+corner_top_left = 32
+corner_top_right = 32
+corner_bottom_right = 32
+corner_bottom_left = 32
+horizontal_padding = 36
+
+[node name="Content" type="Control" parent="Bottom/Layout" unique_id=286699713]
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 2
+
+[node name="Grid" parent="Bottom/Layout/Content" unique_id=1368073012 instance=ExtResource("3_grid")]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+min_columns = 1
+separation = 32.0
+
+[node name="Empty" parent="Bottom/Layout/Content" unique_id=1006070220 instance=ExtResource("4_empty")]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+icon = ExtResource("5_icon")
+title = "Loading the marketplace"
+subtitle = ""

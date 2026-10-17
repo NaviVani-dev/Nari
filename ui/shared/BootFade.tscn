@@ -1,0 +1,15 @@
+[gd_scene format=3 uid="uid://b5eb4mcafsi6u"]
+
+[ext_resource type="Script" uid="uid://x5nhyrx2dagi" path="res://ui/shared/boot_fade.gd" id="1_bf"]
+
+[node name="BootFade" type="CanvasLayer" unique_id=1310053001]
+layer = 100
+
+[node name="Fade" type="ColorRect" parent="." unique_id=1310053002]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_bf")

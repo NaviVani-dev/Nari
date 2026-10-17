@@ -1,0 +1,115 @@
+[gd_scene format=3 uid="uid://c2c5a1qyr5go3"]
+
+[ext_resource type="Script" uid="uid://qbykaix510pe" path="res://ui/shared/plex_login.gd" id="1_login"]
+[ext_resource type="Script" uid="uid://djk4e68d3it8a" path="res://ui/components/button.gd" id="2_button"]
+[ext_resource type="Script" uid="uid://emohg8k7r26n" path="res://ui/components/label.gd" id="4_label"]
+[ext_resource type="Shader" uid="uid://ctaeuvi424wmk" path="res://assets/shaders/panel.gdshader" id="4_vqa3q"]
+
+[sub_resource type="FontVariation" id="FontVariation_dty87"]
+variation_opentype = {
+2003265652: 700
+}
+
+[sub_resource type="FontVariation" id="FontVariation_mayo7"]
+variation_opentype = {
+2003265652: 500
+}
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_uy206"]
+shader = ExtResource("4_vqa3q")
+shader_parameter/corner_radius = Vector4(32, 32, 32, 32)
+shader_parameter/panel_size = Vector2(360, 116)
+shader_parameter/fill_color = Color(0.06666667, 0.15686275, 0.3254902, 1)
+shader_parameter/gradient_color = Color(0.31764707, 0.45882353, 0.7254902, 0.75)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_e7a2w"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[node name="PlexLogin" type="VBoxContainer" unique_id=795072844]
+theme_override_constants/separation = 32
+alignment = 1
+script = ExtResource("1_login")
+
+[node name="Title" type="Label" parent="." unique_id=1798856637]
+unique_name_in_owner = true
+self_modulate = Color(0.06666667, 0.15686275, 0.3254902, 1)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_dty87")
+theme_override_font_sizes/font_size = 56
+text = "Connect Plex"
+horizontal_alignment = 1
+script = ExtResource("4_label")
+weight = 700
+font_size = 56
+
+[node name="Hint" type="Label" parent="." unique_id=57606942]
+unique_name_in_owner = true
+modulate = Color(1, 1, 1, 0.75)
+self_modulate = Color(0.06666667, 0.15686275, 0.3254902, 1)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_mayo7")
+theme_override_font_sizes/font_size = 40
+text = "Go to plex.tv/link and enter this code, or open the browser on this device"
+horizontal_alignment = 1
+autowrap_mode = 3
+script = ExtResource("4_label")
+font_size = 40
+
+[node name="Code" type="Label" parent="." unique_id=887278748]
+unique_name_in_owner = true
+self_modulate = Color(0.06666667, 0.15686275, 0.3254902, 1)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_dty87")
+theme_override_font_sizes/font_size = 120
+text = "····"
+horizontal_alignment = 1
+script = ExtResource("4_label")
+weight = 700
+font_size = 120
+
+[node name="Status" type="Label" parent="." unique_id=195783752]
+unique_name_in_owner = true
+visible = false
+modulate = Color(1, 1, 1, 0.75)
+self_modulate = Color(0.06666667, 0.15686275, 0.3254902, 1)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_mayo7")
+theme_override_font_sizes/font_size = 40
+horizontal_alignment = 1
+autowrap_mode = 3
+script = ExtResource("4_label")
+font_size = 40
+
+[node name="AcceptButton" type="PanelContainer" parent="." unique_id=209145699]
+unique_name_in_owner = true
+material = SubResource("ShaderMaterial_uy206")
+custom_minimum_size = Vector2(360, 116)
+layout_mode = 2
+size_flags_horizontal = 4
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_e7a2w")
+script = ExtResource("2_button")
+text = "Open browser"
+font_weight = 600
+font_size = 46
+corner_radius = 32.0
+corner_top_left = 32.0
+corner_top_right = 32.0
+corner_bottom_right = 32.0
+corner_bottom_left = 32.0
+padding = 12
+padding_left = 12
+padding_top = 12
+padding_right = 12
+padding_bottom = 12

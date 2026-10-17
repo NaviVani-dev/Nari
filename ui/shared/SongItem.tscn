@@ -1,0 +1,287 @@
+[gd_scene format=3 uid="uid://dqxeh6qnfqs4o"]
+
+[ext_resource type="Shader" uid="uid://ctaeuvi424wmk" path="res://assets/shaders/panel.gdshader" id="1_210gb"]
+[ext_resource type="Script" uid="uid://btq56w75mccd1" path="res://ui/shared/song_item.gd" id="2_210gb"]
+[ext_resource type="PackedScene" uid="uid://dp422ntw15hsk" path="res://ui/shared/Cover.tscn" id="3_q0h2a"]
+[ext_resource type="Script" uid="uid://emohg8k7r26n" path="res://ui/components/label.gd" id="4_k6swa"]
+[ext_resource type="Shader" uid="uid://b43fanpqqh6iq" path="res://assets/shaders/now_playing_bars.gdshader" id="5_bars"]
+[ext_resource type="Script" uid="uid://djk4e68d3it8a" path="res://ui/components/button.gd" id="6_button"]
+[ext_resource type="Texture2D" uid="uid://dxdsohoqxa4s7" path="res://assets/icons/close.svg" id="7_close"]
+[ext_resource type="Script" uid="uid://b0etlamb18c2f" path="res://ui/components/icon.gd" id="icon_dl_script"]
+[ext_resource type="Texture2D" uid="uid://2jinijyk2qwk" path="res://assets/icons/offline_download.svg" id="icon_dl_tex"]
+[ext_resource type="Texture2D" uid="uid://8xbge2qku816" path="res://assets/icons/like_on.svg" id="like_tex"]
+[ext_resource type="PackedScene" uid="uid://ds1fe8g28iyrb" path="res://ui/shared/LiveChip.tscn" id="live_chip"]
+[ext_resource type="Script" uid="uid://02b3f6ptg8q3" path="res://ui/components/title_row.gd" id="title_row"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_2bvdm"]
+shader = ExtResource("1_210gb")
+shader_parameter/corner_radius = Vector4(28, 28, 28, 28)
+shader_parameter/panel_size = Vector2(1920, 192)
+shader_parameter/fill_color = Color(0.06666667, 0.15686275, 0.3254902, 1)
+shader_parameter/gradient_color = Color(0.31764707, 0.45882353, 0.7254902, 0.75)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_m8d0i"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ksqs2"]
+resource_local_to_scene = true
+bg_color = Color(1, 1, 1, 1)
+draw_center = false
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+shadow_color = Color(1, 1, 1, 0)
+shadow_size = 8
+shadow_offset = Vector2(0, 6)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_playing"]
+bg_color = Color(0, 0, 0, 0.5)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_bars"]
+shader = ExtResource("5_bars")
+shader_parameter/bar_color = Color(1, 1, 1, 1)
+shader_parameter/speed = 1.0
+shader_parameter/bpm = 120.0
+shader_parameter/bar_width = 0.2
+shader_parameter/gap = 0.12
+
+[sub_resource type="FontVariation" id="FontVariation_dty87"]
+variation_opentype = {
+2003265652: 700
+}
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_rxlxy"]
+shader = ExtResource("1_210gb")
+shader_parameter/corner_radius = Vector4(12, 12, 12, 12)
+shader_parameter/panel_size = Vector2(106, 53)
+shader_parameter/fill_color = Color(1, 0.39607844, 0.3372549, 1)
+shader_parameter/gradient_color = Color(1, 0.56078434, 0.5176471, 0.75)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_jyc1p"]
+content_margin_left = 12.0
+content_margin_top = 0.0
+content_margin_right = 12.0
+content_margin_bottom = 0.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_f6n10"]
+shader = ExtResource("1_210gb")
+shader_parameter/corner_radius = Vector4(60, 60, 60, 60)
+shader_parameter/panel_size = Vector2(120, 120)
+shader_parameter/fill_color = Color(1, 1, 1, 0)
+shader_parameter/gradient_color = Color(1, 1, 1, 0)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ebi5g"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[node name="NariButton" type="PanelContainer" unique_id=290693968]
+material = SubResource("ShaderMaterial_2bvdm")
+custom_minimum_size = Vector2(0, 192)
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 0.178
+offset_bottom = -16.240005
+grow_horizontal = 2
+size_flags_horizontal = 3
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_m8d0i")
+script = ExtResource("2_210gb")
+corner_radius = 28.0
+corner_top_left = 28.0
+corner_top_right = 28.0
+corner_bottom_right = 28.0
+corner_bottom_left = 28.0
+padding = 12
+padding_left = 12
+padding_top = 12
+padding_right = 12
+padding_bottom = 12
+metadata/_custom_type_script = "uid://djk4e68d3it8a"
+
+[node name="MarginContainer" type="MarginContainer" parent="." unique_id=201022210]
+layout_mode = 2
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_bottom = 8
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer" unique_id=30218177]
+layout_mode = 2
+theme_override_constants/separation = 32
+
+[node name="Cover" parent="MarginContainer/HBoxContainer" unique_id=1589800182 instance=ExtResource("3_q0h2a")]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(152, 152)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_ksqs2")
+show_shadow = false
+skeleton_color = 6
+skeleton_alpha = Vector2(0.08, 0.2)
+thumbnail = true
+
+[node name="Playing" type="Panel" parent="MarginContainer/HBoxContainer/Cover" unique_id=17697687]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_playing")
+
+[node name="Bars" type="ColorRect" parent="MarginContainer/HBoxContainer/Cover/Playing" unique_id=510794464]
+material = SubResource("ShaderMaterial_bars")
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.25
+anchor_top = 0.25
+anchor_right = 0.75
+anchor_bottom = 0.75
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Number" type="Label" parent="MarginContainer/HBoxContainer" unique_id=611997446]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(152, 152)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_dty87")
+theme_override_font_sizes/font_size = 64
+text = "1"
+horizontal_alignment = 1
+vertical_alignment = 1
+script = ExtResource("4_k6swa")
+color = 6
+weight = 700
+font_size = 64
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/HBoxContainer" unique_id=2014132501]
+layout_mode = 2
+size_flags_horizontal = 3
+alignment = 1
+
+[node name="TitleRow" type="Container" parent="MarginContainer/HBoxContainer/VBoxContainer" unique_id=1362472992]
+layout_mode = 2
+script = ExtResource("title_row")
+
+[node name="Title" type="Label" parent="MarginContainer/HBoxContainer/VBoxContainer/TitleRow" unique_id=1445909444]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_dty87")
+theme_override_font_sizes/font_size = 45
+text = "Song Title"
+clip_text = true
+text_overrun_behavior = 3
+script = ExtResource("4_k6swa")
+color = 6
+weight = 700
+font_size = 45
+metadata/_custom_type_script = "uid://emohg8k7r26n"
+
+[node name="Downloaded" type="TextureRect" parent="MarginContainer/HBoxContainer/VBoxContainer/TitleRow" unique_id=1083626063]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(48, 48)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+texture = ExtResource("icon_dl_tex")
+expand_mode = 1
+stretch_mode = 5
+script = ExtResource("icon_dl_script")
+color = 6
+
+[node name="ArtistRow" type="Container" parent="MarginContainer/HBoxContainer/VBoxContainer" unique_id=1739200421]
+layout_mode = 2
+script = ExtResource("title_row")
+separation = 14
+leading = true
+
+[node name="Artist" type="Label" parent="MarginContainer/HBoxContainer/VBoxContainer/ArtistRow" unique_id=144567359]
+unique_name_in_owner = true
+modulate = Color(1, 1, 1, 0.75000006)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_dty87")
+theme_override_font_sizes/font_size = 45
+text = "Song Title"
+clip_text = true
+text_overrun_behavior = 3
+script = ExtResource("4_k6swa")
+color = 6
+weight = 700
+font_size = 45
+metadata/_custom_type_script = "uid://emohg8k7r26n"
+
+[node name="LiveChip" parent="MarginContainer/HBoxContainer/VBoxContainer/ArtistRow" unique_id=1739200422 instance=ExtResource("live_chip")]
+unique_name_in_owner = true
+visible = false
+material = SubResource("ShaderMaterial_rxlxy")
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_jyc1p")
+font_size = 36
+
+[node name="Liked" type="TextureRect" parent="MarginContainer/HBoxContainer" unique_id=1730550911]
+unique_name_in_owner = true
+visible = false
+self_modulate = Color(1, 0.39607844, 0.3372549, 1)
+custom_minimum_size = Vector2(48, 48)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+texture = ExtResource("like_tex")
+expand_mode = 1
+stretch_mode = 5
+script = ExtResource("icon_dl_script")
+color = 30
+
+[node name="RemoveButton" type="PanelContainer" parent="MarginContainer/HBoxContainer" unique_id=527771216]
+unique_name_in_owner = true
+visible = false
+material = SubResource("ShaderMaterial_f6n10")
+custom_minimum_size = Vector2(120, 120)
+layout_mode = 2
+size_flags_vertical = 4
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_ebi5g")
+script = ExtResource("6_button")
+icon = ExtResource("7_close")
+flat = true
+icon_size = Vector2(72, 72)
+corner_radius = 60.0
+corner_top_left = 60.0
+corner_top_right = 60.0
+corner_bottom_right = 60.0
+corner_bottom_left = 60.0
+padding = 12
+padding_left = 12
+padding_top = 12
+padding_right = 12
+padding_bottom = 12

@@ -1,0 +1,136 @@
+[gd_scene format=3 uid="uid://my8qlsx3xn7b"]
+
+[ext_resource type="Script" uid="uid://cysiwld0u7mmv" path="res://ui/shared/download_status.gd" id="1_status"]
+[ext_resource type="PackedScene" uid="uid://dp422ntw15hsk" path="res://ui/shared/Cover.tscn" id="2_cover"]
+[ext_resource type="Script" uid="uid://b0etlamb18c2f" path="res://ui/components/icon.gd" id="3_icon"]
+[ext_resource type="Texture2D" uid="uid://b66lca3n8w1nj" path="res://assets/icons/check.svg" id="4_check"]
+[ext_resource type="Shader" uid="uid://ctaeuvi424wmk" path="res://assets/shaders/panel.gdshader" id="5_feedy"]
+[ext_resource type="Script" uid="uid://ctbpcejv6a7ua" path="res://ui/components/panel_container.gd" id="5_panel"]
+[ext_resource type="Script" uid="uid://emohg8k7r26n" path="res://ui/components/label.gd" id="6_label"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_d5gke"]
+resource_local_to_scene = true
+bg_color = Color(1, 1, 1, 1)
+draw_center = false
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+shadow_color = Color(1, 1, 1, 0)
+shadow_size = 8
+shadow_offset = Vector2(0, 6)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_acntg"]
+shader = ExtResource("5_feedy")
+shader_parameter/corner_radius = Vector4(17, 17, 17, 17)
+shader_parameter/panel_size = Vector2(36, 39)
+shader_parameter/fill_color = Color(0, 0.6117647, 1, 1)
+shader_parameter/gradient_color = Color(0.5254902, 0.8156863, 1, 0.75)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_e3c07"]
+content_margin_left = 10.0
+content_margin_top = 2.0
+content_margin_right = 10.0
+content_margin_bottom = 2.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[sub_resource type="FontVariation" id="FontVariation_dty87"]
+variation_opentype = {
+2003265652: 700
+}
+
+[node name="DownloadStatus" type="Control" unique_id=710693197]
+visible = false
+layout_mode = 3
+anchors_preset = 0
+mouse_filter = 2
+script = ExtResource("1_status")
+
+[node name="Cover" parent="." unique_id=270620209 instance=ExtResource("2_cover")]
+unique_name_in_owner = true
+layout_mode = 1
+anchor_left = 0.15
+anchor_top = 0.15
+anchor_right = 0.85
+anchor_bottom = 0.85
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_d5gke")
+show_shadow = false
+thumbnail = true
+
+[node name="Ring" type="Control" parent="." unique_id=1571233047]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Check" type="TextureRect" parent="." unique_id=1429841921]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.2
+anchor_top = 0.2
+anchor_right = 0.8
+anchor_bottom = 0.8
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("4_check")
+expand_mode = 1
+stretch_mode = 5
+script = ExtResource("3_icon")
+color = 10
+
+[node name="Pill" type="PanelContainer" parent="." unique_id=174913406]
+unique_name_in_owner = true
+visible = false
+material = SubResource("ShaderMaterial_acntg")
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -22.0
+offset_top = -26.0
+offset_right = 12.0
+offset_bottom = 8.0
+grow_horizontal = 0
+grow_vertical = 0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_e3c07")
+script = ExtResource("5_panel")
+bg_color = 9
+gradient_color = 11
+corner_radius = 17.0
+corner_top_left = 17.0
+corner_top_right = 17.0
+corner_bottom_right = 17.0
+corner_bottom_left = 17.0
+padding = 2
+padding_left = 10
+padding_top = 2
+padding_right = 10
+padding_bottom = 2
+
+[node name="Count" type="Label" parent="Pill" unique_id=1612236118]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_dty87")
+theme_override_font_sizes/font_size = 24
+text = "2"
+horizontal_alignment = 1
+vertical_alignment = 1
+script = ExtResource("6_label")
+color = 10
+weight = 700
+font_size = 24

@@ -1,0 +1,440 @@
+[gd_scene format=3 uid="uid://cokdeidti6s21"]
+
+[ext_resource type="Script" uid="uid://cpsgtmr0yektm" path="res://ui/shared/app_hints.gd" id="1_wc63u"]
+[ext_resource type="Texture2D" uid="uid://7885tlrq4tx6" path="res://assets/icons/signal4.svg" id="2_brsa2"]
+[ext_resource type="Script" uid="uid://b0etlamb18c2f" path="res://ui/components/icon.gd" id="3_n7c3p"]
+[ext_resource type="Texture2D" uid="uid://b0h0rlon5vw24" path="res://assets/icons/battery_full.svg" id="4_idnch"]
+[ext_resource type="Texture2D" uid="uid://dfu3xnyr5xrnx" path="res://assets/icons/time.svg" id="5_hcesn"]
+[ext_resource type="Script" uid="uid://emohg8k7r26n" path="res://ui/components/label.gd" id="6_acyrd"]
+[ext_resource type="Texture2D" uid="uid://dtqyusu0ovbrg" path="res://assets/icons/chevron_left.svg" id="7_back"]
+[ext_resource type="Texture2D" uid="uid://pdbv5scx5dnn" path="res://assets/icons/charge.svg" id="8_charge"]
+[ext_resource type="Texture2D" uid="uid://d0w7fvlfi27wg" path="res://assets/icons/music_note_dual.svg" id="9_idnch"]
+[ext_resource type="Shader" uid="uid://ctaeuvi424wmk" path="res://assets/shaders/panel.gdshader" id="9_vldiq"]
+[ext_resource type="Script" uid="uid://c7yoe64y8vcul" path="res://ui/shared/song_details.gd" id="10_song"]
+[ext_resource type="Script" uid="uid://bm5c7npwpf7md" path="res://ui/shared/device_chip.gd" id="11_device"]
+[ext_resource type="Texture2D" uid="uid://brwoh5rk52clg" path="res://assets/icons/speaker.svg" id="13_speaker"]
+[ext_resource type="PackedScene" uid="uid://my8qlsx3xn7b" path="res://ui/shared/DownloadStatus.tscn" id="download_status"]
+[ext_resource type="Texture2D" uid="uid://h5weg0gg2ov6" path="res://assets/icons/offline_mode.svg" id="offline_tex"]
+[ext_resource type="Script" uid="uid://djk4e68d3it8a" path="res://ui/components/button.gd" id="window_button"]
+[ext_resource type="Texture2D" uid="uid://cnomwe4t6j3nv" path="res://assets/icons/window_minimize.svg" id="window_minimize"]
+[ext_resource type="Texture2D" uid="uid://dsnr3382c607k" path="res://assets/icons/window_maximize.svg" id="window_maximize"]
+[ext_resource type="Texture2D" uid="uid://bcd8gndk2u45b" path="res://assets/icons/window_close.svg" id="window_close"]
+
+[sub_resource type="FontVariation" id="FontVariation_dty87"]
+variation_opentype = {
+2003265652: 700
+}
+
+[sub_resource type="Gradient" id="Gradient_glow"]
+offsets = PackedFloat32Array(0, 0.4, 1)
+colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 0.32, 1, 1, 1, 0)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_glow"]
+gradient = SubResource("Gradient_glow")
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(1, 0.5)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_c5s2b"]
+shader = ExtResource("9_vldiq")
+shader_parameter/corner_radius = Vector4(46, 46, 46, 46)
+shader_parameter/panel_size = Vector2(108, 92)
+shader_parameter/fill_color = Color(0.06666667, 0.15686275, 0.3254902, 1)
+shader_parameter/gradient_color = Color(0.31764707, 0.45882353, 0.7254902, 0.75)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_nnyvx"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 28.0
+content_margin_bottom = 12.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_pxbsp"]
+shader = ExtResource("9_vldiq")
+shader_parameter/corner_radius = Vector4(28, 28, 28, 28)
+shader_parameter/panel_size = Vector2(108, 92)
+shader_parameter/fill_color = Color(1, 1, 1, 0)
+shader_parameter/gradient_color = Color(1, 1, 1, 0)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ijpm1"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 28.0
+content_margin_bottom = 12.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[node name="AppHints" type="Control" unique_id=1665151752]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_wc63u")
+
+[node name="Dim" type="ColorRect" parent="." unique_id=940558753]
+unique_name_in_owner = true
+visible = false
+modulate = Color(1, 1, 1, 0)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0.5)
+
+[node name="MarginContainer" type="MarginContainer" parent="." unique_id=674585273]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_top = 32
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_bottom = 32
+
+[node name="TopColumn" type="VBoxContainer" parent="MarginContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 0
+mouse_filter = 2
+theme_override_constants/separation = 16
+
+[node name="TopBar" type="HBoxContainer" parent="MarginContainer/TopColumn" unique_id=94011901]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 16
+
+[node name="TitleBar" type="HBoxContainer" parent="MarginContainer/TopColumn/TopBar" unique_id=1964502518]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 0
+mouse_filter = 2
+theme_override_constants/separation = 8
+
+[node name="BackIcon" type="TextureRect" parent="MarginContainer/TopColumn/TopBar/TitleBar" unique_id=929039413]
+unique_name_in_owner = true
+visible = false
+self_modulate = Color(0.06666667, 0.15686275, 0.3254902, 1)
+layout_mode = 2
+mouse_filter = 2
+texture = ExtResource("7_back")
+expand_mode = 2
+script = ExtResource("3_n7c3p")
+
+[node name="PageTitle" type="Label" parent="MarginContainer/TopColumn/TopBar/TitleBar" unique_id=357191701]
+unique_name_in_owner = true
+self_modulate = Color(0.06666667, 0.15686275, 0.3254902, 1)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_dty87")
+theme_override_font_sizes/font_size = 45
+text = "TITLE!!!!"
+vertical_alignment = 1
+clip_text = true
+max_lines_visible = 1
+script = ExtResource("6_acyrd")
+weight = 700
+font_size = 45
+marquee = true
+metadata/_custom_type_script = "uid://emohg8k7r26n"
+
+[node name="TopRight" type="HBoxContainer" parent="MarginContainer/TopColumn/TopBar" unique_id=17695824]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 0
+mouse_filter = 2
+theme_override_constants/separation = 16
+alignment = 2
+
+[node name="DownloadStatus" parent="MarginContainer/TopColumn/TopBar/TopRight" unique_id=892116799 instance=ExtResource("download_status")]
+layout_mode = 2
+
+[node name="OfflineStatus" type="TextureRect" parent="MarginContainer/TopColumn/TopBar/TopRight" unique_id=651351181]
+unique_name_in_owner = true
+visible = false
+self_modulate = Color(0.06666667, 0.15686275, 0.3254902, 1)
+layout_mode = 2
+texture = ExtResource("offline_tex")
+expand_mode = 2
+script = ExtResource("3_n7c3p")
+metadata/_custom_type_script = "uid://b0etlamb18c2f"
+
+[node name="NetStatus" type="TextureRect" parent="MarginContainer/TopColumn/TopBar/TopRight" unique_id=1905674405]
+unique_name_in_owner = true
+self_modulate = Color(0.06666667, 0.15686275, 0.3254902, 1)
+layout_mode = 2
+texture = ExtResource("2_brsa2")
+expand_mode = 2
+script = ExtResource("3_n7c3p")
+metadata/_custom_type_script = "uid://b0etlamb18c2f"
+
+[node name="BatteryStatus" type="TextureRect" parent="MarginContainer/TopColumn/TopBar/TopRight" unique_id=1714811784]
+unique_name_in_owner = true
+self_modulate = Color(0.06666667, 0.15686275, 0.3254902, 1)
+layout_mode = 2
+texture = ExtResource("4_idnch")
+expand_mode = 2
+script = ExtResource("3_n7c3p")
+metadata/_custom_type_script = "uid://b0etlamb18c2f"
+
+[node name="ChargeStatus" type="TextureRect" parent="MarginContainer/TopColumn/TopBar/TopRight/BatteryStatus" unique_id=1178967013]
+unique_name_in_owner = true
+self_modulate = Color(1, 0.8, 0.1, 1)
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.23460732
+anchor_top = 0.34848484
+anchor_right = 0.6818927
+anchor_bottom = 0.6515151
+mouse_filter = 2
+texture = ExtResource("8_charge")
+expand_mode = 1
+stretch_mode = 5
+script = ExtResource("3_n7c3p")
+themed = false
+metadata/_edit_use_anchors_ = true
+
+[node name="ChargeGlow" type="TextureRect" parent="MarginContainer/TopColumn/TopBar/TopRight/BatteryStatus" unique_id=1178967014]
+unique_name_in_owner = true
+visible = false
+modulate = Color(1, 1, 1, 0.2)
+self_modulate = Color(1, 0.8, 0.1, 1)
+show_behind_parent = true
+layout_mode = 1
+anchors_preset = -1
+anchor_left = -0.6
+anchor_top = -0.6
+anchor_right = 1.6
+anchor_bottom = 1.6
+mouse_filter = 2
+texture = SubResource("GradientTexture2D_glow")
+expand_mode = 1
+
+[node name="ClockIcon" type="TextureRect" parent="MarginContainer/TopColumn/TopBar/TopRight" unique_id=113292135]
+unique_name_in_owner = true
+self_modulate = Color(0.06666667, 0.15686275, 0.3254902, 1)
+layout_mode = 2
+texture = ExtResource("5_hcesn")
+expand_mode = 2
+script = ExtResource("3_n7c3p")
+metadata/_custom_type_script = "uid://b0etlamb18c2f"
+
+[node name="Clock" type="Label" parent="MarginContainer/TopColumn/TopBar/TopRight" unique_id=353336902]
+unique_name_in_owner = true
+self_modulate = Color(0.06666667, 0.15686275, 0.3254902, 1)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_dty87")
+theme_override_font_sizes/font_size = 45
+text = "12:00"
+script = ExtResource("6_acyrd")
+weight = 700
+font_size = 45
+metadata/_custom_type_script = "uid://emohg8k7r26n"
+
+[node name="WindowControls" type="HBoxContainer" parent="MarginContainer/TopColumn/TopBar"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_constants/separation = 4
+
+[node name="Minimize" type="PanelContainer" parent="MarginContainer/TopColumn/TopBar/WindowControls"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+size_flags_vertical = 4
+focus_mode = 0
+mouse_default_cursor_shape = 2
+script = ExtResource("window_button")
+icon = ExtResource("window_minimize")
+flat = true
+icon_size = Vector2(40, 40)
+fg_color = 8
+corner_radius = 20.0
+corner_top_left = 20.0
+corner_top_right = 20.0
+corner_bottom_right = 20.0
+corner_bottom_left = 20.0
+padding = 12
+padding_left = 12
+padding_top = 12
+padding_right = 12
+padding_bottom = 12
+
+[node name="Maximize" type="PanelContainer" parent="MarginContainer/TopColumn/TopBar/WindowControls"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+size_flags_vertical = 4
+focus_mode = 0
+mouse_default_cursor_shape = 2
+script = ExtResource("window_button")
+icon = ExtResource("window_maximize")
+flat = true
+icon_size = Vector2(40, 40)
+fg_color = 8
+corner_radius = 20.0
+corner_top_left = 20.0
+corner_top_right = 20.0
+corner_bottom_right = 20.0
+corner_bottom_left = 20.0
+padding = 12
+padding_left = 12
+padding_top = 12
+padding_right = 12
+padding_bottom = 12
+
+[node name="Close" type="PanelContainer" parent="MarginContainer/TopColumn/TopBar/WindowControls"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+size_flags_vertical = 4
+focus_mode = 0
+mouse_default_cursor_shape = 2
+script = ExtResource("window_button")
+icon = ExtResource("window_close")
+flat = true
+icon_size = Vector2(40, 40)
+fg_color = 8
+corner_radius = 20.0
+corner_top_left = 20.0
+corner_top_right = 20.0
+corner_bottom_right = 20.0
+corner_bottom_left = 20.0
+padding = 12
+padding_left = 12
+padding_top = 12
+padding_right = 12
+padding_bottom = 12
+
+[node name="Header" type="HBoxContainer" parent="MarginContainer/TopColumn"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 16
+
+[node name="Subtitle" type="Label" parent="MarginContainer/TopColumn/Header"]
+unique_name_in_owner = true
+self_modulate = Color(0.06666667, 0.15686275, 0.3254902, 1)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 34
+vertical_alignment = 1
+clip_text = true
+max_lines_visible = 1
+script = ExtResource("6_acyrd")
+weight = 600
+font_size = 34
+
+[node name="HeaderActions" type="HBoxContainer" parent="MarginContainer/TopColumn/Header"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 12
+alignment = 2
+
+[node name="Bottom" type="VBoxContainer" parent="MarginContainer" unique_id=660308838]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 8
+mouse_filter = 2
+theme_override_constants/separation = 16
+
+[node name="Row" type="HBoxContainer" parent="MarginContainer/Bottom" unique_id=660308839]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 16
+alignment = 2
+
+[node name="Left" type="HBoxContainer" parent="MarginContainer/Bottom/Row" unique_id=2090390734]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="SongDetails" type="PanelContainer" parent="MarginContainer/Bottom/Row/Left" unique_id=2090390733]
+unique_name_in_owner = true
+visible = false
+material = SubResource("ShaderMaterial_c5s2b")
+custom_minimum_size = Vector2(0, 92)
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 4
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_nnyvx")
+script = ExtResource("10_song")
+solid = true
+icon = ExtResource("9_idnch")
+horizontal_alignment = 0
+clip_text = true
+text_overrun_behavior = 3
+font_weight = 700
+font_size = 40
+icon_size = Vector2(68, 68)
+alignment = 0
+separation = 16
+corner_radius = 28.0
+corner_top_left = 46.0
+corner_top_right = 46.0
+corner_bottom_right = 46.0
+corner_bottom_left = 46.0
+padding = 12
+padding_left = 12
+padding_top = 12
+padding_right = 28
+padding_bottom = 12
+
+[node name="DeviceChip" type="PanelContainer" parent="MarginContainer/Bottom/Row/Left" unique_id=2090390735]
+unique_name_in_owner = true
+visible = false
+material = SubResource("ShaderMaterial_pxbsp")
+custom_minimum_size = Vector2(0, 92)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+focus_mode = 2
+mouse_filter = 0
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_ijpm1")
+script = ExtResource("11_device")
+icon = ExtResource("13_speaker")
+flat = true
+horizontal_alignment = 0
+clip_text = true
+text_overrun_behavior = 3
+font_weight = 700
+font_size = 40
+icon_size = Vector2(68, 68)
+alignment = 0
+separation = 16
+fg_color = 8
+corner_radius = 28.0
+corner_top_left = 28.0
+corner_top_right = 28.0
+corner_bottom_right = 28.0
+corner_bottom_left = 28.0
+padding = 12
+padding_left = 12
+padding_top = 12
+padding_right = 28
+padding_bottom = 12

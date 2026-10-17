@@ -1,0 +1,252 @@
+[gd_scene format=3 uid="uid://bjeinp621nt6s"]
+
+[ext_resource type="Script" uid="uid://djk4e68d3it8a" path="res://ui/components/button.gd" id="1_button"]
+[ext_resource type="Shader" uid="uid://ctaeuvi424wmk" path="res://assets/shaders/panel.gdshader" id="1_yi81l"]
+[ext_resource type="Script" uid="uid://ctbpcejv6a7ua" path="res://ui/components/panel_container.gd" id="2_panel"]
+[ext_resource type="Texture2D" uid="uid://oxj6dbugyn06" path="res://assets/icons/queue_music.svg" id="4_queue"]
+[ext_resource type="Texture2D" uid="uid://c7ag3riqn02w0" path="res://assets/icons/lyrics.svg" id="5_lyrics"]
+[ext_resource type="Texture2D" uid="uid://bn6y76keujmsk" path="res://assets/icons/audio_effects.svg" id="6_effects"]
+[ext_resource type="Texture2D" uid="uid://dry4jubypma0m" path="res://assets/icons/soundboard.svg" id="7_soundboard"]
+[ext_resource type="Texture2D" uid="uid://73mddb4ukwmk" path="res://assets/icons/visualizer.svg" id="8_visualizer"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_62425"]
+shader = ExtResource("1_yi81l")
+shader_parameter/corner_radius = Vector4(18, 18, 18, 18)
+shader_parameter/panel_size = Vector2(424, 88)
+shader_parameter/fill_color = Color(0.06666667, 0.15686275, 0.3254902, 1)
+shader_parameter/gradient_color = Color(0.31764707, 0.45882353, 0.7254902, 0.75)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_yi81l"]
+content_margin_left = 4.0
+content_margin_top = 4.0
+content_margin_right = 4.0
+content_margin_bottom = 4.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_u40eh"]
+shader = ExtResource("1_yi81l")
+shader_parameter/corner_radius = Vector4(14, 14, 14, 14)
+shader_parameter/panel_size = Vector2(80, 80)
+shader_parameter/fill_color = Color(0, 0, 0, 0)
+shader_parameter/gradient_color = Color(0, 0, 0, 0)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ltlm0"]
+content_margin_left = 6.0
+content_margin_top = 6.0
+content_margin_right = 6.0
+content_margin_bottom = 6.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_i7sx3"]
+shader = ExtResource("1_yi81l")
+shader_parameter/corner_radius = Vector4(14, 14, 14, 14)
+shader_parameter/panel_size = Vector2(80, 80)
+shader_parameter/fill_color = Color(0, 0, 0, 0)
+shader_parameter/gradient_color = Color(0, 0, 0, 0)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_y2mb1"]
+content_margin_left = 6.0
+content_margin_top = 6.0
+content_margin_right = 6.0
+content_margin_bottom = 6.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ddb8h"]
+shader = ExtResource("1_yi81l")
+shader_parameter/corner_radius = Vector4(14, 14, 14, 14)
+shader_parameter/panel_size = Vector2(80, 80)
+shader_parameter/fill_color = Color(0, 0, 0, 0)
+shader_parameter/gradient_color = Color(0, 0, 0, 0)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_fslm7"]
+content_margin_left = 6.0
+content_margin_top = 6.0
+content_margin_right = 6.0
+content_margin_bottom = 6.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_qy0rk"]
+shader = ExtResource("1_yi81l")
+shader_parameter/corner_radius = Vector4(14, 14, 14, 14)
+shader_parameter/panel_size = Vector2(80, 80)
+shader_parameter/fill_color = Color(0, 0, 0, 0)
+shader_parameter/gradient_color = Color(0, 0, 0, 0)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_cdund"]
+content_margin_left = 6.0
+content_margin_top = 6.0
+content_margin_right = 6.0
+content_margin_bottom = 6.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_mi1q0"]
+shader = ExtResource("1_yi81l")
+shader_parameter/corner_radius = Vector4(14, 14, 14, 14)
+shader_parameter/panel_size = Vector2(80, 80)
+shader_parameter/fill_color = Color(0, 0, 0, 0)
+shader_parameter/gradient_color = Color(0, 0, 0, 0)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_nyi8c"]
+content_margin_left = 6.0
+content_margin_top = 6.0
+content_margin_right = 6.0
+content_margin_bottom = 6.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[node name="Tabs" type="PanelContainer" unique_id=1643724797]
+material = SubResource("ShaderMaterial_62425")
+size_flags_horizontal = 4
+theme_override_styles/panel = SubResource("StyleBoxFlat_yi81l")
+script = ExtResource("2_panel")
+corner_radius = 18.0
+corner_top_left = 18.0
+corner_top_right = 18.0
+corner_bottom_right = 18.0
+corner_bottom_left = 18.0
+padding = 4
+padding_left = 4
+padding_top = 4
+padding_right = 4
+padding_bottom = 4
+
+[node name="TabRow" type="HBoxContainer" parent="." unique_id=1422566979]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 4
+
+[node name="QueueButton" type="PanelContainer" parent="TabRow" unique_id=271857760]
+unique_name_in_owner = true
+material = SubResource("ShaderMaterial_u40eh")
+custom_minimum_size = Vector2(80, 80)
+layout_mode = 2
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_ltlm0")
+script = ExtResource("1_button")
+icon = ExtResource("4_queue")
+icon_size = Vector2(44, 44)
+accent_on_focus = true
+bg_color = 40
+gradient_color = 40
+corner_radius = 14.0
+corner_top_left = 14.0
+corner_top_right = 14.0
+corner_bottom_right = 14.0
+corner_bottom_left = 14.0
+padding = 6
+padding_left = 6
+padding_top = 6
+padding_right = 6
+padding_bottom = 6
+
+[node name="LyricsButton" type="PanelContainer" parent="TabRow" unique_id=900997868]
+unique_name_in_owner = true
+material = SubResource("ShaderMaterial_i7sx3")
+custom_minimum_size = Vector2(80, 80)
+layout_mode = 2
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_y2mb1")
+script = ExtResource("1_button")
+icon = ExtResource("5_lyrics")
+icon_size = Vector2(44, 44)
+accent_on_focus = true
+bg_color = 40
+gradient_color = 40
+corner_radius = 14.0
+corner_top_left = 14.0
+corner_top_right = 14.0
+corner_bottom_right = 14.0
+corner_bottom_left = 14.0
+padding = 6
+padding_left = 6
+padding_top = 6
+padding_right = 6
+padding_bottom = 6
+
+[node name="EffectsButton" type="PanelContainer" parent="TabRow" unique_id=868658559]
+unique_name_in_owner = true
+material = SubResource("ShaderMaterial_ddb8h")
+custom_minimum_size = Vector2(80, 80)
+layout_mode = 2
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_fslm7")
+script = ExtResource("1_button")
+icon = ExtResource("6_effects")
+icon_size = Vector2(44, 44)
+accent_on_focus = true
+bg_color = 40
+gradient_color = 40
+corner_radius = 14.0
+corner_top_left = 14.0
+corner_top_right = 14.0
+corner_bottom_right = 14.0
+corner_bottom_left = 14.0
+padding = 6
+padding_left = 6
+padding_top = 6
+padding_right = 6
+padding_bottom = 6
+
+[node name="SoundboardButton" type="PanelContainer" parent="TabRow" unique_id=1072376394]
+unique_name_in_owner = true
+material = SubResource("ShaderMaterial_qy0rk")
+custom_minimum_size = Vector2(80, 80)
+layout_mode = 2
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_cdund")
+script = ExtResource("1_button")
+icon = ExtResource("7_soundboard")
+icon_size = Vector2(44, 44)
+accent_on_focus = true
+bg_color = 40
+gradient_color = 40
+corner_radius = 14.0
+corner_top_left = 14.0
+corner_top_right = 14.0
+corner_bottom_right = 14.0
+corner_bottom_left = 14.0
+padding = 6
+padding_left = 6
+padding_top = 6
+padding_right = 6
+padding_bottom = 6
+
+[node name="VisualizersButton" type="PanelContainer" parent="TabRow" unique_id=658656647]
+unique_name_in_owner = true
+material = SubResource("ShaderMaterial_mi1q0")
+custom_minimum_size = Vector2(80, 80)
+layout_mode = 2
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_nyi8c")
+script = ExtResource("1_button")
+icon = ExtResource("8_visualizer")
+icon_size = Vector2(44, 44)
+accent_on_focus = true
+bg_color = 40
+gradient_color = 40
+corner_radius = 14.0
+corner_top_left = 14.0
+corner_top_right = 14.0
+corner_bottom_right = 14.0
+corner_bottom_left = 14.0
+padding = 6
+padding_left = 6
+padding_top = 6
+padding_right = 6
+padding_bottom = 6

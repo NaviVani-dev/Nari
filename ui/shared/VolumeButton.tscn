@@ -1,0 +1,164 @@
+[gd_scene format=3 uid="uid://dwcrk36gqargh"]
+
+[ext_resource type="Shader" uid="uid://ctaeuvi424wmk" path="res://assets/shaders/panel.gdshader" id="1_peuvk"]
+[ext_resource type="Script" uid="uid://bnsjre4ckricj" path="res://ui/shared/volume_button.gd" id="1_volume"]
+[ext_resource type="Texture2D" uid="uid://c33sbc78qls50" path="res://assets/icons/sound.svg" id="2_sound"]
+[ext_resource type="Script" uid="uid://ctbpcejv6a7ua" path="res://ui/components/panel_container.gd" id="3_panel"]
+[ext_resource type="Script" uid="uid://p51md88pyjch" path="res://ui/components/thin_slider.gd" id="4_thin"]
+[ext_resource type="Texture2D" uid="uid://ddjthjli6at0u" path="res://assets/images/grabber.svg" id="5_grabber"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_0c5wi"]
+shader = ExtResource("1_peuvk")
+shader_parameter/corner_radius = Vector4(20, 20, 20, 20)
+shader_parameter/panel_size = Vector2(80, 80)
+shader_parameter/fill_color = Color(1, 1, 1, 0)
+shader_parameter/gradient_color = Color(1, 1, 1, 0)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_nvcdf"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_aj85d"]
+shader = ExtResource("1_peuvk")
+shader_parameter/corner_radius = Vector4(28, 28, 28, 28)
+shader_parameter/panel_size = Vector2(96, 328)
+shader_parameter/fill_color = Color(0.06666667, 0.15686275, 0.3254902, 1)
+shader_parameter/gradient_color = Color(0.31764707, 0.45882353, 0.7254902, 0.75)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_y14df"]
+content_margin_left = 24.0
+content_margin_top = 24.0
+content_margin_right = 24.0
+content_margin_bottom = 24.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[node name="VolumeButton" type="PanelContainer" unique_id=1427965486]
+material = SubResource("ShaderMaterial_0c5wi")
+custom_minimum_size = Vector2(80, 80)
+size_flags_vertical = 4
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_nvcdf")
+script = ExtResource("1_volume")
+icon = ExtResource("2_sound")
+flat = true
+icon_size = Vector2(56, 56)
+accent_on_focus = true
+corner_radius = 20.0
+corner_top_left = 20.0
+corner_top_right = 20.0
+corner_bottom_right = 20.0
+corner_bottom_left = 20.0
+padding = 12
+padding_left = 12
+padding_top = 12
+padding_right = 12
+padding_bottom = 12
+
+[node name="Popup" type="PanelContainer" parent="." unique_id=885455009]
+visible = false
+z_index = 20
+material = SubResource("ShaderMaterial_aj85d")
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_y14df")
+script = ExtResource("3_panel")
+corner_radius = 28.0
+corner_top_left = 28.0
+corner_top_right = 28.0
+corner_bottom_right = 28.0
+corner_bottom_left = 28.0
+padding = 24
+padding_left = 24
+padding_top = 24
+padding_right = 24
+padding_bottom = 24
+
+[node name="Slider" type="Range" parent="Popup" unique_id=709175426]
+unique_name_in_owner = false
+process_mode = 0
+process_priority = 0
+process_physics_priority = 0
+process_thread_group = 0
+physics_interpolation_mode = 2
+auto_translate_mode = 0
+editor_description = ""
+visible = true
+modulate = Color(1, 1, 1, 1)
+self_modulate = Color(1, 1, 1, 1)
+show_behind_parent = false
+top_level = false
+clip_children = 0
+oversampling_with_scale = 0
+light_mask = 1
+visibility_layer = 1
+z_index = 0
+z_as_relative = true
+y_sort_enabled = false
+texture_filter = 0
+texture_repeat = 0
+material = null
+use_parent_material = false
+custom_minimum_size = Vector2(48, 280)
+custom_maximum_size = Vector2(-1, -1)
+propagate_maximum_size = false
+clip_contents = false
+layout_mode = 2
+size_flags_horizontal = 1
+size_flags_vertical = 1
+size_flags_stretch_ratio = 1.0
+offset_transform_enabled = false
+offset_transform_position = Vector2(0, 0)
+offset_transform_position_ratio = Vector2(0, 0)
+offset_transform_scale = Vector2(1, 1)
+offset_transform_rotation = 0.0
+offset_transform_pivot = Vector2(0, 0)
+offset_transform_pivot_ratio = Vector2(0.5, 0.5)
+offset_transform_visual_only = true
+localize_numeral_system = true
+layout_direction = 0
+translation_context = &""
+tooltip_text = ""
+tooltip_auto_translate_mode = 0
+focus_neighbor_left = NodePath("")
+focus_neighbor_top = NodePath("")
+focus_neighbor_right = NodePath("")
+focus_neighbor_bottom = NodePath("")
+focus_next = NodePath("")
+focus_previous = NodePath("")
+focus_mode = 0
+focus_behavior_recursive = 0
+mouse_filter = 0
+mouse_behavior_recursive = 0
+mouse_force_pass_scroll_events = true
+mouse_default_cursor_shape = 2
+accessibility_name = ""
+accessibility_description = ""
+accessibility_live = 0
+accessibility_controls_nodes = Array[NodePath]([])
+accessibility_described_by_nodes = Array[NodePath]([])
+accessibility_labeled_by_nodes = Array[NodePath]([])
+accessibility_flow_to_nodes = Array[NodePath]([])
+theme = null
+theme_type_variation = &""
+min_value = 0.0
+max_value = 1.0
+step = 0.01
+page = 0.0
+value = 1.0
+exp_edit = false
+rounded = false
+allow_greater = false
+allow_lesser = false
+script = ExtResource("4_thin")
+thickness = 12.0
+vertical = true
+editable = true
+color = 6
+grabber = ExtResource("5_grabber")

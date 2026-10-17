@@ -1,0 +1,4 @@
+The libavcodec, libavformat, libavutil and libswscale libraries next to libnari come from
+FFmpeg 8.0.1 (https://ffmpeg.org/releases/ffmpeg-8.0.1.tar.xz), licensed under the LGPL 2.1 or
+later (see FFMPEG-LGPL.txt). They are unmodified, dynamically linked and built without GPL or
+nonfree parts by scripts/music_service.py, which lists the exact configure options.

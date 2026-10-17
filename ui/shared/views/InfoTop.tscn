@@ -1,0 +1,154 @@
+[gd_scene format=3 uid="uid://0er1bw0abrrs"]
+
+[ext_resource type="Script" uid="uid://dj6p2gco6siy0" path="res://ui/shared/item_info.gd" id="1_info"]
+[ext_resource type="PackedScene" uid="uid://dp422ntw15hsk" path="res://ui/shared/Cover.tscn" id="2_cover"]
+[ext_resource type="Script" uid="uid://emohg8k7r26n" path="res://ui/components/label.gd" id="3_label"]
+[ext_resource type="PackedScene" uid="uid://eukl3uqx134m" path="res://ui/shared/InfoLine.tscn" id="4_line"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_i377l"]
+resource_local_to_scene = true
+bg_color = Color(1, 1, 1, 1)
+draw_center = false
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+shadow_color = Color(0, 0, 0, 0.15)
+shadow_size = 8
+shadow_offset = Vector2(0, 6)
+
+[sub_resource type="FontVariation" id="FontVariation_dty87"]
+variation_opentype = {
+2003265652: 700
+}
+
+[node name="InfoTop" type="Control" unique_id=1377320218]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_info")
+
+[node name="Row" type="BoxContainer" parent="." unique_id=2043858182]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.06
+anchor_top = 0.5
+anchor_right = 0.94
+anchor_bottom = 0.5
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 64
+alignment = 1
+
+[node name="Cover" parent="Row" unique_id=1287849596 instance=ExtResource("2_cover")]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(560, 560)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_override_styles/panel = SubResource("StyleBoxFlat_i377l")
+
+[node name="Details" type="VBoxContainer" parent="Row" unique_id=987988531]
+custom_minimum_size = Vector2(760, 0)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+theme_override_constants/separation = 16
+
+[node name="InfoTitle" type="Label" parent="Row/Details" unique_id=107277990]
+unique_name_in_owner = true
+self_modulate = Color(0.06666667, 0.15686275, 0.3254902, 1)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_dty87")
+theme_override_font_sizes/font_size = 88
+text = "Title"
+clip_text = true
+max_lines_visible = 1
+script = ExtResource("3_label")
+weight = 700
+font_size = 88
+marquee = true
+
+[node name="Subtitle" parent="Row/Details" unique_id=2062739015 instance=ExtResource("4_line")]
+unique_name_in_owner = true
+layout_mode = 2
+text_size = 56
+marquee = true
+
+[node name="Meta" type="HFlowContainer" parent="Row/Details" unique_id=1905284910]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/h_separation = 16
+
+[node name="Item1" parent="Row/Details/Meta" unique_id=1718318753 instance=ExtResource("4_line")]
+layout_mode = 2
+theme_override_constants/separation = 12
+text_size = 40
+icon_size = 44.0
+
+[node name="Dot1" type="Label" parent="Row/Details/Meta" unique_id=1608445335]
+modulate = Color(1, 1, 1, 0.75)
+self_modulate = Color(0.06666667, 0.15686275, 0.3254902, 1)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_dty87")
+theme_override_font_sizes/font_size = 40
+text = "·"
+script = ExtResource("3_label")
+weight = 700
+font_size = 40
+
+[node name="Item2" parent="Row/Details/Meta" unique_id=1236650663 instance=ExtResource("4_line")]
+layout_mode = 2
+theme_override_constants/separation = 12
+text_size = 40
+icon_size = 44.0
+
+[node name="Dot2" type="Label" parent="Row/Details/Meta" unique_id=1407284168]
+modulate = Color(1, 1, 1, 0.75)
+self_modulate = Color(0.06666667, 0.15686275, 0.3254902, 1)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_dty87")
+theme_override_font_sizes/font_size = 40
+text = "·"
+script = ExtResource("3_label")
+weight = 700
+font_size = 40
+
+[node name="Item3" parent="Row/Details/Meta" unique_id=1196866386 instance=ExtResource("4_line")]
+layout_mode = 2
+theme_override_constants/separation = 12
+text_size = 40
+icon_size = 44.0
+
+[node name="Dot3" type="Label" parent="Row/Details/Meta" unique_id=668134330]
+modulate = Color(1, 1, 1, 0.75)
+self_modulate = Color(0.06666667, 0.15686275, 0.3254902, 1)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_dty87")
+theme_override_font_sizes/font_size = 40
+text = "·"
+script = ExtResource("3_label")
+weight = 700
+font_size = 40
+
+[node name="Item4" parent="Row/Details/Meta" unique_id=145019121 instance=ExtResource("4_line")]
+layout_mode = 2
+theme_override_constants/separation = 12
+text_size = 40
+icon_size = 44.0
+
+[node name="Actions" type="HBoxContainer" parent="Row/Details" unique_id=796005460]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 16

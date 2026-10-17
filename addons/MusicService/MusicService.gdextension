@@ -1,0 +1,100 @@
+[configuration]
+entry_symbol = "gdext_rust_init"
+compatibility_minimum = "4.2"
+reloadable = false
+
+[libraries]
+linux.debug.x86_64 = "res://addons/MusicService/bin/linux/libnari.so"
+linux.release.x86_64 = "res://addons/MusicService/bin/linux/libnari.so"
+linux.debug.arm64 = "res://addons/MusicService/bin/linux/arm64/libnari.so"
+linux.release.arm64 = "res://addons/MusicService/bin/linux/arm64/libnari.so"
+macos.debug = "res://addons/MusicService/bin/macos/libnari.macos.dylib"
+macos.release = "res://addons/MusicService/bin/macos/libnari.macos.dylib"
+windows.debug.x86_64 = "res://addons/MusicService/bin/windows/nari.dll"
+windows.release.x86_64 = "res://addons/MusicService/bin/windows/nari.dll"
+android.debug.arm64 = "res://addons/MusicService/bin/android/arm64/libnari.so"
+android.release.arm64 = "res://addons/MusicService/bin/android/arm64/libnari.so"
+android.debug.x86_64 = "res://addons/MusicService/bin/android/x86_64/libnari.so"
+android.release.x86_64 = "res://addons/MusicService/bin/android/x86_64/libnari.so"
+
+[dependencies]
+macos.debug = {
+	"res://addons/MusicService/bin/macos/libavutil.60.dylib": "",
+	"res://addons/MusicService/bin/macos/libavcodec.62.dylib": "",
+	"res://addons/MusicService/bin/macos/libavformat.62.dylib": "",
+	"res://addons/MusicService/bin/macos/libswscale.9.dylib": "",
+}
+macos.release = {
+	"res://addons/MusicService/bin/macos/libavutil.60.dylib": "",
+	"res://addons/MusicService/bin/macos/libavcodec.62.dylib": "",
+	"res://addons/MusicService/bin/macos/libavformat.62.dylib": "",
+	"res://addons/MusicService/bin/macos/libswscale.9.dylib": "",
+}
+linux.debug.x86_64 = {
+	"res://addons/MusicService/bin/linux/libavutil.so.60": "",
+	"res://addons/MusicService/bin/linux/libavcodec.so.62": "",
+	"res://addons/MusicService/bin/linux/libavformat.so.62": "",
+	"res://addons/MusicService/bin/linux/libswscale.so.9": "",
+	"res://addons/MusicService/bin/linux/libnari_webview.so": "",
+}
+linux.release.x86_64 = {
+	"res://addons/MusicService/bin/linux/libavutil.so.60": "",
+	"res://addons/MusicService/bin/linux/libavcodec.so.62": "",
+	"res://addons/MusicService/bin/linux/libavformat.so.62": "",
+	"res://addons/MusicService/bin/linux/libswscale.so.9": "",
+	"res://addons/MusicService/bin/linux/libnari_webview.so": "",
+}
+linux.debug.arm64 = {
+	"res://addons/MusicService/bin/linux/arm64/libavutil.so.60": "",
+	"res://addons/MusicService/bin/linux/arm64/libavcodec.so.62": "",
+	"res://addons/MusicService/bin/linux/arm64/libavformat.so.62": "",
+	"res://addons/MusicService/bin/linux/arm64/libswscale.so.9": "",
+	"res://addons/MusicService/bin/linux/arm64/libnari_webview.so": "",
+}
+linux.release.arm64 = {
+	"res://addons/MusicService/bin/linux/arm64/libavutil.so.60": "",
+	"res://addons/MusicService/bin/linux/arm64/libavcodec.so.62": "",
+	"res://addons/MusicService/bin/linux/arm64/libavformat.so.62": "",
+	"res://addons/MusicService/bin/linux/arm64/libswscale.so.9": "",
+	"res://addons/MusicService/bin/linux/arm64/libnari_webview.so": "",
+}
+windows.debug.x86_64 = {
+	"res://addons/MusicService/bin/windows/libwinpthread-1.dll": "",
+	"res://addons/MusicService/bin/windows/avutil-60.dll": "",
+	"res://addons/MusicService/bin/windows/avcodec-62.dll": "",
+	"res://addons/MusicService/bin/windows/avformat-62.dll": "",
+	"res://addons/MusicService/bin/windows/swscale-9.dll": "",
+	"res://addons/MusicService/bin/windows/WebView2Loader.dll": "",
+}
+windows.release.x86_64 = {
+	"res://addons/MusicService/bin/windows/libwinpthread-1.dll": "",
+	"res://addons/MusicService/bin/windows/avutil-60.dll": "",
+	"res://addons/MusicService/bin/windows/avcodec-62.dll": "",
+	"res://addons/MusicService/bin/windows/avformat-62.dll": "",
+	"res://addons/MusicService/bin/windows/swscale-9.dll": "",
+	"res://addons/MusicService/bin/windows/WebView2Loader.dll": "",
+}
+android.debug.arm64 = {
+	"res://addons/MusicService/bin/android/arm64/libavutil.so": "",
+	"res://addons/MusicService/bin/android/arm64/libavcodec.so": "",
+	"res://addons/MusicService/bin/android/arm64/libavformat.so": "",
+	"res://addons/MusicService/bin/android/arm64/libswscale.so": "",
+}
+android.release.arm64 = {
+	"res://addons/MusicService/bin/android/arm64/libavutil.so": "",
+	"res://addons/MusicService/bin/android/arm64/libavcodec.so": "",
+	"res://addons/MusicService/bin/android/arm64/libavformat.so": "",
+	"res://addons/MusicService/bin/android/arm64/libswscale.so": "",
+}
+android.debug.x86_64 = {
+	"res://addons/MusicService/bin/android/x86_64/libavutil.so": "",
+	"res://addons/MusicService/bin/android/x86_64/libavcodec.so": "",
+	"res://addons/MusicService/bin/android/x86_64/libavformat.so": "",
+	"res://addons/MusicService/bin/android/x86_64/libswscale.so": "",
+}
+android.release.x86_64 = {
+	"res://addons/MusicService/bin/android/x86_64/libavutil.so": "",
+	"res://addons/MusicService/bin/android/x86_64/libavcodec.so": "",
+	"res://addons/MusicService/bin/android/x86_64/libavformat.so": "",
+	"res://addons/MusicService/bin/android/x86_64/libswscale.so": "",
+}

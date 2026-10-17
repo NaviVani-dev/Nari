@@ -1,0 +1,107 @@
+[gd_scene format=3 uid="uid://b284h7sem1yi6"]
+
+[ext_resource type="Script" uid="uid://brux67ywe3jeq" path="res://ui/shared/snackbar_item.gd" id="1_item"]
+[ext_resource type="Script" uid="uid://b0etlamb18c2f" path="res://ui/components/icon.gd" id="2_icon"]
+[ext_resource type="Script" uid="uid://emohg8k7r26n" path="res://ui/components/label.gd" id="3_label"]
+[ext_resource type="Texture2D" uid="uid://guu4exuna6y7" path="res://assets/icons/info.svg" id="4_info"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_item"]
+content_margin_left = 28.0
+content_margin_top = 24.0
+content_margin_right = 36.0
+content_margin_bottom = 24.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[sub_resource type="FontVariation" id="FontVariation_dty87"]
+variation_opentype = {
+2003265652: 700
+}
+
+[sub_resource type="FontVariation" id="FontVariation_mayo7"]
+variation_opentype = {
+2003265652: 500
+}
+
+[node name="SnackbarItem" type="PanelContainer" unique_id=1387670034]
+custom_minimum_size = Vector2(0, 120)
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_item")
+script = ExtResource("1_item")
+bg_color = 18
+gradient_color = 20
+corner_radius = 36.0
+corner_top_left = 36.0
+corner_top_right = 36.0
+corner_bottom_right = 36.0
+corner_bottom_left = 36.0
+padding = 28
+padding_left = 28
+padding_top = 24
+padding_right = 36
+padding_bottom = 24
+
+[node name="Row" type="HBoxContainer" parent="." unique_id=164601866]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 24
+
+[node name="Glyph" type="TextureRect" parent="Row" unique_id=1770975072]
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+size_flags_vertical = 0
+mouse_filter = 2
+texture = ExtResource("4_info")
+expand_mode = 1
+stretch_mode = 5
+script = ExtResource("2_icon")
+color = 19
+
+[node name="Text" type="VBoxContainer" parent="Row" unique_id=1096291671]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_constants/separation = 4
+
+[node name="Title" type="Label" parent="Row/Text" unique_id=800709641]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_dty87")
+theme_override_font_sizes/font_size = 40
+text = "Plugin ran into an error"
+autowrap_mode = 3
+script = ExtResource("3_label")
+color = 19
+weight = 700
+font_size = 40
+
+[node name="Message" type="Label" parent="Row/Text" unique_id=1046033372]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_mayo7")
+theme_override_font_sizes/font_size = 34
+text = "attempt to index a nil value"
+autowrap_mode = 3
+text_overrun_behavior = 3
+max_lines_visible = 4
+script = ExtResource("3_label")
+color = 19
+font_size = 34
+
+[node name="Location" type="Label" parent="Row/Text" unique_id=1369075729]
+unique_name_in_owner = true
+modulate = Color(1, 1, 1, 0.75)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_mayo7")
+theme_override_font_sizes/font_size = 30
+text = "main.lua, line 1"
+script = ExtResource("3_label")
+color = 19
+font_size = 30
+
+[node name="Life" type="Timer" parent="." unique_id=1909098486]
+unique_name_in_owner = true
+one_shot = true

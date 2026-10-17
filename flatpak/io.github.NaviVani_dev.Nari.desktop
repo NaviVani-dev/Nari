@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Nari
+Comment=Beautiful feature-rich music player
+Exec=nari %U
+MimeType=x-scheme-handler/nari;audio/mpeg;audio/mp3;audio/flac;audio/x-flac;audio/ogg;audio/x-vorbis+ogg;audio/opus;audio/x-opus+ogg;audio/wav;audio/x-wav;audio/aac;audio/mp4;audio/x-m4a;audio/aiff;audio/x-aiff;audio/x-ms-wma;audio/midi;audio/x-midi;audio/x-mod;audio/x-xm;audio/x-s3m;audio/x-it;audio/prs.sid;
+Icon=io.github.NaviVani_dev.Nari
+Terminal=false
+Categories=AudioVideo;Audio;Player;Music;
+Keywords=music;player;audio;
+StartupWMClass=Nari
+X-Purism-FormFactor=Workstation;Mobile;

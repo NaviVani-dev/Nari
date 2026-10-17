@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="ThemeResource" format=3 uid="uid://utjq15ms4v2i"]
+
+[ext_resource type="Script" uid="uid://cciyyyd34la3s" path="res://systems/theme/theme_resource.gd" id="1_pu0sx"]
+
+[resource]
+script = ExtResource("1_pu0sx")
+background = Color(0.0431373, 0.0705882, 0.12549, 1)
+foreground = Color(0.909804, 0.933333, 0.984314, 1)
+background_gradient = Color(0.109804, 0.141176, 0.211765, 1)
+background_tint = Color(0.105882, 0.368627, 0.560784, 1)
+animbg_color1 = Color(0, 0.74902, 0.690196, 1)
+animbg_color2 = Color(0.752941, 0, 0.690196, 1)
+animbg_color3 = Color(0.784314, 0.74902, 0, 1)
+panel_bg = Color(0.113725, 0.168627, 0.290196, 1)
+panel_fg = Color(0.909804, 0.933333, 0.984314, 1)
+panel_gradient = Color(0.227451, 0.333333, 0.564706, 1)
+accent_gradient = Color(0.309804, 0.713725, 1, 1)
+metadata/_custom_type_script = "uid://cciyyyd34la3s"

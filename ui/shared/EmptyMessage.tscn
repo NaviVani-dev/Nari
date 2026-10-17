@@ -1,0 +1,98 @@
+[gd_scene format=3 uid="uid://djd55jdackffg"]
+
+[ext_resource type="Script" uid="uid://ctke7qcwvh5kh" path="res://ui/shared/empty_message.gd" id="1_empty"]
+[ext_resource type="Script" uid="uid://b0etlamb18c2f" path="res://ui/components/icon.gd" id="2_icon"]
+[ext_resource type="Script" uid="uid://emohg8k7r26n" path="res://ui/components/label.gd" id="3_label"]
+[ext_resource type="Texture2D" uid="uid://dflxqa8eu3lf3" path="res://assets/icons/search.svg" id="4_search"]
+
+[sub_resource type="FontVariation" id="FontVariation_dty87"]
+variation_opentype = {
+2003265652: 700
+}
+
+[sub_resource type="FontVariation" id="FontVariation_mayo7"]
+variation_opentype = {
+2003265652: 500
+}
+
+[node name="EmptyMessage" type="VBoxContainer" unique_id=159092678]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 32
+alignment = 1
+script = ExtResource("1_empty")
+icon = ExtResource("4_search")
+title = "Nothing here"
+subtitle = "Try adding more music"
+
+[node name="GlyphArea" type="Control" parent="." unique_id=731585658]
+custom_minimum_size = Vector2(0, 280)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Glyph" type="TextureRect" parent="GlyphArea" unique_id=1400909095]
+unique_name_in_owner = true
+self_modulate = Color(0.06666667, 0.15686275, 0.3254902, 1)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -120.0
+offset_top = -120.0
+offset_right = 120.0
+offset_bottom = 120.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("4_search")
+expand_mode = 1
+stretch_mode = 5
+script = ExtResource("2_icon")
+
+[node name="Caption" type="VBoxContainer" parent="." unique_id=2030295748]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Title" type="Label" parent="Caption" unique_id=207903204]
+unique_name_in_owner = true
+self_modulate = Color(0.06666667, 0.15686275, 0.3254902, 1)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_dty87")
+theme_override_font_sizes/font_size = 64
+text = "Nothing here"
+horizontal_alignment = 1
+autowrap_mode = 3
+script = ExtResource("3_label")
+weight = 700
+font_size = 64
+
+[node name="Subtitle" type="Label" parent="Caption" unique_id=2146269391]
+unique_name_in_owner = true
+modulate = Color(1, 1, 1, 0.75)
+self_modulate = Color(0.06666667, 0.15686275, 0.3254902, 1)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_mayo7")
+theme_override_font_sizes/font_size = 48
+text = "Try adding more music"
+horizontal_alignment = 1
+autowrap_mode = 3
+script = ExtResource("3_label")
+font_size = 48
+
+[node name="ActionBar" type="HBoxContainer" parent="Caption" unique_id=1603973546]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(0, 128)
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 16
+alignment = 1

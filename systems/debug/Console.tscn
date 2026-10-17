@@ -1,0 +1,137 @@
+[gd_scene format=3 uid="uid://deh85ape6f0s0"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_console"]
+content_margin_left = 20.0
+content_margin_top = 20.0
+content_margin_right = 20.0
+content_margin_bottom = 20.0
+bg_color = Color(0.05, 0.06, 0.08, 0.94)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="SystemFont" id="SystemFont_mono"]
+font_names = PackedStringArray("monospace")
+
+[sub_resource type="SystemFont" id="SystemFont_mono_bold"]
+font_names = PackedStringArray("monospace")
+font_weight = 700
+
+[node name="Console" type="Control" unique_id=884289142]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Panel" type="PanelContainer" parent="." unique_id=998017869]
+unique_name_in_owner = true
+visible = false
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = 24.0
+offset_right = -24.0
+offset_bottom = -24.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_console")
+
+[node name="Layout" type="VBoxContainer" parent="Panel" unique_id=250013383]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Toolbar" type="HBoxContainer" parent="Panel/Layout" unique_id=616819858]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="Panel/Layout/Toolbar" unique_id=294804716]
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "Console"
+
+[node name="Filter" type="LineEdit" parent="Panel/Layout/Toolbar" unique_id=1283364967]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 24
+placeholder_text = "Filter"
+clear_button_enabled = true
+
+[node name="Level" type="OptionButton" parent="Panel/Layout/Toolbar" unique_id=1011648019]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+selected = 0
+item_count = 3
+popup/item_0/text = "All"
+popup/item_0/id = 0
+popup/item_1/text = "Warnings"
+popup/item_1/id = 1
+popup/item_2/text = "Errors"
+popup/item_2/id = 2
+
+[node name="Follow" type="CheckButton" parent="Panel/Layout/Toolbar" unique_id=226938843]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+button_pressed = true
+text = "Follow"
+
+[node name="Clear" type="Button" parent="Panel/Layout/Toolbar" unique_id=1531247021]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Clear"
+
+[node name="Copy" type="Button" parent="Panel/Layout/Toolbar" unique_id=1598017869]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Copy"
+
+[node name="Close" type="Button" parent="Panel/Layout/Toolbar" unique_id=1650013383]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Close"
+
+[node name="Output" type="RichTextLabel" parent="Panel/Layout" unique_id=1716819858]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+focus_mode = 2
+theme_override_fonts/normal_font = SubResource("SystemFont_mono")
+theme_override_fonts/bold_font = SubResource("SystemFont_mono_bold")
+theme_override_font_sizes/normal_font_size = 22
+theme_override_font_sizes/bold_font_size = 22
+scroll_following = true
+selection_enabled = true
+
+[node name="Command" type="LineEdit" parent="Panel/Layout" unique_id=1794804716]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = SubResource("SystemFont_mono")
+theme_override_font_sizes/font_size = 24
+
+[node name="Stats" type="Label" parent="." unique_id=1883364967]
+unique_name_in_owner = true
+visible = false
+layout_mode = 0
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -560.0
+offset_top = 24.0
+offset_right = -24.0
+offset_bottom = 120.0
+grow_horizontal = 0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = SubResource("SystemFont_mono")
+theme_override_font_sizes/font_size = 24
+horizontal_alignment = 2

@@ -1,0 +1,470 @@
+[gd_scene format=3 uid="uid://bn0vsynsg4gdn"]
+
+[ext_resource type="Script" uid="uid://cqpqixfijum3j" path="res://ui/shared/sound_editor.gd" id="1_editor"]
+[ext_resource type="Shader" uid="uid://ctaeuvi424wmk" path="res://assets/shaders/panel.gdshader" id="2_8l3wj"]
+[ext_resource type="Script" uid="uid://djk4e68d3it8a" path="res://ui/components/button.gd" id="2_button"]
+[ext_resource type="Script" uid="uid://ctbpcejv6a7ua" path="res://ui/components/panel_container.gd" id="3_panel"]
+[ext_resource type="Script" uid="uid://5gggjlyqhhqs" path="res://ui/shared/effects_presets.gd" id="4_presets"]
+[ext_resource type="Script" uid="uid://cuxjrkpvldf8h" path="res://ui/components/progress_slider.gd" id="6_slider"]
+[ext_resource type="Texture2D" uid="uid://bn6y76keujmsk" path="res://assets/icons/audio_effects.svg" id="9_presets_icon"]
+[ext_resource type="Texture2D" uid="uid://dfsugw6r7l5d6" path="res://assets/icons/effects_fast.svg" id="10_fast"]
+[ext_resource type="Texture2D" uid="uid://cb53gifolkj1w" path="res://assets/icons/pause.svg" id="12_pause"]
+[ext_resource type="Texture2D" uid="uid://bu5ixjae0kkv3" path="res://assets/icons/effect_concert.svg" id="14_concert"]
+[ext_resource type="Texture2D" uid="uid://on2417c4odm0" path="res://assets/icons/effect_robot.svg" id="15_robot"]
+[ext_resource type="Texture2D" uid="uid://tk7b132ncddc" path="res://assets/icons/effect_helium.svg" id="16_helium"]
+[ext_resource type="Texture2D" uid="uid://ccsgtv5ddlj3s" path="res://assets/icons/effect_instrumental.svg" id="17_instrumental"]
+[ext_resource type="PackedScene" uid="uid://c8kcay70kqfed" path="res://ui/shared/SpeedPanel.tscn" id="18_speed"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_6cg14"]
+shader = ExtResource("2_8l3wj")
+shader_parameter/corner_radius = Vector4(32, 32, 32, 32)
+shader_parameter/panel_size = Vector2(409, 294)
+shader_parameter/fill_color = Color(0.06666667, 0.15686275, 0.3254902, 1)
+shader_parameter/gradient_color = Color(0.31764707, 0.45882353, 0.7254902, 0.75)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bv62c"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_gvup0"]
+shader = ExtResource("2_8l3wj")
+shader_parameter/corner_radius = Vector4(32, 32, 32, 32)
+shader_parameter/panel_size = Vector2(409, 294)
+shader_parameter/fill_color = Color(0.06666667, 0.15686275, 0.3254902, 1)
+shader_parameter/gradient_color = Color(0.31764707, 0.45882353, 0.7254902, 0.75)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_5lgy1"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_8l3wj"]
+shader = ExtResource("2_8l3wj")
+shader_parameter/corner_radius = Vector4(32, 32, 32, 32)
+shader_parameter/panel_size = Vector2(312, 192)
+shader_parameter/fill_color = Color(0.06666667, 0.15686275, 0.3254902, 1)
+shader_parameter/gradient_color = Color(0.31764707, 0.45882353, 0.7254902, 0.75)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_gwdev"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_adi48"]
+shader = ExtResource("2_8l3wj")
+shader_parameter/corner_radius = Vector4(32, 32, 32, 32)
+shader_parameter/panel_size = Vector2(312, 192)
+shader_parameter/fill_color = Color(0.06666667, 0.15686275, 0.3254902, 1)
+shader_parameter/gradient_color = Color(0.31764707, 0.45882353, 0.7254902, 0.75)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_8q6of"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_dcsun"]
+shader = ExtResource("2_8l3wj")
+shader_parameter/corner_radius = Vector4(32, 32, 32, 32)
+shader_parameter/panel_size = Vector2(312, 192)
+shader_parameter/fill_color = Color(0.06666667, 0.15686275, 0.3254902, 1)
+shader_parameter/gradient_color = Color(0.31764707, 0.45882353, 0.7254902, 0.75)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_kk6r1"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_v3nje"]
+shader = ExtResource("2_8l3wj")
+shader_parameter/corner_radius = Vector4(32, 32, 32, 32)
+shader_parameter/panel_size = Vector2(312, 192)
+shader_parameter/fill_color = Color(0.06666667, 0.15686275, 0.3254902, 1)
+shader_parameter/gradient_color = Color(0.31764707, 0.45882353, 0.7254902, 0.75)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bc4vi"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_4dsdf"]
+shader = ExtResource("2_8l3wj")
+shader_parameter/corner_radius = Vector4(32, 32, 32, 32)
+shader_parameter/panel_size = Vector2(128, 128)
+shader_parameter/fill_color = Color(0.06666667, 0.15686275, 0.3254902, 1)
+shader_parameter/gradient_color = Color(0.31764707, 0.45882353, 0.7254902, 0.75)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_k5udc"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_uwsxl"]
+shader = ExtResource("2_8l3wj")
+shader_parameter/corner_radius = Vector4(24, 24, 24, 24)
+shader_parameter/panel_size = Vector2(1696, 74)
+shader_parameter/fill_color = Color(0.06666667, 0.15686275, 0.3254902, 1)
+shader_parameter/gradient_color = Color(0.31764707, 0.45882353, 0.7254902, 0.75)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bojwh"]
+content_margin_left = 32.0
+content_margin_top = 16.0
+content_margin_right = 32.0
+content_margin_bottom = 16.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[sub_resource type="Image" id="Image_i207s"]
+data = {
+"data": PackedByteArray(255, 255, 255, 0),
+"format": "RGBA8",
+"height": 1,
+"mipmaps": false,
+"width": 1
+}
+
+[sub_resource type="ImageTexture" id="ImageTexture_oo7p4"]
+image = SubResource("Image_i207s")
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_e8sg4"]
+
+[node name="SoundEditor" type="VBoxContainer" unique_id=1631461649]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 32
+script = ExtResource("1_editor")
+
+[node name="Content" type="Control" parent="." unique_id=1853287017]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Choices" type="HBoxContainer" parent="Content" unique_id=671299647]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.2784792
+anchor_top = 0.342
+anchor_right = 0.72152084
+anchor_bottom = 0.65800005
+offset_left = 0.3199463
+offset_top = -0.37600708
+offset_right = -0.32006836
+offset_bottom = 0.37597656
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 32
+alignment = 1
+metadata/_edit_use_anchors_ = true
+
+[node name="PresetsButton" type="PanelContainer" parent="Content/Choices" unique_id=424124833]
+unique_name_in_owner = true
+material = SubResource("ShaderMaterial_6cg14")
+custom_minimum_size = Vector2(312, 294)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_bv62c")
+script = ExtResource("2_button")
+text = "Presets"
+icon = ExtResource("9_presets_icon")
+font_weight = 600
+font_size = 52
+icon_size = Vector2(92, 92)
+vertical = true
+separation = 0
+corner_radius = 32.0
+corner_top_left = 32.0
+corner_top_right = 32.0
+corner_bottom_right = 32.0
+corner_bottom_left = 32.0
+padding = 12
+padding_left = 12
+padding_top = 12
+padding_right = 12
+padding_bottom = 12
+
+[node name="SpeedButton" type="PanelContainer" parent="Content/Choices" unique_id=1255612702]
+unique_name_in_owner = true
+material = SubResource("ShaderMaterial_gvup0")
+custom_minimum_size = Vector2(312, 294)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_5lgy1")
+script = ExtResource("2_button")
+text = "Speed"
+icon = ExtResource("10_fast")
+font_weight = 600
+font_size = 52
+icon_size = Vector2(92, 92)
+vertical = true
+separation = 0
+corner_radius = 32.0
+corner_top_left = 32.0
+corner_top_right = 32.0
+corner_bottom_right = 32.0
+corner_bottom_left = 32.0
+padding = 12
+padding_left = 12
+padding_top = 12
+padding_right = 12
+padding_bottom = 12
+
+[node name="PresetsPanel" type="MarginContainer" parent="Content" unique_id=216332886]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_top = 32
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_bottom = 0
+
+[node name="Presets" type="VBoxContainer" parent="Content/PresetsPanel" unique_id=378189238]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 32
+script = ExtResource("4_presets")
+standalone = true
+
+[node name="Presets1" type="HBoxContainer" parent="Content/PresetsPanel/Presets" unique_id=1487572337]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 32
+
+[node name="Effect1" type="PanelContainer" parent="Content/PresetsPanel/Presets/Presets1" unique_id=771031537]
+material = SubResource("ShaderMaterial_8l3wj")
+custom_minimum_size = Vector2(312, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_gwdev")
+script = ExtResource("2_button")
+text = "Concert"
+icon = ExtResource("14_concert")
+font_weight = 500
+font_size = 52
+icon_size = Vector2(92, 92)
+vertical = true
+separation = 0
+corner_radius = 32.0
+corner_top_left = 32.0
+corner_top_right = 32.0
+corner_bottom_right = 32.0
+corner_bottom_left = 32.0
+padding = 12
+padding_left = 12
+padding_top = 12
+padding_right = 12
+padding_bottom = 12
+
+[node name="Effect2" type="PanelContainer" parent="Content/PresetsPanel/Presets/Presets1" unique_id=1390866906]
+material = SubResource("ShaderMaterial_adi48")
+custom_minimum_size = Vector2(312, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_8q6of")
+script = ExtResource("2_button")
+text = "Robot"
+icon = ExtResource("15_robot")
+font_weight = 500
+font_size = 52
+icon_size = Vector2(92, 92)
+vertical = true
+separation = 0
+corner_radius = 32.0
+corner_top_left = 32.0
+corner_top_right = 32.0
+corner_bottom_right = 32.0
+corner_bottom_left = 32.0
+padding = 12
+padding_left = 12
+padding_top = 12
+padding_right = 12
+padding_bottom = 12
+
+[node name="Presets2" type="HBoxContainer" parent="Content/PresetsPanel/Presets" unique_id=375996826]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 32
+
+[node name="Effect3" type="PanelContainer" parent="Content/PresetsPanel/Presets/Presets2" unique_id=820198373]
+material = SubResource("ShaderMaterial_dcsun")
+custom_minimum_size = Vector2(312, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_kk6r1")
+script = ExtResource("2_button")
+text = "Helium"
+icon = ExtResource("16_helium")
+font_weight = 500
+font_size = 52
+icon_size = Vector2(92, 92)
+vertical = true
+separation = 0
+corner_radius = 32.0
+corner_top_left = 32.0
+corner_top_right = 32.0
+corner_bottom_right = 32.0
+corner_bottom_left = 32.0
+padding = 12
+padding_left = 12
+padding_top = 12
+padding_right = 12
+padding_bottom = 12
+
+[node name="Effect4" type="PanelContainer" parent="Content/PresetsPanel/Presets/Presets2" unique_id=1471114893]
+material = SubResource("ShaderMaterial_v3nje")
+custom_minimum_size = Vector2(312, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_bc4vi")
+script = ExtResource("2_button")
+text = "Instrumental"
+icon = ExtResource("17_instrumental")
+font_weight = 500
+font_size = 52
+icon_size = Vector2(92, 92)
+vertical = true
+separation = 0
+corner_radius = 32.0
+corner_top_left = 32.0
+corner_top_right = 32.0
+corner_bottom_right = 32.0
+corner_bottom_left = 32.0
+padding = 12
+padding_left = 12
+padding_top = 12
+padding_right = 12
+padding_bottom = 12
+
+[node name="SpeedPanel" type="MarginContainer" parent="Content" unique_id=412963447]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_top = 32
+theme_override_constants/margin_right = 32
+
+[node name="Speed" parent="Content/SpeedPanel" unique_id=1092037547 instance=ExtResource("18_speed")]
+unique_name_in_owner = true
+layout_mode = 2
+standalone = true
+
+[node name="MarginContainer" type="MarginContainer" parent="." unique_id=1921481689]
+layout_mode = 2
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_bottom = 32
+
+[node name="Controls" type="HBoxContainer" parent="MarginContainer" unique_id=129638132]
+layout_mode = 2
+theme_override_constants/separation = 32
+
+[node name="Play" type="PanelContainer" parent="MarginContainer/Controls" unique_id=1863702382]
+unique_name_in_owner = true
+material = SubResource("ShaderMaterial_4dsdf")
+custom_minimum_size = Vector2(128, 128)
+layout_mode = 2
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_k5udc")
+script = ExtResource("2_button")
+icon = ExtResource("12_pause")
+icon_size = Vector2(72, 72)
+corner_radius = 32.0
+corner_top_left = 32.0
+corner_top_right = 32.0
+corner_bottom_right = 32.0
+corner_bottom_left = 32.0
+padding = 12
+padding_left = 12
+padding_top = 12
+padding_right = 12
+padding_bottom = 12
+
+[node name="Progress" type="PanelContainer" parent="MarginContainer/Controls" unique_id=1113466845]
+material = SubResource("ShaderMaterial_uwsxl")
+custom_minimum_size = Vector2(0, 72)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+theme_override_styles/panel = SubResource("StyleBoxFlat_bojwh")
+script = ExtResource("3_panel")
+padding_left = 32
+padding_right = 32
+metadata/_custom_type_script = "uid://ctbpcejv6a7ua"
+
+[node name="Slider" type="HSlider" parent="MarginContainer/Controls/Progress" unique_id=297990841]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+mouse_default_cursor_shape = 2
+theme_override_icons/grabber = SubResource("ImageTexture_oo7p4")
+theme_override_icons/grabber_highlight = SubResource("ImageTexture_oo7p4")
+theme_override_icons/grabber_disabled = SubResource("ImageTexture_oo7p4")
+theme_override_styles/slider = SubResource("StyleBoxEmpty_e8sg4")
+theme_override_styles/grabber_area = SubResource("StyleBoxEmpty_e8sg4")
+theme_override_styles/grabber_area_highlight = SubResource("StyleBoxEmpty_e8sg4")
+script = ExtResource("6_slider")
+
+[node name="ActionBar" type="HBoxContainer" parent="MarginContainer/Controls" unique_id=1044646153]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 16

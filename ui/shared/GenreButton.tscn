@@ -1,0 +1,48 @@
+[gd_scene format=3 uid="uid://c31tr6gs8g5re"]
+
+[ext_resource type="Script" uid="uid://djk4e68d3it8a" path="res://ui/components/button.gd" id="1_button"]
+[ext_resource type="Shader" uid="uid://ctaeuvi424wmk" path="res://assets/shaders/panel.gdshader" id="1_vt26i"]
+[ext_resource type="Texture2D" uid="uid://8ig0pu84pjn4" path="res://assets/icons/music_note.svg" id="2_note"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_vt26i"]
+shader = ExtResource("1_vt26i")
+shader_parameter/corner_radius = Vector4(64, 64, 64, 64)
+shader_parameter/panel_size = Vector2(149, 129)
+shader_parameter/fill_color = Color(0.06666667, 0.15686275, 0.3254902, 1)
+shader_parameter/gradient_color = Color(0.31764707, 0.45882353, 0.7254902, 0.75)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_j06um"]
+content_margin_left = 32.0
+content_margin_top = 32.0
+content_margin_right = 32.0
+content_margin_bottom = 32.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[node name="GenreButton" type="PanelContainer" unique_id=1736662674]
+material = SubResource("ShaderMaterial_vt26i")
+custom_minimum_size = Vector2(0, 128)
+size_flags_horizontal = 3
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_j06um")
+script = ExtResource("1_button")
+text = "Genre"
+icon = ExtResource("2_note")
+clip_text = true
+text_overrun_behavior = 3
+font_weight = 700
+font_size = 44
+icon_size = Vector2(64, 64)
+separation = 20
+corner_radius = 64.0
+corner_top_left = 64.0
+corner_top_right = 64.0
+corner_bottom_right = 64.0
+corner_bottom_left = 64.0
+padding = 32
+padding_left = 32
+padding_top = 32
+padding_right = 32
+padding_bottom = 32

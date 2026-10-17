@@ -1,0 +1,13 @@
+[gd_scene format=4 uid="uid://eidylqcp5g1j"]
+
+[ext_resource type="Script" uid="uid://choxfb58qmfjl" path="res://ui/shared/bg.gd" id="1_npdkk"]
+
+[node name="BG" type="Control" unique_id=791225153]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_npdkk")
+background_scale = 16

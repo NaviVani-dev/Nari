@@ -1,0 +1,44 @@
+[gd_scene format=3 uid="uid://c8v0n56pyjvn6"]
+
+[ext_resource type="Shader" uid="uid://ctaeuvi424wmk" path="res://assets/shaders/panel.gdshader" id="1_du4yr"]
+[ext_resource type="Script" uid="uid://dfo5mlgc5kp6h" path="res://ui/shared/hint_button.gd" id="1_hint"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_du4yr"]
+shader = ExtResource("1_du4yr")
+shader_parameter/corner_radius = Vector4(33, 33, 33, 33)
+shader_parameter/panel_size = Vector2(40, 66)
+shader_parameter/fill_color = Color(0.06666667, 0.15686275, 0.3254902, 0.1)
+shader_parameter/gradient_color = Color(0.06666667, 0.15686275, 0.3254902, 0.1)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_t1358"]
+content_margin_left = 20.0
+content_margin_top = 8.0
+content_margin_right = 20.0
+content_margin_bottom = 8.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[node name="HintButton" type="PanelContainer" unique_id=1305273315]
+material = SubResource("ShaderMaterial_du4yr")
+custom_minimum_size = Vector2(0, 66)
+size_flags_vertical = 4
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_t1358")
+script = ExtResource("1_hint")
+font_weight = 700
+font_size = 40
+icon_size = Vector2(52, 52)
+separation = 10
+fg_color = 8
+corner_radius = 28.0
+corner_top_left = 33.0
+corner_top_right = 33.0
+corner_bottom_right = 33.0
+corner_bottom_left = 33.0
+padding = 12
+padding_left = 20
+padding_top = 8
+padding_right = 20
+padding_bottom = 8

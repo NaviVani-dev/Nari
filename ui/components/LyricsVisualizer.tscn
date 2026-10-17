@@ -1,0 +1,55 @@
+[gd_scene format=3 uid="uid://cmmb7uqcq7rwt"]
+
+[ext_resource type="Script" uid="uid://bh3ry71u3rqn4" path="res://ui/components/lyrics_visualizer.gd" id="1_lyrics"]
+[ext_resource type="Shader" uid="uid://dp36ewwmgww30" path="res://assets/shaders/lyrics_surface.gdshader" id="2_surface"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_surface"]
+shader = ExtResource("2_surface")
+shader_parameter/focus_center = 0.5
+shader_parameter/focus_half = 0.08
+shader_parameter/blur_falloff = 34.0
+shader_parameter/blur_max = 10.0
+shader_parameter/fade_size = 0.13
+
+[node name="LyricsVisualizer" type="Control" unique_id=1597721188 groups=["owns_scroll_stick"]]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_lyrics")
+
+[node name="Surface" type="SubViewportContainer" parent="." unique_id=1214769422]
+unique_name_in_owner = true
+material = SubResource("ShaderMaterial_surface")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+stretch = true
+
+[node name="View" type="SubViewport" parent="Surface" unique_id=17410944]
+unique_name_in_owner = true
+transparent_bg = true
+handle_input_locally = false
+size = Vector2i(1920, 1080)
+render_target_update_mode = 4
+
+[node name="Scroll" type="ScrollContainer" parent="Surface/View" unique_id=1088890847]
+unique_name_in_owner = true
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+horizontal_scroll_mode = 0
+vertical_scroll_mode = 3
+
+[node name="Lines" type="VBoxContainer" parent="Surface/View/Scroll" unique_id=1768498487]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 25

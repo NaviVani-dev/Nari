@@ -1,0 +1,152 @@
+[gd_scene format=3 uid="uid://cmvro0v68dbpc"]
+
+[ext_resource type="Shader" uid="uid://ctaeuvi424wmk" path="res://assets/shaders/panel.gdshader" id="1_78uqk"]
+[ext_resource type="Script" uid="uid://cn31tri54t8hi" path="res://ui/shared/song_item_v.gd" id="1_item"]
+[ext_resource type="PackedScene" uid="uid://dp422ntw15hsk" path="res://ui/shared/Cover.tscn" id="2_cover"]
+[ext_resource type="Script" uid="uid://emohg8k7r26n" path="res://ui/components/label.gd" id="3_label"]
+[ext_resource type="Script" uid="uid://02b3f6ptg8q3" path="res://ui/components/title_row.gd" id="4_row"]
+[ext_resource type="PackedScene" uid="uid://ds1fe8g28iyrb" path="res://ui/shared/LiveChip.tscn" id="5_live"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_1nk6a"]
+shader = ExtResource("1_78uqk")
+shader_parameter/corner_radius = Vector4(28, 28, 28, 28)
+shader_parameter/panel_size = Vector2(340, 500)
+shader_parameter/fill_color = Color(0.06666667, 0.15686275, 0.3254902, 1)
+shader_parameter/gradient_color = Color(0.31764707, 0.45882353, 0.7254902, 0.75)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_flokx"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_vwy05"]
+resource_local_to_scene = true
+bg_color = Color(1, 1, 1, 1)
+draw_center = false
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+shadow_color = Color(1, 1, 1, 0)
+shadow_size = 8
+shadow_offset = Vector2(0, 6)
+
+[sub_resource type="FontVariation" id="FontVariation_dty87"]
+variation_opentype = {
+2003265652: 700
+}
+
+[sub_resource type="FontVariation" id="FontVariation_mayo7"]
+variation_opentype = {
+2003265652: 500
+}
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ipevg"]
+shader = ExtResource("1_78uqk")
+shader_parameter/corner_radius = Vector4(12, 12, 12, 12)
+shader_parameter/panel_size = Vector2(81, 37)
+shader_parameter/fill_color = Color(1, 0.39607844, 0.3372549, 1)
+shader_parameter/gradient_color = Color(1, 0.56078434, 0.5176471, 0.75)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_7w8xl"]
+content_margin_left = 12.0
+content_margin_top = 0.0
+content_margin_right = 12.0
+content_margin_bottom = 0.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[node name="SongItemV" type="PanelContainer" unique_id=553544746]
+material = SubResource("ShaderMaterial_1nk6a")
+custom_minimum_size = Vector2(340, 500)
+offset_right = 340.0
+offset_bottom = 500.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_flokx")
+script = ExtResource("1_item")
+corner_radius = 28.0
+corner_top_left = 28.0
+corner_top_right = 28.0
+corner_bottom_right = 28.0
+corner_bottom_left = 28.0
+padding = 12
+padding_left = 12
+padding_top = 12
+padding_right = 12
+padding_bottom = 12
+
+[node name="MarginContainer" type="MarginContainer" parent="." unique_id=1252299487]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer" unique_id=105469806]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="CoverArea" type="AspectRatioContainer" parent="MarginContainer/VBoxContainer" unique_id=292159201]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Cover" parent="MarginContainer/VBoxContainer/CoverArea" unique_id=382478619 instance=ExtResource("2_cover")]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 240)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_vwy05")
+show_shadow = false
+skeleton_color = 6
+skeleton_alpha = Vector2(0.08, 0.2)
+thumbnail = true
+
+[node name="Title" type="Label" parent="MarginContainer/VBoxContainer" unique_id=2057756704]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_dty87")
+theme_override_font_sizes/font_size = 37
+text = "Title"
+clip_text = true
+text_overrun_behavior = 3
+script = ExtResource("3_label")
+color = 6
+weight = 700
+font_size = 37
+
+[node name="SubtitleRow" type="Container" parent="MarginContainer/VBoxContainer" unique_id=1739200431]
+unique_name_in_owner = true
+layout_mode = 2
+script = ExtResource("4_row")
+separation = 10
+leading = true
+
+[node name="Subtitle" type="Label" parent="MarginContainer/VBoxContainer/SubtitleRow" unique_id=877089033]
+unique_name_in_owner = true
+modulate = Color(1, 1, 1, 0.75)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_mayo7")
+theme_override_font_sizes/font_size = 31
+text = "Subtitle"
+clip_text = true
+text_overrun_behavior = 3
+script = ExtResource("3_label")
+color = 6
+font_size = 31
+
+[node name="LiveChip" parent="MarginContainer/VBoxContainer/SubtitleRow" unique_id=1739200432 instance=ExtResource("5_live")]
+unique_name_in_owner = true
+visible = false
+material = SubResource("ShaderMaterial_ipevg")
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_7w8xl")
+font_size = 25

@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=$name
+Comment=$summary
+Exec=nari %U
+MimeType=$mime_types;
+Icon=$app_id
+Terminal=false
+Categories=$categories;
+Keywords=$keywords;
+StartupWMClass=$name

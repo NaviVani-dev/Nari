@@ -1,0 +1,187 @@
+[gd_scene format=3 uid="uid://ygmgch66rlgg"]
+
+[ext_resource type="Shader" uid="uid://ctaeuvi424wmk" path="res://assets/shaders/panel.gdshader" id="1_shader"]
+[ext_resource type="Script" uid="uid://b73alietq8aeh" path="res://ui/shared/addon_card.gd" id="2_card"]
+[ext_resource type="PackedScene" uid="uid://dp422ntw15hsk" path="res://ui/shared/Cover.tscn" id="3_cover"]
+[ext_resource type="Script" uid="uid://emohg8k7r26n" path="res://ui/components/label.gd" id="4_label"]
+[ext_resource type="PackedScene" uid="uid://ds1fe8g28iyrb" path="res://ui/shared/LiveChip.tscn" id="5_chip"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_card"]
+shader = ExtResource("1_shader")
+shader_parameter/corner_radius = Vector4(28, 28, 28, 28)
+shader_parameter/panel_size = Vector2(560, 560)
+shader_parameter/fill_color = Color(0.06666667, 0.15686275, 0.3254902, 1)
+shader_parameter/gradient_color = Color(0.31764707, 0.45882353, 0.7254902, 0.75)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_shot"]
+resource_local_to_scene = true
+bg_color = Color(1, 1, 1, 1)
+draw_center = false
+corner_radius_top_left = 20
+corner_radius_top_right = 20
+corner_radius_bottom_right = 20
+corner_radius_bottom_left = 20
+shadow_color = Color(1, 1, 1, 0)
+shadow_size = 8
+shadow_offset = Vector2(0, 6)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_icon"]
+resource_local_to_scene = true
+bg_color = Color(1, 1, 1, 1)
+draw_center = false
+corner_radius_top_left = 20
+corner_radius_top_right = 20
+corner_radius_bottom_right = 20
+corner_radius_bottom_left = 20
+shadow_color = Color(1, 1, 1, 0)
+shadow_size = 8
+shadow_offset = Vector2(0, 6)
+
+[sub_resource type="FontVariation" id="FontVariation_title"]
+variation_opentype = {
+2003265652: 700
+}
+
+[sub_resource type="FontVariation" id="FontVariation_text"]
+variation_opentype = {
+2003265652: 500
+}
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_chip"]
+shader = ExtResource("1_shader")
+shader_parameter/corner_radius = Vector4(12, 12, 12, 12)
+shader_parameter/panel_size = Vector2(160, 46)
+shader_parameter/fill_color = Color(0, 0.6117647, 1, 1)
+shader_parameter/gradient_color = Color(0.5254902, 0.8156863, 1, 0.75)
+shader_parameter/gradient_blur = 24.0
+
+[node name="AddonCard" type="PanelContainer" unique_id=1302845711]
+material = SubResource("ShaderMaterial_card")
+custom_minimum_size = Vector2(560, 0)
+size_flags_horizontal = 3
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+script = ExtResource("2_card")
+corner_radius = 28.0
+corner_top_left = 28.0
+corner_top_right = 28.0
+corner_bottom_right = 28.0
+corner_bottom_left = 28.0
+padding = 12
+padding_left = 12
+padding_top = 12
+padding_right = 12
+padding_bottom = 12
+
+[node name="MarginContainer" type="MarginContainer" parent="." unique_id=1302845712]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 20
+
+[node name="Layout" type="VBoxContainer" parent="MarginContainer" unique_id=1302845713]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 20
+
+[node name="Shot" parent="MarginContainer/Layout" unique_id=1302845714 instance=ExtResource("3_cover")]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 280)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_shot")
+show_shadow = false
+corner_radius = 20
+skeleton_color = 6
+skeleton_alpha = Vector2(0.08, 0.2)
+crop = true
+
+[node name="Row" type="HBoxContainer" parent="MarginContainer/Layout" unique_id=1302845715]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 20
+
+[node name="Icon" parent="MarginContainer/Layout/Row" unique_id=1302845716 instance=ExtResource("3_cover")]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(96, 96)
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_styles/panel = SubResource("StyleBoxFlat_icon")
+show_shadow = false
+corner_radius = 20
+skeleton_color = 6
+skeleton_alpha = Vector2(0.08, 0.2)
+
+[node name="Texts" type="VBoxContainer" parent="MarginContainer/Layout/Row" unique_id=1302845717]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_constants/separation = 6
+alignment = 1
+
+[node name="Title" type="Label" parent="MarginContainer/Layout/Row/Texts" unique_id=1302845718]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_title")
+theme_override_font_sizes/font_size = 40
+text = "Title"
+clip_text = true
+text_overrun_behavior = 3
+script = ExtResource("4_label")
+color = 6
+weight = 700
+font_size = 40
+
+[node name="Subtitle" type="Label" parent="MarginContainer/Layout/Row/Texts" unique_id=1302845719]
+unique_name_in_owner = true
+modulate = Color(1, 1, 1, 0.75)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_text")
+theme_override_font_sizes/font_size = 31
+text = "Subtitle"
+clip_text = true
+text_overrun_behavior = 3
+script = ExtResource("4_label")
+color = 6
+font_size = 31
+
+[node name="Description" type="Label" parent="MarginContainer/Layout" unique_id=1302845720]
+unique_name_in_owner = true
+modulate = Color(1, 1, 1, 0.85)
+custom_minimum_size = Vector2(0, 84)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_text")
+theme_override_font_sizes/font_size = 31
+text = "Description"
+autowrap_mode = 3
+text_overrun_behavior = 3
+max_lines_visible = 2
+script = ExtResource("4_label")
+color = 6
+font_size = 31
+skeleton_width = 0.9
+
+[node name="Badge" parent="." unique_id=1302845721 instance=ExtResource("5_chip")]
+unique_name_in_owner = true
+visible = false
+material = SubResource("ShaderMaterial_chip")
+custom_minimum_size = Vector2(0, 46)
+layout_mode = 2
+size_flags_horizontal = 8
+size_flags_vertical = 0
+bg_color = 9
+gradient_color = 11

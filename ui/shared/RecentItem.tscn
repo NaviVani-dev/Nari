@@ -1,0 +1,145 @@
+[gd_scene format=3 uid="uid://bwk3kfaxigbqm"]
+
+[ext_resource type="Script" uid="uid://btl05bmr430ej" path="res://ui/shared/recent_item.gd" id="1_item"]
+[ext_resource type="Shader" uid="uid://ctaeuvi424wmk" path="res://assets/shaders/panel.gdshader" id="1_wfls3"]
+[ext_resource type="Script" uid="uid://b0etlamb18c2f" path="res://ui/components/icon.gd" id="2_icon"]
+[ext_resource type="Script" uid="uid://emohg8k7r26n" path="res://ui/components/label.gd" id="3_label"]
+[ext_resource type="Texture2D" uid="uid://c72vif2onknmr" path="res://assets/icons/recent.svg" id="4_recent"]
+[ext_resource type="Script" uid="uid://djk4e68d3it8a" path="res://ui/components/button.gd" id="5_button"]
+[ext_resource type="Texture2D" uid="uid://dxdsohoqxa4s7" path="res://assets/icons/close.svg" id="6_close"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_wfls3"]
+shader = ExtResource("1_wfls3")
+shader_parameter/corner_radius = Vector4(28, 28, 28, 28)
+shader_parameter/panel_size = Vector2(257, 96)
+shader_parameter/fill_color = Color(0.06666667, 0.15686275, 0.3254902, 1)
+shader_parameter/gradient_color = Color(0.31764707, 0.45882353, 0.7254902, 0.75)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_x2x0f"]
+content_margin_left = 8.0
+content_margin_top = 8.0
+content_margin_right = 8.0
+content_margin_bottom = 8.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[sub_resource type="FontVariation" id="FontVariation_mayo7"]
+variation_opentype = {
+2003265652: 500
+}
+
+[sub_resource type="FontVariation" id="FontVariation_dty87"]
+variation_opentype = {
+2003265652: 700
+}
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_5ocoh"]
+shader = ExtResource("1_wfls3")
+shader_parameter/corner_radius = Vector4(40, 40, 40, 40)
+shader_parameter/panel_size = Vector2(80, 80)
+shader_parameter/fill_color = Color(1, 1, 1, 0)
+shader_parameter/gradient_color = Color(1, 1, 1, 0)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_3j5x3"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[node name="RecentItem" type="PanelContainer" unique_id=1862397935]
+material = SubResource("ShaderMaterial_wfls3")
+custom_minimum_size = Vector2(0, 96)
+size_flags_horizontal = 3
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_x2x0f")
+script = ExtResource("1_item")
+text_color = 6
+corner_radius = 28.0
+corner_top_left = 28.0
+corner_top_right = 28.0
+corner_bottom_right = 28.0
+corner_bottom_left = 28.0
+padding = 8
+padding_left = 8
+padding_top = 8
+padding_right = 8
+padding_bottom = 8
+
+[node name="MarginContainer" type="MarginContainer" parent="." unique_id=732539192]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_right = 8
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer" unique_id=1340436396]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 32
+
+[node name="Glyph" type="TextureRect" parent="MarginContainer/HBoxContainer" unique_id=2056705301]
+unique_name_in_owner = true
+self_modulate = Color(0.06666667, 0.15686275, 0.3254902, 1)
+custom_minimum_size = Vector2(56, 56)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+texture = ExtResource("4_recent")
+expand_mode = 1
+stretch_mode = 5
+script = ExtResource("2_icon")
+
+[node name="Number" type="Label" parent="MarginContainer/HBoxContainer" unique_id=1000478036]
+unique_name_in_owner = true
+visible = false
+self_modulate = Color(0.06666667, 0.15686275, 0.3254902, 1)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_mayo7")
+theme_override_font_sizes/font_size = 18
+script = ExtResource("3_label")
+
+[node name="Title" type="Label" parent="MarginContainer/HBoxContainer" unique_id=7247761]
+unique_name_in_owner = true
+self_modulate = Color(0.06666667, 0.15686275, 0.3254902, 1)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_dty87")
+theme_override_font_sizes/font_size = 40
+text = "Recent search"
+vertical_alignment = 1
+clip_text = true
+text_overrun_behavior = 3
+script = ExtResource("3_label")
+weight = 700
+font_size = 40
+
+[node name="RemoveButton" type="PanelContainer" parent="MarginContainer/HBoxContainer" unique_id=2134585441]
+unique_name_in_owner = true
+material = SubResource("ShaderMaterial_5ocoh")
+custom_minimum_size = Vector2(80, 80)
+layout_mode = 2
+size_flags_vertical = 4
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_3j5x3")
+script = ExtResource("5_button")
+icon = ExtResource("6_close")
+flat = true
+icon_size = Vector2(48, 48)
+accent_on_focus = true
+corner_radius = 40.0
+corner_top_left = 40.0
+corner_top_right = 40.0
+corner_bottom_right = 40.0
+corner_bottom_left = 40.0
+padding = 12
+padding_left = 12
+padding_top = 12
+padding_right = 12
+padding_bottom = 12

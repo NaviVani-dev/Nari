@@ -1,0 +1,15 @@
+[gd_scene format=3 uid="uid://pm5josuke8ci"]
+
+[ext_resource type="Script" uid="uid://qpl74scl4p12" path="res://ui/shared/theme_overlays.gd" id="1_ovr"]
+
+[node name="ThemeOverlays" type="CanvasLayer" unique_id=1310053301]
+layer = 90
+script = ExtResource("1_ovr")
+
+[node name="Stack" type="Control" parent="." unique_id=1310053302]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
