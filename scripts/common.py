@@ -43,6 +43,10 @@ def info(message):
     print(f"\033[0;34m==> {message}\033[0m", flush=True)
 
 
+def warn(message):
+    print(f"\033[0;33mwarning: {message}\033[0m", file=sys.stderr, flush=True)
+
+
 def fail(message):
     print(f"\033[0;31merror: {message}\033[0m", file=sys.stderr, flush=True)
     sys.exit(1)
