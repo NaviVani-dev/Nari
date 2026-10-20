@@ -185,6 +185,10 @@ func _ready() -> void:
 func _setup_theme() -> void:
 	if ThemeEngine.current_theme == null:
 		return
+	if not Engine.is_editor_hint():
+		Themes.shade(self, "label")
+		if material is ShaderMaterial:
+			material.set_shader_parameter("font_size", float(get_theme_font_size("font_size")))
 	_change_color()
 	_change_weight()
 	_change_size()

@@ -148,6 +148,7 @@ func _process(delta: float) -> void:
 	_grabber.position = Vector2(grabber_x, (size.y - _grabber_size().y) * 0.5)
 	_material.set_shader_parameter("progress", (grabber_x + _grabber_size().x * 0.5) / maxf(size.x, 1.0))
 	_material.set_shader_parameter("control_size", Vector2(size.x, _track_height()))
+	queue_redraw()
 
 func _show_buffered(ranges: PackedVector2Array) -> void:
 	if ranges == _buffered and size.is_equal_approx(_last_size):
@@ -168,11 +169,19 @@ func _track_x(ratio: float, travel: float) -> float:
 	return (ratio * travel + _grabber_size().x * 0.5) / maxf(size.x, 1.0)
 
 func _setup_theme() -> void:
+	if not Engine.is_editor_hint():
+		Themes.dress("progress", _material, TRACK_SHADER)
+		_track.visible = not Themes.styles.get("progress", {}).has("fill")
+		queue_redraw()
 	_material.set_shader_parameter("start_color", ThemeEngine.get_color(ThemeEngine.Colors.AccentBg))
 	_material.set_shader_parameter("end_color", ThemeEngine.get_color(ThemeEngine.Colors.AccentGradient))
 	var fg := ThemeEngine.get_color(ThemeEngine.Colors.PanelFg)
 	_material.set_shader_parameter("remaining_color", Color(fg, fg.a * (UNBUFFERED_ALPHA if show_buffered else 1.0)))
 	_material.set_shader_parameter("buffered_color", fg)
+
+func _draw() -> void:
+	if not Engine.is_editor_hint():
+		Themes.draw_bar(self, _track.get_rect(), maxf(_last_ratio, 0.0))
 
 func _refresh_grabber() -> void:
 	_grabber.visible = show_grabber and (not grabber_on_hover or _held or _hovered or has_focus() and not Engine.is_editor_hint() and InputGlyphs.navigating())

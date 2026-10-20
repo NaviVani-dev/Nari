@@ -483,9 +483,69 @@ func _scene(path: String) -> PackedScene:
 			_scenes[path] = load(path)
 	return _scenes[path]
 
-func _transition() -> String:
-	var style := str(Themes.active.get("page_transition", "slide"))
-	return style if PAGE_TRANSITIONS.has(style) else "slide"
+func transition(key: String = "page_transition") -> Dictionary:
+	var listed: Variant = Themes.active.get(key, "slide")
+	var style: Dictionary = listed.duplicate() if listed is Dictionary else {"type": str(listed)}
+	if not PAGE_TRANSITIONS.has(str(style.get("type", ""))):
+		style["type"] = "slide"
+	var material := ShaderMaterial.new()
+	style["material"] = material if Themes.dress("transition", material, null) else null
+	return style
+
+func _process(_delta: float) -> void:
+	for view: Node in _containers:
+		if is_instance_valid(view):
+			Themes.sway(_containers[view], "sway")
+			if view.has_node(HINTS_NAME):
+				Themes.sway(view.get_node(HINTS_NAME), "sway")
+
+static func _physics_curve(config: Dictionary) -> PackedFloat32Array:
+	var step := 1.0 / 60.0
+	var keep := exp(-float(config.get("damping", 50.0)) * step)
+	var distance := float(config.get("distance", 10.0))
+	var limit := float(config.get("max_speed", 70.0)) * step
+	var offset := distance
+	var speed := 0.0
+	var curve := PackedFloat32Array([1.0])
+	while (absf(offset) > 0.001 or absf(speed) > 0.001) and curve.size() < 600:
+		speed = clampf(keep * speed - (1.0 - keep) * offset * float(config.get("pull", 35.0)) * step, -limit, limit)
+		offset += speed
+		curve.append(offset / distance)
+	return curve
+
+func animate(tween: Tween, control: Control, style: Dictionary, entering: bool, distance: float) -> void:
+	var time := float(style.get("duration" if entering else "exit", style.get("duration", TRANSITION_TIME)))
+	var origin := control.position
+	var shift := -distance * float(style.get("shift", TRANSITION_SHIFT))
+	if style["type"] == "slide" and entering:
+		control.position.y = origin.y + shift
+	if style["type"] == "slide" and entering and style.get("physics") is Dictionary:
+		var curve := _physics_curve(style["physics"])
+		time = curve.size() / 60.0
+		tween.tween_method(func(left: float): control.position.y = origin.y + shift * curve[mini(int(left * 60.0), curve.size() - 1)], 0.0, time, time)
+	elif style["type"] == "slide":
+		tween.tween_property(control, "position:y", origin.y if entering else origin.y + shift, time) \
+			.set_trans(ClassDB.class_get_integer_constant("Tween", "TRANS_" + str(style.get("trans", "cubic")).to_upper())) \
+			.set_ease(ClassDB.class_get_integer_constant("Tween", "EASE_" + str(style.get("ease", "out" if entering else "in")).to_upper()))
+	if style["type"] != "none" and style.get("fade", true):
+		if entering:
+			control.modulate.a = 0.0
+		tween.tween_property(control, "modulate:a", 1.0 if entering else 0.0, time)
+	if entering and style.has("shake"):
+		var span := float(style.get("shake_time", 0.6))
+		tween.chain().tween_method(func(left: float):
+			control.position = origin + Vector2(sin(19.913 * left), sin(21.913 * left)) * float(style["shake"]) * pow(1.0 - left / span, 2.0), 0.0, span, span)
+	var material: ShaderMaterial = style["material"]
+	if material:
+		var overlay := ColorRect.new()
+		overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		overlay.material = material
+		material.set_shader_parameter("progress", 0.0 if entering else 1.0)
+		material.set_shader_parameter("entering", entering)
+		control.get_parent().add_child(overlay)
+		overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		tween.tween_property(material, "shader_parameter/progress", 1.0 if entering else 0.0, time)
+		tween.finished.connect(overlay.queue_free)
 
 func _slide_out(page: Page) -> void:
 	var top := page.top
@@ -496,18 +556,15 @@ func _slide_out(page: Page) -> void:
 				node.get_parent().queue_free()
 		if is_instance_valid(page):
 			page.queue_free()
-	var style := _transition()
-	if style == "none":
+	var style := transition()
+	if style["type"] == "none" and not style["material"] or float(style.get("exit", 1.0)) <= 0.0:
 		remove.call()
 		return
 	var tween := create_tween().set_parallel(true)
 	if is_instance_valid(top) and _top_view:
-		if style == "slide":
-			var shift := -_view_height(_top_view) * TRANSITION_SHIFT
-			tween.tween_property(top, "position:y", top.position.y + shift, TRANSITION_TIME).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
-		tween.tween_property(top, "modulate:a", 0.0, TRANSITION_TIME)
-	if is_instance_valid(bottom):
-		tween.tween_property(bottom, "modulate:a", 0.0, TRANSITION_TIME)
+		animate(tween, top, style, false, _view_height(_top_view))
+	if is_instance_valid(bottom) and style["type"] != "none":
+		tween.tween_property(bottom, "modulate:a", 0.0, float(style.get("exit", style.get("duration", TRANSITION_TIME))))
 	tween.chain().tween_callback(remove)
 
 func _viewport_of(view: Node) -> Viewport:
@@ -525,15 +582,8 @@ func _mount(control: Control, view: Node) -> void:
 	control.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_bleed(view, holder)
 	control.visible = not _content_hidden
-	control.modulate.a = 0.0 if _content_hidden else 1.0
-	var style := _transition()
-	if view != _top_view or style == "none":
-		control.modulate.a = 1.0
+	var style := transition()
+	control.modulate.a = 1.0
+	if view != _top_view or style["type"] == "none" and not style["material"]:
 		return
-	control.modulate.a = 0.0
-	var tween := create_tween().set_parallel(true)
-	if style == "slide":
-		var rest := control.position.y
-		control.position.y = rest - _view_height(view) * TRANSITION_SHIFT
-		tween.tween_property(control, "position:y", rest, TRANSITION_TIME).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	tween.tween_property(control, "modulate:a", 1.0, TRANSITION_TIME)
+	animate(control.create_tween().set_parallel(true), control, style, true, _view_height(_top_view))

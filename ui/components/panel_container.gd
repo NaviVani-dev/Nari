@@ -120,7 +120,6 @@ func _setup_theme() -> void:
 		if _textured:
 			_textured = null
 			_texture_source = null
-			material = _material
 			add_theme_stylebox_override("panel", style)
 			texture_filter = TEXTURE_FILTER_PARENT_NODE
 	elif _texture_source != _box_of(themed):
@@ -129,10 +128,11 @@ func _setup_theme() -> void:
 		_texture_modulate = themed["modulate"]
 		_set_content_margins(_textured, extra)
 		_fit_margins()
-		material = null
 		add_theme_stylebox_override("panel", _textured)
 		texture_filter = themed["filter"]
 	_set_content_margins(_textured if _textured else style, extra)
+	var shaded := not Engine.is_editor_hint() and Themes.dress(_shader_kind(), _material, PANEL_SHADER)
+	material = _material if shaded or _textured == null else null
 
 	_paint_fill(_bg)
 	_paint_gradient(_gr)
@@ -157,6 +157,9 @@ func _style_kind() -> String:
 
 func _spacing_kind() -> String:
 	return _style_kind()
+
+func _shader_kind() -> String:
+	return "panel"
 
 func _paint_fill(color: Color) -> void:
 	_material.set_shader_parameter("fill_color", color)

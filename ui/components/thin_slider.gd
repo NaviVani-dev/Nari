@@ -58,9 +58,13 @@ func _draw() -> void:
 	var track := tint
 	track.a *= track_alpha
 	var fill := length * clampf(ratio, 0.0, 1.0)
-	_bar(0.0, length, line, across, radius, track)
-	if fill > 0.0:
-		_bar(length - maxf(fill, line) if vertical else 0.0, maxf(fill, line), line, across, radius, tint)
+	var base := Transform2D(-PI * 0.5, Vector2(0.0, length)) if vertical else Transform2D.IDENTITY
+	var textured := not Engine.is_editor_hint() and Themes.draw_bar(self, Rect2(0.0, (across - line) * 0.5, length, line), clampf(ratio, 0.0, 1.0), base)
+	draw_set_transform(Vector2.ZERO)
+	if not textured:
+		_bar(0.0, length, line, across, radius, track)
+		if fill > 0.0:
+			_bar(length - maxf(fill, line) if vertical else 0.0, maxf(fill, line), line, across, radius, tint)
 	if not editable or not (focus_mode == FOCUS_NONE or has_focus() and InputGlyphs.navigating() or _dragging or _hovered):
 		return
 	var at := length - fill if vertical else fill

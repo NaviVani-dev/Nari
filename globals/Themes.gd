@@ -14,12 +14,12 @@ const ICONS_TARGET: = "res://assets/icons"
 const SCRIPT_FILE: = "main.lua"
 const SCRIPT_PREFIX: = "theme_"
 const IMPORT_DEPTH: = 8
-const STYLE_KINDS: = ["panel", "button"]
+const STYLE_KINDS: = ["panel", "button", "progress"]
 const AXIS_STRETCH: = {"stretch": StyleBoxTexture.AXIS_STRETCH_MODE_STRETCH, "tile": StyleBoxTexture.AXIS_STRETCH_MODE_TILE, "tile_fit": StyleBoxTexture.AXIS_STRETCH_MODE_TILE_FIT}
 const FILTERS: = {"nearest": CanvasItem.TEXTURE_FILTER_NEAREST, "linear": CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS}
 const ADAPT_MODES: = ["allow", "off", "force"]
 const GLYPH: = preload("res://assets/icons/theme.svg")
-const LOOK_KEYS: = ["styles", "shape", "font", "font_pixelated", "font_shadow", "mode", "adapt", "icons_colored", "filters", "icons", "glyphs"]
+const LOOK_KEYS: = ["styles", "shape", "font", "font_pixelated", "font_shadow", "mode", "adapt", "icons_colored", "filters", "icons", "glyphs", "shaders"]
 const IMAGE_EXTENSIONS: = ["png", "jpg", "jpeg", "webp"]
 const LAYER_TYPES: = ["color", "blobs", "tint", "triangles", "dots", "image", "cover", "shader"]
 const DEFAULT_LAYERS: = [{"type": "color"}, {"type": "blobs"}, {"type": "tint"}, {"type": "triangles"}, {"type": "dots"}]
@@ -243,6 +243,7 @@ func _paint(animate: bool) -> void :
 
 func _repaint() -> void :
 	_restyle(true)
+	stage_changed.emit()
 
 func _restyle(announce: bool) -> void :
 	var previous: = active
@@ -700,11 +701,12 @@ func _load_styles() -> void :
 		box.axis_stretch_horizontal = AXIS_STRETCH.get(str(settings.get("stretch", "stretch")), StyleBoxTexture.AXIS_STRETCH_MODE_STRETCH)
 		box.axis_stretch_vertical = box.axis_stretch_horizontal
 		styles[kind] = {"box": box, "padding": _sides(settings.get("padding", [])), "modulate": bool(settings.get("modulate", true)), "filter": Icon.filter_of(texture)}
-		var focus: = load_image(str(settings["focus"])) if settings.has("focus") else null
-		if focus:
-			var focused: = box.duplicate() as StyleBoxTexture
-			focused.texture = focus
-			styles[kind]["focus"] = focused
+		for state in ["focus", "fill"]:
+			var other: = load_image(str(settings[state])) if settings.has(state) else null
+			if other:
+				var alternate: = box.duplicate() as StyleBoxTexture
+				alternate.texture = other
+				styles[kind][state] = alternate
 
 static func _sides(value: Variant) -> PackedFloat32Array:
 	var sides: = PackedFloat32Array([0.0, 0.0, 0.0, 0.0])
@@ -758,6 +760,65 @@ func shader_of(file: String) -> Shader:
 		loaded.code = code
 	_shaders[file] = loaded
 	return loaded
+
+func draw_bar(item: CanvasItem, rect: Rect2, ratio: float, base: = Transform2D.IDENTITY) -> bool:
+	var themed: Dictionary = styles.get("progress", {})
+	if not themed.has("fill"):
+		return false
+	var track: StyleBoxTexture = themed["box"]
+	var scale: = rect.size.y / maxf(track.texture.get_height(), 1.0)
+	var local: = Rect2(rect.position / scale, rect.size / scale)
+	if item.texture_filter != themed["filter"]:
+		item.texture_filter = themed["filter"]
+	item.draw_set_transform_matrix(base.scaled_local(Vector2(scale, scale)))
+	item.draw_style_box(track, local)
+	if ratio > 0.0:
+		item.draw_style_box(themed["fill"], Rect2(local.position, Vector2(local.size.x * ratio, local.size.y)))
+	item.draw_set_transform_matrix(base)
+	return true
+
+func enabled(section: String, kind: String) -> bool:
+	return _dict(active, section).get(kind, true) != false
+
+func motion_of(kind: String) -> Dictionary:
+	return _dict(_dict(active, "motion"), kind)
+
+func drift(kind: String) -> Vector3:
+	var motion: = motion_of(kind)
+	if motion.is_empty() or Main.reduce_motion:
+		return Vector3.ZERO
+	var time: = Time.get_ticks_msec() / 1000.0
+	return Vector3(
+		float(motion.get("x", 0.0)) * sin(float(motion.get("x_speed", 1.0)) * time),
+		float(motion.get("y", 0.0)) * sin(float(motion.get("y_speed", 1.0)) * time),
+		float(motion.get("rotation", 0.0)) * sin(float(motion.get("rotation_speed", 1.0)) * time))
+
+func sway(control: Control, kind: String) -> void:
+	var offset: = drift(kind)
+	pose(control, Vector2(offset.x, offset.y) * control.size, offset.z)
+
+static func pose(control: Control, position: Vector2, rotation: float, scale: float = 1.0) -> void:
+	control.offset_transform_enabled = position != Vector2.ZERO or rotation != 0.0 or scale != 1.0
+	control.offset_transform_visual_only = true
+	control.offset_transform_pivot_ratio = Vector2.ONE * 0.5
+	control.offset_transform_position = position
+	control.offset_transform_rotation = rotation
+	control.offset_transform_scale = Vector2.ONE * scale
+
+func shade(item: CanvasItem, kind: String) -> void:
+	var material: ShaderMaterial = item.get_meta(&"theme_material") if item.has_meta(&"theme_material") else ShaderMaterial.new()
+	item.set_meta(&"theme_material", material)
+	if dress(kind, material, null) or item.material == material:
+		item.material = material if material.shader else null
+
+func dress(kind: String, material: ShaderMaterial, fallback: Shader) -> bool:
+	var entry: = _dict(_dict(active, "shaders"), kind)
+	var shader: = shader_of(str(entry.get("file", "")))
+	material.shader = shader if shader else fallback
+	var uniforms: = _dict(entry, "uniforms")
+	for uniform: Variant in uniforms:
+		material.set_shader_parameter(str(uniform), uniform_value(uniforms[uniform]))
+	return shader != null
 
 func texture_of(file: String) -> Texture2D:
 	return _textures.get(file)

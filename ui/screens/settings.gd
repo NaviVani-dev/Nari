@@ -468,7 +468,7 @@ func _theme_entries() -> Array:
 			"plugin": id,
 			"section": "Installed",
 			"enabled": active,
-			"action": PluginInfo.open.bind(id, Themes),
+			"action": Themes.activate.bind(id) if Themes.is_builtin(id) else PluginInfo.open.bind(id, Themes),
 			"settings": Main.change_page.bind(Main.Pages.Settings, {"category": "theme", "theme": id}) if active and not Themes.settings_for(id).is_empty() else Callable(),
 		})
 	return entries
@@ -484,7 +484,8 @@ func _theme_setting_entry(setting: Dictionary, id: String) -> Dictionary:
 		"action": func(): SettingsManager.set_value(section, key, Themes.next_setting_value(id, setting)),
 		"reset": func(): SettingsManager.set_value(section, key, setting.get("default")),
 	}
-	if str(setting.get("type", "")) == "choice":
+	var labels := Themes.setting_options(setting).map(func(option: Dictionary): return str(option.get("name", option.get("id", ""))))
+	if str(setting.get("type", "")) == "choice" and not labels.all(func(label: String): return label in ["On", "Off"]):
 		entry.erase("action")
 		entry["choices"] = {
 			"options": Themes.setting_options(setting).map(func(option: Dictionary): return {"value": str(option.get("id", "")), "label": str(option.get("name", option.get("id", "")))}),
