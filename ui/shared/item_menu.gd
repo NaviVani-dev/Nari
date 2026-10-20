@@ -2,6 +2,7 @@ class_name ItemMenu
 
 const PLAYLIST_EDITOR := preload("res://ui/shared/PlaylistEditor.tscn")
 const SCROLL_LIST := preload("res://ui/shared/ScrollList.tscn")
+const PLAY_ICON := preload("res://assets/icons/play.svg")
 const ADD_ICON := preload("res://assets/icons/add.svg")
 const PLAY_NEXT_ICON := preload("res://assets/icons/queue_play_next.svg")
 const QUEUE_ICON := preload("res://assets/icons/add_to_queue.svg")
@@ -53,6 +54,7 @@ static func now_playing(data: Dictionary) -> void:
 	var dialog := Dialog.menu(str(data.get("title", "")), "%s · %s" % [data.get("artist", ""), data.get("album", "")], cover[0], cover[1])
 	if not data.get("ephemeral", false):
 		add_like_option(dialog, "track", data)
+		dialog.add_option("Add to playlist", func(): add_to_playlist(PackedStringArray([str(data.get("id", ""))])), PLAYLIST_ADD_ICON)
 	if not str(data.get("artist_id", "")).is_empty():
 		dialog.add_option("Go to artist", Main.change_page.bind(Main.Pages.Artist, {"artist_id": str(data.get("artist_id", ""))}), ARTIST_ICON)
 	if not str(data.get("album_id", "")).is_empty():
@@ -65,6 +67,7 @@ static func now_playing(data: Dictionary) -> void:
 
 static func album(data: Dictionary, shuffle: Callable = Callable()) -> void:
 	var dialog := Dialog.menu(str(data.get("title", "")), str(data.get("artist", "")), MediaPlayer.COVER_ALBUM, str(data.get("id", "")))
+	dialog.add_option("Play", func(): MediaPlayer.play_tracks((await MediaPlayer.get_album(str(data.get("id", "")))).get("tracks", [])), PLAY_ICON)
 	add_shuffle_option(dialog, shuffle)
 	dialog.add_option("Play next", func(): MediaPlayer.play_next_tracks((await MediaPlayer.get_album(str(data.get("id", "")))).get("tracks", [])), PLAY_NEXT_ICON)
 	dialog.add_option("Add to queue", func():
