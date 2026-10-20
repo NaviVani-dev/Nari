@@ -5,6 +5,7 @@ var _covers: Dictionary = {}
 
 func _init() -> void :
 	super ("local", "Local files", "Plays the music stored in the folders you select", preload("res://assets/icons/music_library.svg"), Color("9ad07a"))
+	supports_folders = true
 	if not Engine.has_singleton("MusicService"):
 		return
 	_native = Engine.get_singleton("MusicService")
@@ -70,6 +71,38 @@ func get_status() -> Dictionary:
 
 func get_tracks() -> Array:
 	return _json_array("getTracksJson")
+
+func get_folder(folder_id: String) -> Dictionary:
+	var tracks: = get_tracks()
+	var base: = folder_id if not folder_id.is_empty() else _common_dir(tracks)
+	var folders: = {}
+	var here: Array = []
+	for track: Dictionary in tracks:
+		var dir: = _dir_of(track)
+		if dir == base:
+			here.append(track)
+		elif dir.begins_with(base + "/"):
+			var name: = dir.substr(base.length() + 1).get_slice("/", 0)
+			folders[base + "/" + name] = name
+	var ids: = folders.keys()
+	ids.sort_custom(func(a: String, b: String): return folders[a].naturalnocasecmp_to(folders[b]) < 0)
+	return {"folders": ids.map(func(id: String): return {"id": id, "name": folders[id]}), "tracks": here}
+
+func _dir_of(track: Dictionary) -> String:
+	return str(track.get("path", "")).replace("\\", "/").get_base_dir()
+
+func _common_dir(tracks: Array) -> String:
+	var common: PackedStringArray
+	for index in tracks.size():
+		var parts: = _dir_of(tracks[index]).split("/")
+		if index == 0:
+			common = parts
+			continue
+		var length: = 0
+		while length < mini(common.size(), parts.size()) and common[length] == parts[length]:
+			length += 1
+		common = common.slice(0, length)
+	return "/".join(common)
 
 func get_albums() -> Array:
 	return _json_array("getAlbumsJson")

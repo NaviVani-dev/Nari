@@ -240,6 +240,7 @@ func _entries_of(category: String) -> Array:
 					UI_SCALE_RANGE, func(scale: float): return "%sx" % _number(scale)),
 				_choice("Home appearance", "The carousel on the home screen", preload("res://assets/icons/home.svg"), "theme", "home_view",
 					HomeView.NAMES.keys(), HomeView.NAMES),
+				home_entries_entry(SettingItem.refresh_list.bind(list)),
 				_choice("Now Playing pill", "The player shown at the bottom of every screen", preload("res://assets/icons/music_note.svg"), "theme", "pill",
 					["comfy", "compact", "slim"], {"comfy": "Comfy", "compact": "Compact", "slim": "Slim"}),
 				_choice("Show media controls on Now Playing", "Hides the controls after a few seconds without input", preload("res://assets/icons/play.svg"), "theme", "now_playing_controls",
@@ -332,6 +333,34 @@ static func lyrics_provider_entry(refresh: Callable) -> Dictionary:
 			list.custom_minimum_size.y = list.container.cell_height * minf(MediaPlayer.lyrics.providers.size(), ItemMenu.VISIBLE_OPTIONS)
 			dialog.add_button("Accept", Callable(), Dialog.Style.PRIMARY),
 		"reset": func(): SettingsManager.lyrics.reset("providers"),
+	}
+
+static func home_entries_entry(refresh: Callable) -> Dictionary:
+	return {
+		"title": "Home entries",
+		"description": "Choose which entries the home carousel shows",
+		"icon": preload("res://assets/icons/home.svg"),
+		"value": func(): return "%d hidden" % SettingsManager.theme.hidden_home.size(),
+		"action": func():
+			var dialog := Dialog.menu("Home entries")
+			var list: ScrollList = ItemMenu.SCROLL_LIST.instantiate()
+			list.separation = 0
+			list.follow_focus = true
+			dialog.content.add_child(list)
+			dialog.closed.connect(refresh)
+			dialog.popup()
+			var entries := HomeView.entries(true).filter(func(entry: Dictionary): return entry.get("page") != Main.Pages.Settings)
+			list.set_items(entries, func(entry: Dictionary) -> NariButton:
+				var key := HomeView.key(entry)
+				return dialog.make_toggle(str(entry["title"]), not SettingsManager.theme.hidden_home.has(key), func(enabled: bool):
+					var hidden := Array(SettingsManager.theme.hidden_home)
+					hidden.erase(key)
+					if not enabled:
+						hidden.append(key)
+					SettingsManager.theme.hidden_home = PackedStringArray(hidden), entry["icon"]))
+			list.custom_minimum_size.y = list.container.cell_height * minf(entries.size(), ItemMenu.VISIBLE_OPTIONS)
+			dialog.add_button("Accept", Callable(), Dialog.Style.PRIMARY),
+		"reset": func(): SettingsManager.theme.reset("hidden_home"),
 	}
 
 static func library_entries(setup: bool) -> Array:

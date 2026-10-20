@@ -242,6 +242,10 @@ class ThemeSection extends Section:
 		set(value):
 			home_view = value
 			_store("home_view", value)
+	var hidden_home: = PackedStringArray(["Folders"]):
+		set(value):
+			hidden_home = value
+			_store("hidden_home", value)
 
 	func _init() -> void :
 		super ("theme")
@@ -254,6 +258,7 @@ class ThemeSection extends Section:
 		active = _fetch("active", active)
 		pill = _fetch("pill", pill)
 		home_view = _fetch("home_view", home_view)
+		hidden_home = PackedStringArray(_fetch("hidden_home", hidden_home))
 
 class PlaybackSection extends Section:
 	var normalize_volume: = false:

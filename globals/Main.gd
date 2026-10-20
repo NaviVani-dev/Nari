@@ -6,7 +6,7 @@ signal dual_changed(enabled: bool)
 signal header_changed
 signal booted
 
-enum Pages { Home, Tracks, Albums, Artists, Playlists, Album, Artist, Playlist, NowPlaying, Settings, Soundboard, Welcome, Search, About, Discover, Web, Marketplace }
+enum Pages { Home, Tracks, Albums, Artists, Playlists, Album, Artist, Playlist, NowPlaying, Settings, Soundboard, Welcome, Search, About, Discover, Web, Marketplace, Folders }
 
 const PAGE_SCENES := {
 	Pages.Home: "Home",
@@ -26,6 +26,7 @@ const PAGE_SCENES := {
 	Pages.Discover: "Discover",
 	Pages.Web: "Web",
 	Pages.Marketplace: "Marketplace",
+	Pages.Folders: "Folders",
 }
 const SCREENS_PATH := "res://ui/screens/%s/%s.tscn"
 const FADE_TIME := 0.15

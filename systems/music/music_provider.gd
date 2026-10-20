@@ -27,6 +27,7 @@ var icon: Texture2D
 var streams: = false
 var supports_quality: = false
 var supports_likes: = false
+var supports_folders: = false
 var auto_discover: = true
 var paged: = false
 var reachable: = true
@@ -101,6 +102,9 @@ func playable(_tracks: Array) -> Array:
 
 func get_cover_path(_kind: String, _id: String, _thumb: bool) -> String:
 	return ""
+
+func get_folder(_folder_id: String) -> Dictionary:
+	return {}
 
 func get_playlists() -> Array:
 	return []

@@ -126,6 +126,7 @@ func load_relative(file: String) -> Resource:
 
 func add_home_entry(spec: Dictionary) -> void :
 	spec["icon"] = texture(spec.get("icon"))
+	spec["id"] = "%s.%s" % [id, spec.get("id", spec.get("title", ""))]
 	var color: = str(spec.get("color", "Gray"))
 	for part in ["bg", "gradient", "fg"]:
 		spec[part] = ThemeEngine.Colors.get(color + part.capitalize(), ThemeEngine.Colors.get("Gray" + part.capitalize()))

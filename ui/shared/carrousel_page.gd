@@ -18,6 +18,7 @@ const VIEW_DEFAULTS: = {
 	"albums": ["ipod", "grid"],
 	"artists": ["vertical", "grid"],
 	"playlists": ["ipod", "grid"],
+	"folders": ["ipod", "grid"],
 	"album": ["info", "stair"],
 	"playlist": ["info", "stair"],
 }
@@ -56,6 +57,7 @@ const ITEM_ICONS: = {
 	"albums": preload("res://assets/icons/album.svg"),
 	"artists": preload("res://assets/icons/artist.svg"),
 	"playlists": preload("res://assets/icons/queue_music.svg"),
+	"folders": preload("res://assets/icons/new_folder.svg"),
 }
 const EMPTY_MESSAGE: = preload("res://ui/shared/EmptyMessage.tscn")
 const EMPTY_MESSAGES: = {
