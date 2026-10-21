@@ -738,7 +738,7 @@ mod rules {
         "WebRTCPeerConnection", "WebRTCDataChannel", "WebRTCMultiplayerPeer", "ENetConnection", "ENetMultiplayerPeer",
         "ENetPacketPeer", "IP", "UPNP", "WebView",
     ];
-    const BLOCKED_NARI: [&str; 9] = ["Marketplace", "Themes", "Vault", "FileUtil", "Package", "NariPlugin", "Worker", "AnimationLoader", "DevTools"];
+    const BLOCKED_NARI: [&str; 10] = ["Marketplace", "Themes", "Vault", "FileUtil", "Package", "NariPlugin", "Worker", "MotionPlayer", "NariMotion", "DevTools"];
     const BLOCKED_MEMBERS: [&str; 12] = [
         "call", "callv", "call_deferred", "set", "set_deferred", "set_indexed", "get", "get_indexed", "set_script",
         "get_script", "get_property_list", "get_method_list",

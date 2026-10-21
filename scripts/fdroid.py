@@ -103,6 +103,8 @@ def main():
     os.environ["ANDROID_NDK_HOME"] = str(sdk / "ndk" / ndk_version)
     if os.environ.get("FFMPEG_SRC"):
         os.environ["FFMPEG_SOURCE"] = os.environ["FFMPEG_SRC"]
+    if os.environ.get("DAV1D_SRC"):
+        os.environ["DAV1D_SOURCE"] = os.environ["DAV1D_SRC"]
 
     remove_prebuilt_binaries()
     godot = build_godot(godot_src)

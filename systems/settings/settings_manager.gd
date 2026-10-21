@@ -324,6 +324,10 @@ class PerformanceSection extends Section:
 		set(value):
 			battery_saving = value
 			_store("battery_saving", value)
+	var video_decoding: = "auto":
+		set(value):
+			video_decoding = value
+			_store("video_decoding", value)
 
 	func _init() -> void :
 		super ("performance")
@@ -333,6 +337,7 @@ class PerformanceSection extends Section:
 		background = _fetch("background", background)
 		background_quality = _fetch("background_quality", background_quality)
 		battery_saving = _fetch("battery_saving", battery_saving)
+		video_decoding = _fetch("video_decoding", video_decoding)
 
 class DiscordSection extends Section:
 	var enabled: = false:

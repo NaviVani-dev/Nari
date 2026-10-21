@@ -1246,6 +1246,13 @@ mod tests {
     }
 
     #[test]
+    fn videos_play_their_audio_track() {
+        let samples = decode_all(&Path::new(env!("CARGO_MANIFEST_DIR")).join("fixtures").join("motion_sound.mp4"), 48_000);
+        assert!((samples.len() as f64 / CHANNELS as f64 / 48_000.0 - 1.0).abs() < 0.05);
+        assert!(samples.iter().any(|sample| sample.abs() > 0.1));
+    }
+
+    #[test]
     fn decodes_and_resamples_without_losing_the_signal() {
         let directory = std::env::temp_dir().join("music_service_audio_test");
         std::fs::create_dir_all(&directory).unwrap();

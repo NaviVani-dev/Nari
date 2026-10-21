@@ -3,10 +3,11 @@ import os
 import platform
 import re
 import shutil
+import sys
 from pathlib import Path
 
-from common import (ROOT, JOBS, android_ndk, android_sdk, build_image, container_engine, download,
-                    download_tarball, fail, gradle, info, output, outside_project, run, run_in_container, work_dir)
+from common import (ROOT, JOBS, android_ndk, android_sdk, build_image, container_engine, download, download_tarball,
+                    extract_zip, fail, gradle, info, output, outside_project, run, run_in_container, work_dir)
 
 PLUGIN = ROOT / "addons" / "MusicService"
 CRATE = PLUGIN / "native"
@@ -15,6 +16,15 @@ WORK = PLUGIN / ".build"
 
 FFMPEG_VERSION = "8.0.1"
 FFMPEG_SHA256 = "05ee0b03119b45c0bdb4df654b96802e909e0a752f72e4fe3794f487229e5a41"
+DAV1D_VERSION = "1.5.4"
+DAV1D_SHA256 = "686616b7c69eb88d44459391ab25cac13b6647a3b288835c5784e71c1514a5c5"
+MESON_VERSION = "1.12.1"
+MESON_SHA256 = "ab0a6ca09f8ef70c564c8241fb5a23957886a0b53fb58412b5e07eaf07dba743"
+NINJA_VERSION = "1.13.2"
+NINJA_BUILDS = {
+    "x86_64": ("ninja-linux.zip", "5749cbc4e668273514150a80e387a957f933c6ed3f5f11e03fb30955e2bbead6"),
+    "aarch64": ("ninja-linux-aarch64.zip", "fd2cacc8050a7f12a16a2e48f9e06fca5c14fc4c2bee2babb67b58be17a607fc"),
+}
 OPENMPT_VERSION = "0.8.9"
 OPENMPT_SHA256 = "9273b88b67973cc69e54d748ab1b749399d6d07695f1c37d0c59f88b4106074f"
 MACOS_SDK_VERSION = "14.5"
@@ -38,9 +48,26 @@ FFMPEG_OPTIONS = [
     *[f"--enable-decoder={name}" for name in ("h264", "hevc", "mpeg4", "vp8", "vp9", "av1")],
 ]
 
+ANDROID_FFMPEG_OPTIONS = [
+    "--enable-jni", "--enable-mediacodec",
+    *[f"--enable-decoder={name}_mediacodec" for name in ("h264", "hevc", "mpeg4", "vp8", "vp9", "av1")],
+]
+WINDOWS_FFMPEG_OPTIONS = [
+    "--enable-d3d11va", "--enable-dxva2",
+    *[f"--enable-hwaccel={name}_{api}" for name in ("h264", "hevc", "vp9", "av1") for api in ("d3d11va", "d3d11va2", "dxva2")],
+]
+MACOS_FFMPEG_OPTIONS = [
+    "--enable-videotoolbox",
+    *[f"--enable-hwaccel={name}_videotoolbox" for name in ("h264", "hevc", "mpeg4", "vp9", "av1")],
+]
+
 
 def ffmpeg_source():
     return Path(os.environ.get("FFMPEG_SOURCE") or WORK / f"ffmpeg-{FFMPEG_VERSION}")
+
+
+def dav1d_source():
+    return Path(os.environ.get("DAV1D_SOURCE") or WORK / f"dav1d-{DAV1D_VERSION}")
 
 
 def openmpt_source():
@@ -53,6 +80,10 @@ def fetch_sources():
     if not (ffmpeg / "configure").exists():
         download_tarball(f"https://ffmpeg.org/releases/ffmpeg-{FFMPEG_VERSION}.tar.xz", ffmpeg, FFMPEG_SHA256)
 
+    dav1d = dav1d_source()
+    if not (dav1d / "meson.build").exists():
+        download_tarball(f"https://downloads.videolan.org/pub/videolan/dav1d/{DAV1D_VERSION}/dav1d-{DAV1D_VERSION}.tar.xz", dav1d, DAV1D_SHA256)
+
     openmpt = openmpt_source()
     version_file = openmpt / ".version"
     if not version_file.exists() or version_file.read_text().strip() != OPENMPT_VERSION:
@@ -62,13 +93,76 @@ def fetch_sources():
     os.environ["OPENMPT_SOURCE"] = str(openmpt)
 
 
+def meson():
+    found = os.environ.get("MESON") or shutil.which("meson")
+    if found:
+        return [found]
+    source = WORK / f"meson-{MESON_VERSION}"
+    if not (source / "meson.py").exists():
+        download_tarball(f"https://files.pythonhosted.org/packages/source/m/meson/meson-{MESON_VERSION}.tar.gz", source, MESON_SHA256)
+    return [sys.executable, source / "meson.py"]
+
+
+def ninja():
+    found = os.environ.get("NINJA") or shutil.which("ninja")
+    if found:
+        return Path(found)
+    binary = WORK / f"ninja-{NINJA_VERSION}" / "ninja"
+    if not binary.exists():
+        name, sha256 = NINJA_BUILDS["aarch64" if platform.machine() in ("aarch64", "arm64") else "x86_64"]
+        archive = download(f"https://github.com/ninja-build/ninja/releases/download/v{NINJA_VERSION}/{name}", binary.parent / name)
+        if hashlib.sha256(archive.read_bytes()).hexdigest() != sha256:
+            archive.unlink()
+            fail(f"{name} doesn't match its sha256")
+        extract_zip(archive, binary.parent)
+        archive.unlink()
+    return binary
+
+
+def meson_cross_file(system, cpu, c, ar, ranlib, strip, flags=()):
+    listed = lambda values: "[" + ", ".join(f"'{value}'" for value in values) + "]"
+    return (f"[binaries]\nc = {listed([c])}\nar = '{ar}'\nranlib = '{ranlib}'\nstrip = '{strip}'\n\n"
+            f"[built-in options]\nc_args = {listed(flags)}\nc_link_args = {listed(flags)}\n\n"
+            f"[host_machine]\nsystem = '{system}'\ncpu_family = '{cpu}'\ncpu = '{cpu}'\nendian = 'little'\n")
+
+
+def build_dav1d(name, cpu, cross=None, env=None):
+    prefix = WORK / "dav1d" / name
+    assembly = cpu == "aarch64" or shutil.which("nasm") is not None
+    options = [f"--prefix={prefix}", "--libdir=lib", "--buildtype=release", "--default-library=static",
+               "-Denable_tools=false", "-Denable_tests=false", "-Denable_examples=false", f"-Denable_asm={str(assembly).lower()}"]
+    cross_file = meson_cross_file(cpu=cpu, **cross) if cross else ""
+    configuration = "\n".join([*options, cross_file])
+    stamp = prefix / "options.txt"
+    if (prefix / "lib" / "pkgconfig" / "dav1d.pc").is_file() and stamp.is_file() and stamp.read_text() == configuration:
+        return prefix
+    info(f"Building dav1d ({name})")
+    build = WORK / "dav1d" / f"build-{name}"
+    shutil.rmtree(build, ignore_errors=True)
+    shutil.rmtree(prefix, ignore_errors=True)
+    build.mkdir(parents=True)
+    if cross:
+        (build / "cross.ini").write_text(cross_file)
+        options += ["--cross-file", build / "cross.ini"]
+    tools = {**(env or {}), "NINJA": ninja()}
+    run(*meson(), "setup", build, dav1d_source(), *options, env=tools)
+    run(tools["NINJA"], "-C", build, f"-j{JOBS}", "install", env=tools)
+    stamp.write_text(configuration)
+    return prefix
+
+
 def ffmpeg_prefix(name):
     return WORK / "ffmpeg" / name
 
 
-def build_ffmpeg(name, *options, env=None):
+def build_ffmpeg(name, *options, dav1d=None, env=None):
     prefix = ffmpeg_prefix(name)
-    if (prefix / "include").is_dir():
+    if dav1d:
+        options = (*options, "--enable-libdav1d", "--enable-decoder=libdav1d", "--pkg-config=pkg-config", "--pkg-config-flags=--static")
+        env = {**(env or {}), "PKG_CONFIG_LIBDIR": dav1d / "lib" / "pkgconfig"}
+    configuration = "\n".join(map(str, [*FFMPEG_OPTIONS, *options]))
+    stamp = prefix / "options.txt"
+    if (prefix / "include").is_dir() and stamp.is_file() and stamp.read_text() == configuration:
         return
     info(f"Building FFmpeg ({name})")
     build = WORK / "ffmpeg" / f"build-{name}"
@@ -78,6 +172,7 @@ def build_ffmpeg(name, *options, env=None):
     run(ffmpeg_source() / "configure", f"--prefix={prefix}", *FFMPEG_OPTIONS, *options, cwd=build, env=env)
     run("make", f"-j{JOBS}", cwd=build, env=env)
     run("make", "install", cwd=build, env=env)
+    stamp.write_text(configuration)
 
 
 def stage_ffmpeg(name, destination):
@@ -107,9 +202,10 @@ def container(engine, image, function, target_dir):
         "CARGO_HOME": CRATE / "target" / "container-cargo",
         "CARGO_TARGET_DIR": CRATE / "target" / target_dir,
         "FFMPEG_SOURCE": ffmpeg_source(),
+        "DAV1D_SOURCE": dav1d_source(),
         "OPENMPT_SOURCE": openmpt_source(),
     }
-    mounts = [path for path in (ffmpeg_source(), openmpt_source()) if outside_project(path)]
+    mounts = [path for path in (ffmpeg_source(), dav1d_source(), openmpt_source()) if outside_project(path)]
     info(f"Running {function} inside {image}")
     run_in_container(engine, image, "music_service", function, env=env, mounts=mounts)
 
@@ -120,20 +216,27 @@ def linux_container(function):
     container(engine, LINUX_IMAGE, function, "container")
 
 
+def build_linux_ffmpeg():
+    build_ffmpeg("linux-x86_64", dav1d=build_dav1d("linux-x86_64", "x86_64"))
+
+
 def build_linux():
     if not IN_CONTAINER:
         return linux_container("build_linux")
 
     target_dir = cargo_target_dir()
-    build_ffmpeg("linux-x86_64")
+    build_linux_ffmpeg()
     info(f"cargo build (linux x86_64, glibc {platform.libc_ver()[1]})")
     cargo_build("--workspace", env={"FFMPEG_DIR": ffmpeg_prefix("linux-x86_64")})
     for lib in ("libnari.so", "libnari_webview.so"):
         shutil.copy(target_dir / "release" / lib, BIN / "linux")
     stage_ffmpeg("linux-x86_64", BIN / "linux")
 
+    arm64_dav1d = build_dav1d("linux-arm64", "aarch64", cross={
+        "system": "linux", "c": "aarch64-linux-gnu-gcc", "ar": "aarch64-linux-gnu-ar", "ranlib": "aarch64-linux-gnu-ranlib",
+        "strip": "aarch64-linux-gnu-strip"})
     build_ffmpeg("linux-arm64", "--enable-cross-compile", "--arch=aarch64", "--target-os=linux",
-                 "--cross-prefix=aarch64-linux-gnu-")
+                 "--cross-prefix=aarch64-linux-gnu-", dav1d=arm64_dav1d)
     info("cargo build (linux arm64)")
     cargo_build("--workspace", "--target", "aarch64-unknown-linux-gnu", env={
         "FFMPEG_DIR": ffmpeg_prefix("linux-arm64"),
@@ -165,8 +268,11 @@ def winpthread_dll():
 
 def build_windows():
     fetch_sources()
+    windows_dav1d = build_dav1d("windows-x86_64", "x86_64", cross={
+        "system": "windows", "c": "x86_64-w64-mingw32-gcc", "ar": "x86_64-w64-mingw32-ar", "ranlib": "x86_64-w64-mingw32-ranlib",
+        "strip": "x86_64-w64-mingw32-strip"})
     build_ffmpeg("windows-x86_64", "--enable-cross-compile", "--arch=x86_64", "--target-os=mingw32",
-                 "--cross-prefix=x86_64-w64-mingw32-")
+                 "--cross-prefix=x86_64-w64-mingw32-", *WINDOWS_FFMPEG_OPTIONS, dav1d=windows_dav1d)
     info("cargo build (windows)")
     cargo_build("--target", WINDOWS_TARGET, env={"FFMPEG_DIR": ffmpeg_prefix("windows-x86_64")})
     release = cargo_target_dir() / WINDOWS_TARGET / "release"
@@ -191,10 +297,13 @@ def build_android():
 
     for target, folder, arch in [("aarch64-linux-android", "arm64", "aarch64"), ("x86_64-linux-android", "x86_64", "x86_64")]:
         clang = tools / f"{target}{ANDROID_API}-clang"
+        android_dav1d = build_dav1d(f"android-{folder}", arch, cross={
+            "system": "android", "c": clang, "ar": tools / "llvm-ar", "ranlib": tools / "llvm-ranlib", "strip": tools / "llvm-strip"})
         build_ffmpeg(f"android-{folder}", "--enable-cross-compile", "--target-os=android", f"--arch={arch}",
                      f"--cross-prefix={tools / target}-", f"--cc={clang}", f"--cxx={clang}++",
                      f"--ar={tools / 'llvm-ar'}", f"--ranlib={tools / 'llvm-ranlib'}", f"--nm={tools / 'llvm-nm'}",
-                     f"--strip={tools / 'llvm-strip'}", f"--sysroot={toolchain / 'sysroot'}")
+                     f"--strip={tools / 'llvm-strip'}", f"--sysroot={toolchain / 'sysroot'}", *ANDROID_FFMPEG_OPTIONS,
+                     dav1d=android_dav1d)
         info(f"cargo build (android {folder})")
         variable = target.replace("-", "_")
         cargo_build("--target", target, env={
@@ -242,10 +351,14 @@ def build_macos():
                                           ("aarch64-apple-darwin", "arm64", "aarch64", "11.0")]:
         prefix = f"{arch}-apple-{darwin}"
         env = {"MACOSX_DEPLOYMENT_TARGET": minimum}
+        macos_dav1d = build_dav1d(f"macos-{folder}", arch, env=env, cross={
+            "system": "darwin", "c": f"{prefix}-clang", "ar": f"{prefix}-ar", "ranlib": f"{prefix}-ranlib", "strip": f"{prefix}-strip",
+            "flags": [f"-mmacosx-version-min={minimum}"]})
         build_ffmpeg(f"macos-{folder}", "--enable-cross-compile", "--target-os=darwin", f"--arch={arch}",
                      f"--cc={prefix}-clang", f"--cxx={prefix}-clang++", f"--ar={prefix}-ar", f"--ranlib={prefix}-ranlib",
                      f"--nm={prefix}-nm", f"--strip={prefix}-strip",
-                     f"--extra-cflags=-mmacosx-version-min={minimum}", f"--extra-ldflags=-mmacosx-version-min={minimum}", env=env)
+                     f"--extra-cflags=-mmacosx-version-min={minimum}", f"--extra-ldflags=-mmacosx-version-min={minimum}",
+                     *MACOS_FFMPEG_OPTIONS, dav1d=macos_dav1d, env=env)
         info(f"cargo build (macos {folder})")
         variable = target.replace("-", "_")
         cargo_build("--target", target, env={
@@ -283,7 +396,7 @@ def build_aar():
 def test():
     if not IN_CONTAINER:
         return linux_container("test")
-    build_ffmpeg("linux-x86_64")
+    build_linux_ffmpeg()
     info("cargo test")
     lib = ffmpeg_prefix("linux-x86_64")
     run("cargo", "test", cwd=CRATE, env={"FFMPEG_DIR": lib, "LD_LIBRARY_PATH": lib / "lib"})

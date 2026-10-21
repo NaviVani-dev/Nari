@@ -6,6 +6,8 @@ var _runtime: RefCounted
 var _log: Log
 var _settings: = Callable()
 var _cleanup: Array[Callable] = []
+var _videos: = {}
+var _last_video: = 0
 
 const IMAGES: = ["png", "jpg", "jpeg", "webp", "svg", "bmp", "tga"]
 const SOUNDS: = {"mp3": "AudioStreamMP3", "ogg": "AudioStreamOggVorbis", "wav": "AudioStreamWAV"}
@@ -196,6 +198,105 @@ func add_visualizer(spec: Dictionary) -> void :
 		entry["params"][key] = load_relative(value) if value is String and (value as String).get_extension().to_lower() in IMAGES else value
 	Visualizers.register(entry)
 	_cleanup.append(Visualizers.unregister.bind(entry))
+
+func add_cover_view(spec: Dictionary) -> String:
+	var entry: = {
+		"id": "%s.%s" % [id, spec.get("id", "view")],
+		"icon": texture(spec.get("icon")),
+		"title": str(spec.get("title", "")),
+		"available": false,
+		"texture": null,
+		"on_toggle": spec.get("on_toggle", Callable()),
+	}
+	_extend(Plugins.cover_views, entry)
+	_cleanup.append(func():
+		if Plugins.cover_view == entry["id"]:
+			Plugins.set_cover_view(""))
+	return entry["id"]
+
+func cover_view_available(key: String, available: bool) -> void:
+	if key.begins_with(id + "."):
+		Plugins.update_cover_view(key, "available", available)
+
+func cover_view_texture(key: String, view: Texture2D) -> void:
+	if key.begins_with(id + "."):
+		Plugins.update_cover_view(key, "texture", view)
+
+func cover_view_active(key: String) -> bool:
+	return Plugins.cover_view == key
+
+func add_output(spec: Dictionary) -> String:
+	var entry: = {
+		"id": "%s.%s" % [id, spec.get("id", "output")],
+		"scan": spec.get("scan", Callable()),
+		"connect": spec.get("connect", Callable()),
+		"disconnect": spec.get("disconnect", Callable()),
+		"volume": spec.get("volume", Callable()),
+	}
+	_extend(Plugins.outputs, entry)
+	_cleanup.append(Plugins.release_output.bind(entry["id"]))
+	return entry["id"]
+
+func release_output(key: String) -> void:
+	if key.begins_with(id + "."):
+		Plugins.release_output(key)
+
+func output_connected(key: String) -> bool:
+	return Plugins.output.get("key") == key and Plugins.is_output_connected()
+
+func open_video(source: String, spec: Dictionary) -> int:
+	var remote: = MotionPlayer.is_remote(source)
+	if remote and not (Plugins.ALL_ACCESS in Package.permissions(manifest) or "network" in Package.permissions(manifest)):
+		return -1
+	var player: = MotionPlayer.create(source if remote else path_of(source))
+	if player == null:
+		return -1
+	_last_video += 1
+	var id: = _last_video
+	player.looping = bool(spec.get("loop", false))
+	player.playing = bool(spec.get("autoplay", true))
+	if bool(spec.get("music", false)):
+		player.sync = func() -> float: return MediaPlayer.get_position() / 1000.0
+	var ready: Callable = spec.get("on_ready", Callable())
+	var failed: Callable = spec.get("on_error", Callable())
+	var ended: Callable = spec.get("on_end", Callable())
+	player.settled.connect(func(error: String):
+		if error.is_empty() and ready.is_valid():
+			ready.call(player.texture)
+		elif not error.is_empty() and failed.is_valid():
+			failed.call(error))
+	if ended.is_valid():
+		player.ended.connect(ended)
+	_videos[id] = player
+	add_child(player)
+	_cleanup.append(close_video.bind(id))
+	return id
+
+func video_texture(id: int) -> Texture2D:
+	return _videos[id].texture if _videos.has(id) else null
+
+func video_playing(id: int, playing: bool) -> void:
+	if _videos.has(id):
+		_videos[id].playing = playing
+
+func video_seek(id: int, seconds: float) -> void:
+	if _videos.has(id):
+		_videos[id].seek(seconds)
+
+func video_position(id: int) -> float:
+	return _videos[id].position() if _videos.has(id) else 0.0
+
+func video_length(id: int) -> float:
+	return _videos[id].length() if _videos.has(id) else 0.0
+
+func video_watch(id: int, viewer: CanvasItem) -> void:
+	if _videos.has(id) and viewer:
+		_videos[id].watch(viewer)
+
+func close_video(id: int) -> void:
+	if _videos.has(id):
+		_videos[id].queue_free()
+		_videos.erase(id)
 
 func add_command(command_name: String, description: String, handler: Callable) -> bool:
 	var run: = func(args: PackedStringArray) -> Variant: return handler.call(Array(args))

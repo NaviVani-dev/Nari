@@ -218,6 +218,8 @@ func _update_layout() -> void:
 	Main.set_dual(dual)
 	if bottom_view is Window:
 		_show_bottom_window(dual)
+	elif bottom_view is SubViewport and not screens.ayn_thor_plugin:
+		bottom_view.render_target_update_mode = SubViewport.UPDATE_ALWAYS if dual else SubViewport.UPDATE_DISABLED
 
 func _wake() -> void:
 	_last_input_msec = Time.get_ticks_msec()

@@ -7,8 +7,7 @@ signal stage_changed
 
 const DIR: = "user://themes"
 const STAGING_DIR: = "user://theme_staging"
-const POSTERS_DIR: = "user://theme_posters"
-const POSTER_SIZE: = 1920
+const MEDIA_WAIT_MSEC: = 1500
 const API: = 1
 const ASSETS_FOLDER: = "assets"
 const GLYPHS_FOLDER: = "glyphs"
@@ -54,8 +53,7 @@ var _page: = "home"
 var _follows_page: = false
 var _swapped: = {}
 var _held: = {}
-var _media_jobs: Array[Dictionary] = []
-var _last_draw: = 0
+var _players: = {}
 var _script: NariPlugin
 var _script_theme: = ""
 var _script_overrides: = {}
@@ -65,17 +63,17 @@ var _booted: = false
 var _l: = Log.new("Themes", Color("c58af2"))
 
 func _ready() -> void :
-	set_process(false)
 	DirAccess.make_dir_recursive_absolute(DIR)
 	_scan()
 	_apply(false)
 	_boot.call_deferred()
-	RenderingServer.frame_post_draw.connect(_on_frame_drawn)
 	SettingsManager.changed.connect( func(section: String, key: String, value: Variant):
 		if section == "theme" and key == "active":
 			_apply(true)
 		elif section == "performance" and key == "background":
 			_hold_still()
+		elif section == "performance" and key == "video_decoding":
+			_reload_media()
 		elif section == settings_section(active_id()):
 			if _script:
 				_script.emit_event("setting", [key, value])
@@ -95,9 +93,6 @@ func _boot() -> void :
 	if _script:
 		active = _resolve(manifest)
 		_paint(false)
-
-func _exit_tree() -> void :
-	wait_for_media()
 
 func active_id() -> String:
 	return str(active.get("id", ""))
@@ -133,10 +128,24 @@ func install(zip_path: String) -> String:
 		return "Nari could not write the theme files"
 	DirAccess.remove_absolute(zip_path)
 	_l.log("Installed theme '%s' %s" % [id, manifest.get("version", "")])
+	_warn_unplayable(target)
 	_scan()
 	if id == active_id():
 		_apply(true)
 	return ""
+
+func _warn_unplayable(root: String) -> void :
+	if not MotionPlayer.available():
+		return
+	var checked: = PackedStringArray()
+	for layer in layers_of(read_manifest(root)):
+		var file: = str(layer.get("file", ""))
+		if str(layer["type"]) != "image" or file.is_empty() or checked.has(file):
+			continue
+		checked.append(file)
+		var problem: String = ClassDB.class_call_static("NariMotion", "probe", ProjectSettings.globalize_path(root.path_join(file)))
+		if not problem.is_empty():
+			_l.warn("The theme background '%s' can't be played on this device: %s" % [file, problem])
 
 func is_builtin(id: String) -> bool:
 	return BUILTIN.has(id)
@@ -172,9 +181,8 @@ func load_screenshot(id: String, source: String) -> Texture2D:
 	return await Plugins.load_screenshot(id, source)
 
 func wait_for_media() -> void :
-	for job in _media_jobs.duplicate():
-		while not _advance_job(job, true):
-			OS.delay_msec(5)
+	for player: MotionPlayer in _players.values():
+		player.prime(MEDIA_WAIT_MSEC)
 
 static func read_manifest(root: String) -> Dictionary:
 	return _with_imports(root, Package.manifest_at(root), {}, 0)
@@ -827,90 +835,69 @@ func dress(kind: String, material: ShaderMaterial, fallback: Shader) -> bool:
 func texture_of(file: String) -> Texture2D:
 	return _textures.get(file)
 
+func watch(file: String, viewer: CanvasItem) -> void :
+	if _players.has(file):
+		_players[file].watch(viewer)
+
 func _load_backgrounds() -> void :
 	var root: = str(active.get("path", ""))
 	if root != _texture_root:
 		_texture_root = root
-		_textures = {}
+		_clear_media()
 		_shaders = {}
 		_samplers = {}
 	layers = layers_of(active)
 	overlays = overlays_of(active)
-	var missing: = PackedStringArray()
+	var files: = PackedStringArray()
 	for layer in layers:
 		var file: = str(layer.get("file", ""))
-		if str(layer["type"]) == "image" and not file.is_empty() and not _textures.has(file) and not missing.has(file):
-			missing.append(file)
-	if not missing.is_empty():
-		_load_media(missing)
+		if str(layer["type"]) == "image" and not file.is_empty() and not files.has(file):
+			files.append(file)
+	for file: String in _textures.keys():
+		if not files.has(file):
+			_forget_media(file)
+	for file in files:
+		if not _textures.has(file):
+			_load_media(file)
 	backgrounds_changed.emit()
 
-func _load_media(files: PackedStringArray) -> void :
-	var job: = {"files": files, "root": _texture_root, "ids": [], "results": [], "task": -1, "loaded": []}
-	for file in files:
-		var id: = AnimationLoader.start(ProjectSettings.globalize_path(_texture_root.path_join(file)))
-		job["ids"].append(id)
-		job["results"].append(null if id >= 0 else {})
-		job["loaded"].append(null)
-		_textures[file] = null
-	_media_jobs.append(job)
-	if not _advance_job(job):
-		set_process(true)
-		if _booted:
-			_show_posters(files, _texture_root)
+func _load_media(file: String) -> void :
+	_textures[file] = null
+	var player: = MotionPlayer.create(_texture_root.path_join(file))
+	if player == null:
+		_l.warn("The theme background '%s' could not be loaded" % file)
+		return
+	player.playing = str(SettingsManager.performance.background) != "simple"
+	player.on_demand = true
+	player.settled.connect(_on_media_settled.bind(file, player))
+	_players[file] = player
+	add_child(player)
 
-func _show_posters(files: PackedStringArray, root: String) -> void :
-	DirAccess.make_dir_recursive_absolute(POSTERS_DIR)
-	for file in files:
-		var source: = ProjectSettings.globalize_path(root.path_join(file))
-		var poster: = POSTERS_DIR.path_join("%d_%d.jpg" % [source.hash(), FileAccess.get_modified_time(source)])
-		var made: bool = FileAccess.file_exists(poster) or ClassDB.class_call_static("NariAnimation", "save_poster", source, ProjectSettings.globalize_path(poster), POSTER_SIZE)
-		if made and root == _texture_root and _textures.has(file) and _textures[file] == null:
-			_textures[file] = ImageTexture.create_from_image(Image.load_from_file(poster))
-			backgrounds_changed.emit()
+func _on_media_settled(error: String, file: String, player: MotionPlayer) -> void :
+	if _players.get(file) != player:
+		return
+	if not error.is_empty():
+		_l.warn("The theme background '%s' could not be loaded: %s" % [file, error])
+		return
+	_textures[file] = player.texture
+	_l.log("Theme background '%s' plays with %s" % [file, player.describe()])
+	backgrounds_changed.emit()
 
-func _advance_job(job: Dictionary, block: bool = false) -> bool:
-	var results: Array = job["results"]
-	if job["task"] < 0:
-		for index in results.size():
-			if results[index] == null:
-				results[index] = AnimationLoader.take(job["ids"][index])
-		if results.has(null):
-			return false
-		var loaded: Array = job["loaded"]
-		job["task"] = WorkerThreadPool.add_task(func():
-			for index in results.size():
-				loaded[index] = _texture_of(results[index]))
-	if not block and not WorkerThreadPool.is_task_completed(job["task"]):
-		return false
-	WorkerThreadPool.wait_for_task_completion(job["task"])
-	_media_jobs.erase(job)
-	if job["root"] == _texture_root:
-		for index in job["files"].size():
-			_textures[job["files"][index]] = job["loaded"][index]
-		_hold_still()
-		backgrounds_changed.emit()
-	return true
+func _forget_media(file: String) -> void :
+	if _players.has(file):
+		_players[file].queue_free()
+		_players.erase(file)
+	_textures.erase(file)
 
-func _process(_delta: float) -> void :
-	for job in _media_jobs.duplicate():
-		_advance_job(job)
-	set_process(not _media_jobs.is_empty())
+func _clear_media() -> void :
+	for file: String in _textures.keys():
+		_forget_media(file)
+
+func _reload_media() -> void :
+	_clear_media()
+	_load_backgrounds()
 
 func _hold_still() -> void :
 	var still: = str(SettingsManager.performance.background) == "simple"
-	for texture: Variant in _textures.values():
-		if texture is AnimatedTexture:
-			texture.pause = still
-			texture.current_frame = 0 if still else texture.current_frame
-
-func _on_frame_drawn() -> void :
-	var now: = Time.get_ticks_usec()
-	if _last_draw > 0 and now - _last_draw > AnimationLoader.STALL_USEC:
-		AnimationLoader.rewind(_textures.values())
-	_last_draw = now
-
-func _texture_of(data: Dictionary) -> Texture2D:
-	if data.has("error"):
-		_l.warn.call_deferred("A theme background could not be loaded: %s" % data["error"])
-	return AnimationLoader.texture_of(data)
+	for player: MotionPlayer in _players.values():
+		player.playing = not still

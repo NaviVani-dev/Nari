@@ -254,6 +254,8 @@ func _entries_of(category: String) -> Array:
 					[30, 60, 120, 144, 0], {30: "30 fps", 60: "60 fps", 120: "120 fps", 144: "144 fps", 0: "Unlimited"}),
 				_choice("Background quality", "Select how often the animated background moves", preload("res://assets/icons/fps.svg"), "performance", "background_quality",
 					["high", "medium", "low"], {"high": "High", "medium": "Medium", "low": "Low"}),
+				_choice("Video decoding", "How animated backgrounds and covers are decoded", preload("res://assets/icons/fps.svg"), "performance", "video_decoding",
+					["auto", "software"], {"auto": "Hardware when available", "software": "Software only"}),
 			])
 		"lyrics":
 			return _section("Sources", [SettingsScreen.lyrics_provider_entry(SettingItem.refresh_list.bind(list))]) + _section("Display", [

@@ -4,6 +4,7 @@
 mod android;
 mod analysis;
 mod animation;
+mod motion;
 mod palette;
 mod api;
 mod audio;

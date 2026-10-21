@@ -4,7 +4,6 @@ signal page_changed(page: Pages, data: Dictionary)
 signal insets_changed(insets: Vector4)
 signal dual_changed(enabled: bool)
 signal header_changed
-signal booted
 
 enum Pages { Home, Tracks, Albums, Artists, Playlists, Album, Artist, Playlist, NowPlaying, Settings, Soundboard, Welcome, Search, About, Discover, Web, Marketplace, Folders }
 
@@ -39,7 +38,6 @@ const SETUP_FILE := "user://OOBE.txt"
 const MARGINS := ["margin_left", "margin_top", "margin_right", "margin_bottom"]
 const BLEED_GROUP := "full_bleed"
 const PRELOAD_IDLE_MS := 600
-const BOOT_WAIT := 5.0
 
 var setup_done := FileAccess.file_exists(SETUP_FILE)
 var loading_held := true
@@ -70,7 +68,6 @@ var _had_song := false
 var _dialogs: Array[Dialog] = []
 var _content_hidden := false
 var _content_fade: Tween
-var _booted := false
 var _last_input := 0
 var _preloading := false
 var _preload_again := false
@@ -88,12 +85,6 @@ func _ready() -> void:
 
 func _exit_tree() -> void:
 	Worker.finish()
-
-func finish_boot() -> void:
-	if _booted:
-		return
-	_booted = true
-	booted.emit()
 
 func _on_mode_changed(_gamepad: bool) -> void:
 	if InputGlyphs.navigating() or not _top_view:
@@ -316,14 +307,14 @@ func has_song() -> bool:
 func focus_owner() -> Control:
 	return _viewport_of(input_view()).gui_get_focus_owner()
 
+func is_preloading() -> bool:
+	return _preloading
+
 func preload_pages() -> void:
 	if _preloading:
 		_preload_again = true
 		return
 	_preloading = true
-	if not _booted:
-		get_tree().create_timer(BOOT_WAIT).timeout.connect(finish_boot)
-		await booted
 	await _preload_pages()
 	_preloading = false
 	if _preload_again:

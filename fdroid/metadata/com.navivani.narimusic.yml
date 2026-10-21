@@ -25,18 +25,19 @@ Builds:
     sudo:
       - apt-get update
       - apt-get install -y openjdk-21-jdk-headless pkg-config scons unzip clang libclang-dev
-        make curl
+        make curl meson ninja-build
     output: nari.apk
     srclibs:
       - Godot@4.7.2-stable
       - godot-cpp@27d9dd23c83871e0619fca5dc2cddfbfd69e926a
       - FFmpeg@n8.0.1
+      - dav1d@1.5.4
     rm:
       - addons/AynThor/bin
       - addons/MusicService/bin
     build:
       - export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
-      - GODOT_SRC=$$Godot$$ GODOT_CPP=$$godot-cpp$$ FFMPEG_SRC=$$FFmpeg$$ ANDROID_HOME=$$SDK$$
+      - GODOT_SRC=$$Godot$$ GODOT_CPP=$$godot-cpp$$ FFMPEG_SRC=$$FFmpeg$$ DAV1D_SRC=$$dav1d$$ ANDROID_HOME=$$SDK$$
         python3 scripts/fdroid.py nari.apk
     ndk: 29.0.14206865
 

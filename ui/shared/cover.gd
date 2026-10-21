@@ -187,6 +187,7 @@ func _load(kind: String, id: String, request: String) -> void:
 		_show_generated(GENERATED_KINDS.get(kind, "album"))
 		return
 	var next: Texture2D = loaded
+	MediaPlayer.watch_cover(next, self)
 	if wave_transitions and _wave_material and _shown and texture and next != texture and Themes.enabled("shaders", "cover_transition"):
 		_wave_to(next)
 	else:
@@ -291,6 +292,11 @@ func _on_theme_changed() -> void:
 func show_loading() -> void:
 	_request = ""
 	_skeleton(true)
+
+func show_texture(view: Texture2D) -> void:
+	_request = ""
+	_skeleton(false)
+	texture = view
 
 func clear() -> void:
 	_request = ""
