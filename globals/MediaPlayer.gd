@@ -91,6 +91,7 @@ var _library_cache: Dictionary = {}
 var _textures: Dictionary = {}
 var _thumb_textures: Dictionary = {}
 var _texture_requests: Dictionary = {}
+var _last_draw: = 0
 var _spectrum_warned: = false
 var library_loading: = false
 var _likes: = {}
@@ -107,6 +108,7 @@ func _ready() -> void :
 	add_child(_tape)
 	add_child(artist_info)
 	get_tree().root.files_dropped.connect(open_files)
+	RenderingServer.frame_post_draw.connect(_on_frame_drawn)
 	_likes = JsonUtil.parse_dict(FileAccess.get_file_as_string(LIKES_PATH)) if FileAccess.file_exists(LIKES_PATH) else {}
 	playlists_changed.connect( func():
 		for key in _library_cache.keys():
@@ -1306,6 +1308,12 @@ func _on_playback_changed(state_json: String) -> void :
 		_apply_stream_title()
 	playback_changed.emit(_state)
 	_track_resume()
+
+func _on_frame_drawn() -> void :
+	var now: = Time.get_ticks_usec()
+	if _last_draw > 0 and now - _last_draw > AnimationLoader.STALL_USEC:
+		AnimationLoader.rewind(_textures.values())
+	_last_draw = now
 
 func _on_library_changed() -> void :
 	_library_cache.clear()

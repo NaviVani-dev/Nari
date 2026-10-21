@@ -53,6 +53,7 @@ var _follows_page: = false
 var _swapped: = {}
 var _held: = {}
 var _media_jobs: Array[Dictionary] = []
+var _last_draw: = 0
 var _script: NariPlugin
 var _script_theme: = ""
 var _script_overrides: = {}
@@ -67,6 +68,7 @@ func _ready() -> void :
 	_scan()
 	_apply(false)
 	_boot.call_deferred()
+	RenderingServer.frame_post_draw.connect(_on_frame_drawn)
 	SettingsManager.changed.connect( func(section: String, key: String, value: Variant):
 		if section == "theme" and key == "active":
 			_apply(true)
@@ -886,8 +888,13 @@ func _hold_still() -> void :
 	for texture: Variant in _textures.values():
 		if texture is AnimatedTexture:
 			texture.pause = still
-			if still:
-				texture.current_frame = 0
+			texture.current_frame = 0 if still else texture.current_frame
+
+func _on_frame_drawn() -> void :
+	var now: = Time.get_ticks_usec()
+	if _last_draw > 0 and now - _last_draw > AnimationLoader.STALL_USEC:
+		AnimationLoader.rewind(_textures.values())
+	_last_draw = now
 
 func _texture_of(data: Dictionary) -> Texture2D:
 	if data.has("error"):

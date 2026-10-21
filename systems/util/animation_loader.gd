@@ -1,5 +1,9 @@
 class_name AnimationLoader
 
+# AnimatedTexture adds the whole gap between draws to its clock, so after a sleep it
+# spins through full loops (looking frozen) until it catches up
+const STALL_USEC: = 500000
+
 static func start(path: String, max_frames: int = AnimatedTexture.MAX_FRAMES, max_size: int = 0) -> int:
 	if path.is_empty() or not FileAccess.file_exists(path) or not ClassDB.class_exists("NariAnimation"):
 		return -1
@@ -21,6 +25,11 @@ static func texture_of(data: Dictionary) -> Texture2D:
 		animated.set_frame_texture(index, ImageTexture.create_from_image(frames[index]))
 		animated.set_frame_duration(index, delays[index])
 	return animated
+
+static func rewind(textures: Array) -> void :
+	for texture: Variant in textures:
+		if texture is AnimatedTexture:
+			texture.current_frame = texture.current_frame
 
 static func load(path: String, max_frames: int = AnimatedTexture.MAX_FRAMES, max_size: int = 0) -> Texture2D:
 	var id: = start(path, max_frames, max_size)
