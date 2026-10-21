@@ -9,6 +9,8 @@ const CLOSE_SIZE := 88.0
 const CLOSE_INSET := 32.0
 const INFO_LINE := preload("res://ui/shared/InfoLine.tscn")
 const COVER := preload("res://ui/shared/Cover.tscn")
+const ESCAPED := 0xE000
+const BREAK := "\u2028"
 const MONTHS := ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 const TEXT_SIZE := 38
 const HEADINGS := {"h1": 60, "h2": 52, "h3": 44}
@@ -377,6 +379,8 @@ static func _weight(folder: String) -> int:
 static func bbcode(markdown: String, link: Color) -> String:
 	var heading := RegEx.create_from_string("^(#{1,6})\\s+(.*)")
 	var item := RegEx.create_from_string("^\\s*([-*+]|\\d+[.)])\\s+(.*)")
+	var rule := RegEx.create_from_string("^ {0,3}([-*_])( *\\1){2,} *$")
+	var underline := RegEx.create_from_string("^ {0,3}(=+|-+) *$")
 	var blocks: Array[Dictionary] = []
 	var current := {}
 	for line in markdown.replace("\r", "").split("\n"):
@@ -389,12 +393,22 @@ static func bbcode(markdown: String, link: Color) -> String:
 			continue
 		var found := heading.search(line)
 		var listed := item.search(line)
+		var lined := underline.search(line)
+		if line.ends_with("  ") or text.ends_with("\\") and not text.ends_with("\\\\"):
+			text = text.trim_suffix("\\") + BREAK
 		var kind := "p"
 		if text.begins_with("```"):
 			kind = "code"
 		elif text.is_empty():
 			current = {}
 			continue
+		elif lined and current.get("kind") == "p":
+			current["kind"] = "h1" if lined.get_string(1).begins_with("=") else "h2"
+			current["lines"] = [" ".join(current["lines"])]
+			current = {}
+			continue
+		elif rule.search(line):
+			kind = "hr"
 		elif found:
 			kind = "h%d" % mini(found.get_string(1).length(), 3)
 			text = found.get_string(2)
@@ -433,8 +447,10 @@ static func bbcode(markdown: String, link: Color) -> String:
 				result += "[indent][code]%s[/code][/indent]" % "\n".join(lines)
 			"table":
 				result += _table(block["lines"], link_format)
+			"hr":
+				result += "[hr]"
 			_:
-				result += " ".join(lines)
+				result += " ".join(lines).replace("\n ", "\n")
 	return result
 
 static func _table(rows: Array, link_format: String) -> String:
@@ -452,13 +468,22 @@ static func _table(rows: Array, link_format: String) -> String:
 	return text + "[/table]"
 
 static func _inline(text: String, link_format: String) -> String:
+	for found in RegEx.create_from_string("\\\\([\\\\`*_{}\\[\\]()#+.!~|<>-])").search_all(text):
+		text = text.replace(found.get_string(), char(ESCAPED + found.get_string(1).unicode_at(0)))
 	text = text.replace("[", "[lb]")
+	text = RegEx.create_from_string("<(https?://[^>\\s]+)>").sub(text, "[lb]$1]($1)", true)
 	text = RegEx.create_from_string("!\\[lb\\]([^\\]]*)\\]\\([^)]*\\)").sub(text, "$1", true)
 	for found in RegEx.create_from_string("\\[lb\\]([^\\]]+)\\]\\(([^)\\s]+)\\)").search_all(text):
 		text = text.replace(found.get_string(), link_format % [found.get_string(2), found.get_string(1)])
 	text = RegEx.create_from_string("`([^`]+)`").sub(text, "[code]$1[/code]", true)
-	text = RegEx.create_from_string("\\*\\*(.+?)\\*\\*").sub(text, "[b]$1[/b]", true)
-	return RegEx.create_from_string("(?<![\\w*])\\*(?!\\s)([^*]+?)\\*(?![\\w*])").sub(text, "[i]$1[/i]", true)
+	text = RegEx.create_from_string("(\\*\\*\\*|___)(.+?)\\1").sub(text, "[b][i]$2[/i][/b]", true)
+	text = RegEx.create_from_string("(\\*\\*|__)(.+?)\\1").sub(text, "[b]$2[/b]", true)
+	text = RegEx.create_from_string("~~(.+?)~~").sub(text, "[s]$1[/s]", true)
+	text = RegEx.create_from_string("(?<![\\w*])\\*(?!\\s)([^*]+?)\\*(?![\\w*])").sub(text, "[i]$1[/i]", true)
+	text = RegEx.create_from_string("(?<![\\w_])_(?!\\s)([^_]+?)_(?![\\w_])").sub(text, "[i]$1[/i]", true)
+	for escaped in "\\`*_{}[]()#+.!~|<>-":
+		text = text.replace(char(ESCAPED + escaped.unicode_at(0)), "[lb]" if escaped == "[" else escaped)
+	return text.replace(BREAK, "\n")
 
 func _toggle_plugin() -> void:
 	if source == Marketplace:

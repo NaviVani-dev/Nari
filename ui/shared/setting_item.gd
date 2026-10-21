@@ -36,7 +36,7 @@ func _ready() -> void:
 func refresh() -> void:
 	glyph.texture = entry.get("icon")
 	title.text = str(entry.get("title", ""))
-	description.text = str(entry.get("description", ""))
+	description.text = " ".join(str(entry.get("description", "")).split("\n", false)).replace("\r", "")
 	var current: Callable = entry.get("value", Callable())
 	value.text = str(current.call()) if current.is_valid() else ""
 	var checked: Variant = _checked()

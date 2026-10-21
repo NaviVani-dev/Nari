@@ -7,6 +7,8 @@ signal stage_changed
 
 const DIR: = "user://themes"
 const STAGING_DIR: = "user://theme_staging"
+const POSTERS_DIR: = "user://theme_posters"
+const POSTER_SIZE: = 1920
 const API: = 1
 const ASSETS_FOLDER: = "assets"
 const GLYPHS_FOLDER: = "glyphs"
@@ -854,6 +856,18 @@ func _load_media(files: PackedStringArray) -> void :
 	_media_jobs.append(job)
 	if not _advance_job(job):
 		set_process(true)
+		if _booted:
+			_show_posters(files, _texture_root)
+
+func _show_posters(files: PackedStringArray, root: String) -> void :
+	DirAccess.make_dir_recursive_absolute(POSTERS_DIR)
+	for file in files:
+		var source: = ProjectSettings.globalize_path(root.path_join(file))
+		var poster: = POSTERS_DIR.path_join("%d_%d.jpg" % [source.hash(), FileAccess.get_modified_time(source)])
+		var made: bool = FileAccess.file_exists(poster) or ClassDB.class_call_static("NariAnimation", "save_poster", source, ProjectSettings.globalize_path(poster), POSTER_SIZE)
+		if made and root == _texture_root and _textures.has(file) and _textures[file] == null:
+			_textures[file] = ImageTexture.create_from_image(Image.load_from_file(poster))
+			backgrounds_changed.emit()
 
 func _advance_job(job: Dictionary, block: bool = false) -> bool:
 	var results: Array = job["results"]

@@ -37,7 +37,7 @@ func _ready() -> void:
 
 func refresh() -> void:
 	title.text = str(entry.get("title", ""))
-	description.text = str(entry.get("description", ""))
+	description.text = " ".join(str(entry.get("description", "")).split("\n", false)).replace("\r", "")
 	cover.clear()
 	cover.texture = entry.get("image")
 	check.visible = bool(entry.get("enabled", false))
