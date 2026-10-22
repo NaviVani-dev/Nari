@@ -38,6 +38,7 @@ const TAB_BAR_GAP := 24.0
 @onready var queue_empty: EmptyMessage = _build_queue_notice()
 @onready var soundboard_area: SoundboardGrid = _build_soundboard()
 @onready var effects_area: HBoxContainer = %EffectsArea
+@onready var effects_locked: NariLabel = %EffectsLocked
 @onready var effects_pages: PagesContainer = %Pages
 @onready var plugin_effects: EffectsPresets = %PluginEffects
 @onready var effects_previous: NariButton = %LeftButton
@@ -90,6 +91,8 @@ func _ready() -> void:
 	_mount_plugin_tabs(_show_area)
 	for key in _plugin_tabs:
 		_areas[key] = _plugin_tabs[key]["area"]
+	Plugins.output_changed.connect(_swap_effects)
+	_swap_effects()
 	lyrics_button.pressed.connect(func():
 		if not (_show_lyrics and lyrics_visualizer.recenter()):
 			_toggle_lyrics())
@@ -149,7 +152,7 @@ func _refresh_actions() -> void:
 	var shown: Array = []
 	if _area == "queue":
 		shown.append({"text": "Clear", "icon": CLEAR_ICON, "action": func(): Dialog.confirm("Clear the upcoming songs?", "Clear", MediaPlayer.clear_upcoming, true)})
-	elif _area == "effects":
+	elif _area == "effects" and _areas["effects"] == effects_area:
 		shown.append({"glyph": InputGlyphs.Glyph.X, "text": "Reset", "icon": RESET_ICON, "action": MediaPlayer.reset_music_distortion})
 	for child in actions.get_children():
 		child.queue_free()
@@ -204,6 +207,18 @@ func _paint_tabs() -> void:
 
 func _paint_tab(button: NariButton, active: bool) -> void:
 	button.indicator = active
+
+func _swap_effects() -> void:
+	var shown: Control = _areas["effects"]
+	var wanted: Control = effects_locked if Plugins.is_output_connected() else effects_area
+	if shown == wanted:
+		return
+	_areas["effects"] = wanted
+	if _area == "effects":
+		shown.hide()
+		wanted.modulate.a = 1.0
+		wanted.show()
+		_refresh_actions()
 
 func _show_area(area: String) -> void:
 	if area == _area:

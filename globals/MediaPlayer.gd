@@ -216,7 +216,7 @@ func register_provider(entry: MusicProvider) -> void :
 	entry.http = HTTPService.new()
 	add_child(entry.http)
 	providers.append(entry)
-	entry.settings_changed.connect(func(): load("res://ui/screens/discover.gd").forget(entry.id))
+	entry.settings_changed.connect(_forget_discover.bind(entry.id))
 	_l.log("Found music provider '%s'" % entry.id)
 	if provider and entry.id == SettingsManager.library.provider and entry != provider:
 		use_provider(entry.id)
@@ -1374,6 +1374,9 @@ func _on_library_ready(success: bool, error: String) -> void :
 
 func _on_provider_settings_changed() -> void :
 	music_provider_changed.emit()
+
+func _forget_discover(provider_id: String) -> void :
+	load("res://ui/screens/discover.gd").forget(provider_id)
 
 func _on_now_playing_requested() -> void:
 	if _native.takeNowPlayingRequest():

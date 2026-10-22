@@ -70,6 +70,7 @@ const QUIET_ACTIONS: Array[StringName] = [&"play_pause", &"previous_track", &"ne
 @onready var queue_empty: EmptyMessage = _build_queue_notice()
 @onready var lyrics_visualizer: LyricsVisualizer = %LyricsVisualizer
 @onready var effects_area: BoxContainer = %EffectsArea
+@onready var effects_locked: NariLabel = %EffectsLocked
 @onready var effects_presets: EffectsPresets = %EffectsPresets
 @onready var plugin_effects: EffectsPresets = %PluginEffects
 @onready var soundboard_area: SoundboardGrid = _build_soundboard()
@@ -104,6 +105,8 @@ func _ready() -> void:
 	UI.link_current_song(song_title, song_artist)
 	for key in _plugin_tabs:
 		_screens[key] = _plugin_tabs[key]["area"]
+	Plugins.output_changed.connect(_swap_effects)
+	_swap_effects()
 	ThemeEngine.follow(backdrop, func(): backdrop.self_modulate = ThemeEngine.get_color(ThemeEngine.Colors.BackgroundGradient))
 	song_title.marquee = true
 	song_artist.marquee = true
@@ -352,6 +355,17 @@ func _press_tab(screen: String) -> void:
 		return
 	_toggle_screen(screen)
 
+func _swap_effects() -> void:
+	var shown: Control = _screens["effects"]
+	var wanted: Control = effects_locked if Plugins.is_output_connected() else effects_area
+	if shown == wanted:
+		return
+	_screens["effects"] = wanted
+	if _screen == "effects":
+		shown.hide()
+		wanted.show()
+		stage_action.visible = wanted == effects_area
+
 func _toggle_screen(screen: String) -> void:
 	var leaving: Control = _screens.get(_screen)
 	_screen = "" if screen == _screen else screen
@@ -363,7 +377,7 @@ func _toggle_screen(screen: String) -> void:
 		_fade_backdrop()
 		stage_title.text = SCREEN_TITLES.get(_screen, _plugin_tabs.get(_screen, {}).get("title", ""))
 		stage_header.visible = _screen != "lyrics"
-		stage_action.visible = _screen == "queue" or _screen == "effects"
+		stage_action.visible = _screen == "queue" or (_screen == "effects" and _screens["effects"] == effects_area)
 		stage_action.icon = CLEAR_ICON if _screen == "queue" else RESET_ICON
 		if _screen == "queue":
 			_load_queue()
