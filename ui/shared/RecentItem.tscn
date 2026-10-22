@@ -7,6 +7,7 @@
 [ext_resource type="Texture2D" uid="uid://c72vif2onknmr" path="res://assets/icons/recent.svg" id="4_recent"]
 [ext_resource type="Script" uid="uid://djk4e68d3it8a" path="res://ui/components/button.gd" id="5_button"]
 [ext_resource type="Texture2D" uid="uid://dxdsohoqxa4s7" path="res://assets/icons/close.svg" id="6_close"]
+[ext_resource type="PackedScene" uid="uid://dp422ntw15hsk" path="res://ui/shared/Cover.tscn" id="7_cover"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_wfls3"]
 shader = ExtResource("1_wfls3")
@@ -34,6 +35,11 @@ variation_opentype = {
 2003265652: 700
 }
 
+[sub_resource type="FontVariation" id="FontVariation_sub"]
+variation_opentype = {
+2003265652: 600
+}
+
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_5ocoh"]
 shader = ExtResource("1_wfls3")
 shader_parameter/corner_radius = Vector4(40, 40, 40, 40)
@@ -52,7 +58,7 @@ anti_aliasing = false
 
 [node name="RecentItem" type="PanelContainer" unique_id=1862397935]
 material = SubResource("ShaderMaterial_wfls3")
-custom_minimum_size = Vector2(0, 96)
+custom_minimum_size = Vector2(0, 112)
 size_flags_horizontal = 3
 focus_mode = 2
 mouse_default_cursor_shape = 2
@@ -93,6 +99,16 @@ expand_mode = 1
 stretch_mode = 5
 script = ExtResource("2_icon")
 
+[node name="Cover" parent="MarginContainer/HBoxContainer" unique_id=1466062311 instance=ExtResource("7_cover")]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(88, 88)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+show_shadow = false
+thumbnail = true
+
 [node name="Number" type="Label" parent="MarginContainer/HBoxContainer" unique_id=1000478036]
 unique_name_in_owner = true
 visible = false
@@ -103,7 +119,14 @@ theme_override_fonts/font = SubResource("FontVariation_mayo7")
 theme_override_font_sizes/font_size = 18
 script = ExtResource("3_label")
 
-[node name="Title" type="Label" parent="MarginContainer/HBoxContainer" unique_id=7247761]
+[node name="Texts" type="VBoxContainer" parent="MarginContainer/HBoxContainer" unique_id=1925534467]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_constants/separation = 0
+alignment = 1
+
+[node name="Title" type="Label" parent="MarginContainer/HBoxContainer/Texts" unique_id=7247761]
 unique_name_in_owner = true
 self_modulate = Color(0.06666667, 0.15686275, 0.3254902, 1)
 layout_mode = 2
@@ -118,6 +141,22 @@ text_overrun_behavior = 3
 script = ExtResource("3_label")
 weight = 700
 font_size = 40
+
+[node name="Subtitle" type="Label" parent="MarginContainer/HBoxContainer/Texts" unique_id=1209957326]
+unique_name_in_owner = true
+visible = false
+self_modulate = Color(0.06666667, 0.15686275, 0.3254902, 1)
+modulate = Color(1, 1, 1, 0.75)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_sub")
+theme_override_font_sizes/font_size = 30
+text = "Song · Artist"
+clip_text = true
+text_overrun_behavior = 3
+script = ExtResource("3_label")
+weight = 600
+font_size = 30
 
 [node name="RemoveButton" type="PanelContainer" parent="MarginContainer/HBoxContainer" unique_id=2134585441]
 unique_name_in_owner = true

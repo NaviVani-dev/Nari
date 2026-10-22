@@ -82,6 +82,9 @@ func get_artists() -> Array:
 func search(_query: String, _filters: Dictionary) -> Variant:
 	return null
 
+func get_hints(_query: String) -> Variant:
+	return null
+
 func get_genres() -> Variant:
 	return null
 

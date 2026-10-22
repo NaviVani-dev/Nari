@@ -3,7 +3,6 @@ extends ColorRect
 const FADE_TIME := 0.7
 const MAX_STEP := 1.0 / 30.0
 const SETTLE_FRAMES := 3
-const MAX_HOLD_MSEC := 8000
 
 var _elapsed := 0.0
 
@@ -15,9 +14,6 @@ func _ready() -> void:
 
 func _start(_page: int, _data: Dictionary) -> void:
 	for frame in SETTLE_FRAMES:
-		await get_tree().process_frame
-	var until := Time.get_ticks_msec() + MAX_HOLD_MSEC
-	while Main.is_preloading() and Time.get_ticks_msec() < until:
 		await get_tree().process_frame
 	set_process(true)
 

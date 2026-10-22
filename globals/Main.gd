@@ -159,7 +159,7 @@ func change_page(page: Pages, data: Dictionary = {}, keep_history: bool = true, 
 	for dialog in _dialogs.duplicate():
 		dialog.close()
 	if _page and keep_history and not _page.get("transient"):
-		_history.push_back({"page": current_page, "data": current_data, "focus": _page_focus()})
+		_history.push_back({"page": current_page, "data": _page_data(), "focus": _page_focus()})
 	if keep_history and not _going_forward:
 		_forward.clear()
 	hide_header()
@@ -203,9 +203,10 @@ func reload_page() -> void:
 	if not _page:
 		return
 	var focus := _page_focus()
+	var state := _page_data()
 	_slide_out(_page)
 	_page = null
-	change_page(current_page, current_data, false, focus)
+	change_page(current_page, state, false, focus)
 
 func set_insets(value: Vector4) -> void:
 	insets = value
@@ -307,9 +308,6 @@ func has_song() -> bool:
 func focus_owner() -> Control:
 	return _viewport_of(input_view()).gui_get_focus_owner()
 
-func is_preloading() -> bool:
-	return _preloading
-
 func preload_pages() -> void:
 	if _preloading:
 		_preload_again = true
@@ -386,7 +384,7 @@ func go_back() -> bool:
 		return false
 	var entry: Dictionary = _history.pop_back()
 	if _page and not _page.get("transient"):
-		_forward.push_back({"page": current_page, "data": current_data, "focus": _page_focus()})
+		_forward.push_back({"page": current_page, "data": _page_data(), "focus": _page_focus()})
 	change_page(entry["page"], entry["data"], false, entry["focus"])
 	return true
 
@@ -440,6 +438,9 @@ func _input_page() -> Control:
 	if not _page:
 		return null
 	return _page.bottom if dual else _page.top
+
+func _page_data() -> Dictionary:
+	return _page.history_data() if _page.has_method("history_data") else current_data
 
 func _page_focus() -> int:
 	var list = _page.get("list")

@@ -22,6 +22,7 @@ enum Context{ALL, ALBUM, ARTIST, PLAYLIST, QUEUE}
 enum MusicEffect{NONE, CONCERT, RADIO, ROBOT, HELIUM, SENIOR, EIGHT_BIT, INSTRUMENTAL, ACAPELLA, GRAMOPHONE}
 
 const TAPE_SCRUB: = preload("res://systems/music/tape_scrub.gd")
+const HINT_KINDS: = {"artist": 1, "album": 2, "track": 4}
 const RADIO_SIZE: = 50
 const RADIO_ARTIST_SHARE: = 15
 const SEARCH_ORDER: = ["title", "artist", "album"]
@@ -624,6 +625,19 @@ func search(query: String, filters: Dictionary = {}) -> Dictionary:
 		if not wanted.has("album"):
 			artists = (await get_artists()).filter(func(artist: Dictionary): return _search_key(str(artist.get("name", ""))).contains(artist_name))
 	return {"tracks": ranked[0] + ranked[1] + ranked[2], "albums": albums, "artists": artists}
+
+func get_hints(query: String) -> Array:
+	if provider == null or query.strip_edges().is_empty():
+		return []
+	var given: Variant = await provider.get_hints(query) if not offline_mode() else null
+	if given is Array:
+		return given
+	var found: = await search(query)
+	var hints: Array = []
+	for kind: String in HINT_KINDS:
+		for item: Dictionary in found.get(kind + "s", []).slice(0, HINT_KINDS[kind]):
+			hints.append({"kind": kind, "item": item})
+	return hints
 
 func _passes(keys: Dictionary, wanted: Dictionary, in_playlist: bool) -> bool:
 	for key: String in wanted:

@@ -411,6 +411,10 @@ class LuaMusic extends MusicProvider:
 	func search(query: String, filters: Dictionary) -> Variant:
 		return await _async("search", [query, filters], null)
 
+	func get_hints(query: String) -> Variant:
+		var hints: Variant = await _async("get_hints", [query], null)
+		return hints if hints is Array else null
+
 	func get_genres() -> Variant:
 		return await _async("get_genres", [], null)
 

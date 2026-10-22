@@ -1,20 +1,23 @@
 extends Page
 
-enum Mode { GENRES, RECENT, RESULTS }
+enum Mode { GENRES, RECENT, SUGGESTIONS, RESULTS }
 
 const SKELETON_ROWS := 8
 
 const SEARCH_ICON := preload("res://assets/icons/search.svg")
 const KIND_ICONS := {
-	"query": preload("res://assets/icons/search.svg"),
+	"query": SEARCH_ICON,
 	"track": preload("res://assets/icons/music_note.svg"),
 	"album": preload("res://assets/icons/album.svg"),
 	"artist": preload("res://assets/icons/artist.svg"),
+	"playlist": preload("res://assets/icons/queue_music.svg"),
 }
+const KIND_LABELS := {"track": "Song", "album": "Album", "artist": "Artist", "playlist": "Playlist"}
 const MESSAGES := {
-	Mode.GENRES: [preload("res://assets/icons/search.svg"), "Search your favorite songs", "Find any song, album or artist in your music"],
+	Mode.GENRES: [SEARCH_ICON, "Search your favorite songs", "Find any song, album or artist in your music"],
 	Mode.RECENT: [preload("res://assets/icons/time.svg"), "No recent searches", "What you search and open shows up here"],
-	Mode.RESULTS: [preload("res://assets/icons/search.svg"), "No results", "Try other words or check the spelling"],
+	Mode.SUGGESTIONS: [SEARCH_ICON, "No suggestions", "Search to see every result"],
+	Mode.RESULTS: [SEARCH_ICON, "No results", "Try other words or check the spelling"],
 }
 const GENRE_COLORS := ["Blue", "Pink", "Teal", "Orange", "Purple", "Lime", "Cyan", "Red", "Indigo", "Green", "Yellow"]
 const GENRE_BUTTON := preload("res://ui/shared/GenreButton.tscn")
@@ -22,6 +25,9 @@ const RECENT_ITEM := preload("res://ui/shared/RecentItem.tscn")
 const RECENT_ICON := preload("res://assets/icons/recent.svg")
 const GENRE_LIMIT := 12
 const RECENT_LIMIT := 12
+const RECENT_SUGGESTED := 3
+const HINT_DELAY := 0.25
+const HISTORY_SECTION := "search_history"
 const SEARCH_TAG := preload("res://ui/shared/SearchTag.tscn")
 const TAG_PATTERN := "(?:^|\\s)(title|artist|album|playlist|date|genre):(\"[^\"]+\"|[^\\s\"]+)"
 const TAG_GAP := 12
@@ -42,6 +48,7 @@ var _tracks: Array = []
 var _wants_edit := false
 var _filters := {}
 var _search_id := 0
+var _hint_id := 0
 var _tag_start := RegEx.create_from_string("(?:^|\\s)(title|artist|album|playlist|date|genre):$")
 var _tag_key := ""
 var _held_text := ""
@@ -73,20 +80,51 @@ func _ready() -> void:
 		search_bar.leading_space = int(tags.get_combined_minimum_size().x) + TAG_GAP if tags.get_child_count() > 0 else 0)
 	list.item_focused.connect(func(index: int, _item: Control): _describe(index))
 	MediaPlayer.library_changed.connect(_load_genres)
+	MediaPlayer.music_provider_changed.connect(_on_provider_changed)
+	if SettingsManager.get_value("search", "recent", false) is Array:
+		SettingsManager.set_value("search", "recent", null)
 	InputGlyphs.mode_changed.connect(_dim_genres.unbind(1))
 	_load_genres()
-	_show(Mode.GENRES)
+	_restore()
 
 func focus_content() -> void:
 	if _mode == Mode.GENRES and genres.get_child_count() > 0:
 		genres.get_child(0).grab_focus()
 	elif not _rows.is_empty():
-		list.focus_item(0)
+		list.focus_item(clampi(focus_index, 0, _rows.size() - 1))
+	focus_index = 0
+
+func history_data() -> Dictionary:
+	if _mode != Mode.RESULTS and _mode != Mode.SUGGESTIONS:
+		return {}
+	var state := {"mode": _mode, "query": search_bar.text.strip_edges(), "filters": _filters.duplicate(), "provider": _history_key()}
+	var loading: bool = not _rows.is_empty() and _rows[0].kind == "skeleton"
+	if _mode == Mode.RESULTS and not loading:
+		state["rows"] = _rows
+		state["tracks"] = _tracks
+	return state
+
+func _restore() -> void:
+	var mode: int = data.get("mode", Mode.GENRES)
+	if mode != Mode.RESULTS and mode != Mode.SUGGESTIONS:
+		_show(Mode.GENRES)
+		return
+	_reset_query(data.get("filters", {}), str(data.get("query", "")))
+	if mode == Mode.SUGGESTIONS and not search_bar.text.is_empty():
+		_suggest(search_bar.text)
+	elif data.has("rows") and data.get("provider") == _history_key():
+		_tracks = data.get("tracks", [])
+		_show(Mode.RESULTS, data["rows"])
+	elif search_bar.text.is_empty() and _filters.is_empty():
+		_show(Mode.GENRES)
+	else:
+		_run_search()
 
 func go_back() -> bool:
 	if _mode == Mode.GENRES:
 		return false
 	_search_id += 1
+	_hint_id += 1
 	_reset_query({})
 	search_bar.release_focus()
 	_show(Mode.GENRES)
@@ -155,8 +193,36 @@ func _on_text_changed(text: String) -> void:
 		_set_field("")
 		_refresh_tags()
 		return
-	if text.strip_edges().is_empty() and _filters.is_empty():
+	if not text.strip_edges().is_empty():
+		_suggest(text.strip_edges())
+	elif _filters.is_empty():
+		_hint_id += 1
 		_show(Mode.RECENT)
+
+func _on_provider_changed() -> void:
+	if _mode == Mode.RECENT:
+		_show(Mode.RECENT)
+	elif _mode == Mode.SUGGESTIONS:
+		_suggest(search_bar.text.strip_edges())
+
+func _suggest(text: String) -> void:
+	_hint_id += 1
+	var id := _hint_id
+	var key := text.to_lower()
+	var rows := _history().filter(func(row: Dictionary) -> bool: return str(row.title).to_lower().contains(key)).slice(0, RECENT_SUGGESTED)
+	_show(Mode.SUGGESTIONS, rows, _mode == Mode.SUGGESTIONS)
+	empty.visible = false
+	await get_tree().create_timer(HINT_DELAY).timeout
+	if id != _hint_id or not is_inside_tree():
+		return
+	var hints: Array = await MediaPlayer.get_hints(text)
+	if id != _hint_id or not is_inside_tree() or _mode != Mode.SUGGESTIONS:
+		return
+	for entry: Variant in hints:
+		var row := _hint_row(entry) if entry is Dictionary else {}
+		if not row.is_empty() and not rows.any(_same.bind(row)):
+			rows.append(row)
+	_show(Mode.SUGGESTIONS, rows, true)
 
 func _commit_tag() -> void:
 	var value := search_bar.text.strip_edges()
@@ -223,6 +289,7 @@ func _submit() -> void:
 
 func _run_search() -> void:
 	_search_id += 1
+	_hint_id += 1
 	var id := _search_id
 	_show_searching.call_deferred(id)
 	var found: Dictionary = await MediaPlayer.search(search_bar.text.strip_edges(), _filters.duplicate())
@@ -230,7 +297,7 @@ func _run_search() -> void:
 		return
 	_search_id += 1
 	_tracks = found.get("tracks", [])
-	_show(Mode.RESULTS, _tracks.map(_track_row) + found.get("albums", []).map(_album_row) + found.get("artists", []).map(_artist_row))
+	_show(Mode.RESULTS, _tracks.map(_track_row) + found.get("albums", []).map(_album_row) + found.get("artists", []).map(_artist_row) + found.get("playlists", []).map(_playlist_row))
 
 func _show_searching(id: int) -> void:
 	if id != _search_id or not is_inside_tree():
@@ -242,14 +309,14 @@ func _show_searching(id: int) -> void:
 	_show(Mode.RESULTS, rows)
 	empty.visible = false
 
-func _show(mode: Mode, rows: Array = []) -> void:
+func _show(mode: Mode, rows: Array = [], refresh := false) -> void:
 	var reuse: bool = mode == Mode.RESULTS and _mode == Mode.RESULTS and not _rows.is_empty() and _rows[0].get("kind") == "skeleton"
 	_mode = mode
-	_rows = SettingsManager.get_value("search", "recent", []) if mode == Mode.RECENT else rows
+	_rows = _history() if mode == Mode.RECENT else rows
 	genre_scroll.visible = mode == Mode.GENRES
 	list.visible = mode != Mode.GENRES
-	if mode == Mode.RECENT:
-		list.set_items(_rows, _build_recent)
+	if mode == Mode.RECENT or mode == Mode.SUGGESTIONS:
+		list.set_items(_rows, _build_recent, func(item: RecentItem, row: Dictionary): _build_recent(row, item), refresh)
 	else:
 		list.set_items(_rows, _build_row, func(item: SongItem, row: Dictionary): _build_row(row, item), reuse)
 	empty.show_message(MESSAGES[mode])
@@ -274,18 +341,38 @@ func _build_row(row: Dictionary, reuse: SongItem = null) -> SongItem:
 		return Items.song(row.source, _open.bind(row), menu, reuse)
 	return Items.row(row.title, row.subtitle, row.cover_kind, row.cover_id, _open.bind(row), menu, reuse)
 
-func _build_recent(row: Dictionary) -> RecentItem:
-	var item: RecentItem = RECENT_ITEM.instantiate()
-	item.setup({"title": row.title, "icon": RECENT_ICON})
+func _build_recent(row: Dictionary, item: RecentItem = null) -> RecentItem:
+	if item == null:
+		item = RECENT_ITEM.instantiate()
+	var hint: bool = row.get("hint", false)
+	var query: bool = row.kind == "query"
+	item.setup({
+		"title": row.title,
+		"subtitle": _caption(row),
+		"icon": (SEARCH_ICON if hint else RECENT_ICON) if query else null,
+		"cover_kind": "" if query else row.cover_kind,
+		"cover_id": row.cover_id,
+		"removable": not hint,
+	})
 	Items.handlers(item, _open.bind(row), _menu_of(row))
-	item.remove_requested.connect(_forget.bind(row))
+	for connection in item.remove_requested.get_connections():
+		item.remove_requested.disconnect(connection.callable)
+	if not hint:
+		item.remove_requested.connect(_forget.bind(row))
 	return item
+
+func _caption(row: Dictionary) -> String:
+	if row.kind == "query":
+		return ""
+	var detail := str(row.source.get("owner" if row.kind == "playlist" else "artist", ""))
+	return KIND_LABELS.get(row.kind, "") + (" · " + detail if not detail.is_empty() and row.kind != "artist" else "")
 
 func _menu_of(row: Dictionary) -> Callable:
 	match row.kind:
 		"track": return ItemMenu.track.bind(row.source, "")
 		"album": return ItemMenu.album.bind(row.source)
 		"artist": return ItemMenu.artist.bind(row.source)
+		"playlist": return ItemMenu.playlist.bind(row.source)
 	return Callable()
 
 func _open(row: Dictionary) -> void:
@@ -302,18 +389,48 @@ func _open(row: Dictionary) -> void:
 			Main.change_page(Main.Pages.Album, {"album_id": str(row.source.get("id", ""))})
 		"artist":
 			Main.change_page(Main.Pages.Artist, {"artist_id": str(row.source.get("id", ""))})
+		"playlist":
+			Main.change_page(Main.Pages.Playlist, {"playlist_id": str(row.source.get("id", ""))})
+
+func _history_key() -> String:
+	return MediaPlayer.provider.id if MediaPlayer.provider else "none"
+
+func _history() -> Array:
+	return SettingsManager.get_value(HISTORY_SECTION, _history_key(), [])
 
 func _remember(row: Dictionary) -> void:
-	var recent := _without(row)
-	recent.push_front(row)
-	SettingsManager.set_value("search", "recent", recent.slice(0, RECENT_LIMIT))
+	var kept := row.duplicate()
+	kept.erase("hint")
+	var recent := _without(kept)
+	recent.push_front(kept)
+	SettingsManager.set_value(HISTORY_SECTION, _history_key(), recent.slice(0, RECENT_LIMIT))
 
 func _forget(row: Dictionary) -> void:
-	SettingsManager.set_value("search", "recent", _without(row))
-	_show(Mode.RECENT)
+	SettingsManager.set_value(HISTORY_SECTION, _history_key(), _without(row))
+	if _mode == Mode.SUGGESTIONS:
+		_show(Mode.SUGGESTIONS, _rows.filter(func(old: Dictionary) -> bool: return not _same(old, row)), true)
+	else:
+		_show(Mode.RECENT)
 
 func _without(row: Dictionary) -> Array:
-	return SettingsManager.get_value("search", "recent", []).filter(func(old: Dictionary): return old.kind != row.kind or old.title != row.title or old.cover_id != row.cover_id)
+	return _history().filter(func(old: Dictionary) -> bool: return not _same(old, row))
+
+func _same(first: Dictionary, second: Dictionary) -> bool:
+	return first.kind == second.kind and first.title == second.title and first.cover_id == second.cover_id
+
+func _hint_row(entry: Dictionary) -> Dictionary:
+	var item: Variant = entry.get("item")
+	var row: Dictionary
+	match str(entry.get("kind", "")):
+		"query": row = _query_row(str(entry.get("query", "")).strip_edges(), {})
+		"track": row = _track_row(item) if item is Dictionary else {}
+		"album": row = _album_row(item) if item is Dictionary else {}
+		"artist": row = _artist_row(item) if item is Dictionary else {}
+		"playlist": row = _playlist_row(item) if item is Dictionary else {}
+	if row.is_empty() or str(row.title).is_empty():
+		return {}
+	row["hint"] = true
+	return row
 
 func _query_row(text: String, filters: Dictionary) -> Dictionary:
 	var words: Array = filters.keys().map(func(key: String): return "%s:%s" % [key, filters[key]])
@@ -330,3 +447,7 @@ func _album_row(album: Dictionary) -> Dictionary:
 
 func _artist_row(artist: Dictionary) -> Dictionary:
 	return {"kind": "artist", "title": str(artist.get("name", "Unknown artist")), "subtitle": "Artist", "cover_kind": MediaPlayer.COVER_ARTIST, "cover_id": str(artist.get("id", "")), "source": artist}
+
+func _playlist_row(playlist: Dictionary) -> Dictionary:
+	var owner_name := str(playlist.get("owner", ""))
+	return {"kind": "playlist", "title": str(playlist.get("name", "Unknown playlist")), "subtitle": "Playlist" + (" · " + owner_name if not owner_name.is_empty() else ""), "cover_kind": MediaPlayer.COVER_PLAYLIST, "cover_id": MediaPlayer.playlist_cover_id(playlist), "source": playlist}
