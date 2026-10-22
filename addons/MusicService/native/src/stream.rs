@@ -1,6 +1,6 @@
 use std::collections::{BTreeMap, VecDeque};
 use std::io::{self, Read, Seek, SeekFrom};
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::{Arc, Condvar, Mutex, MutexGuard};
 
 use symphonia::core::io::MediaSource;
@@ -82,6 +82,7 @@ struct Shared {
     ready: Condvar,
     closed: AtomicBool,
     live: AtomicBool,
+    readers: AtomicUsize,
 }
 
 impl Shared {
@@ -110,6 +111,7 @@ pub fn channel(live: bool, length: Option<u64>) -> (Feed, Stream) {
         ready: Condvar::new(),
         closed: AtomicBool::new(false),
         live: AtomicBool::new(live),
+        readers: AtomicUsize::new(1),
     });
     (Feed { shared: shared.clone() }, Stream { shared, position: 0 })
 }
@@ -229,6 +231,14 @@ impl Stream {
         true
     }
 
+    pub fn reader(&self) -> Option<Stream> {
+        if self.live() {
+            return None;
+        }
+        self.shared.readers.fetch_add(1, Ordering::Relaxed);
+        Some(Stream { shared: self.shared.clone(), position: 0 })
+    }
+
     pub fn early_error(&self) -> Option<String> {
         let buffer = self.shared.lock();
         (!buffer.has_data()).then(|| buffer.error.clone()).flatten()
@@ -312,8 +322,10 @@ impl MediaSource for Stream {
 
 impl Drop for Stream {
     fn drop(&mut self) {
-        self.shared.closed.store(true, Ordering::Relaxed);
-        self.shared.ready.notify_all();
+        if self.shared.readers.fetch_sub(1, Ordering::Relaxed) == 1 {
+            self.shared.closed.store(true, Ordering::Relaxed);
+            self.shared.ready.notify_all();
+        }
     }
 }
 
@@ -364,6 +376,23 @@ mod tests {
         assert!(watch.live() && !stream.is_seekable());
         assert!(stream.seek(SeekFrom::Start(0)).is_err());
         assert_eq!(stream.seek(SeekFrom::Current(0)).unwrap(), read as u64);
+    }
+
+    #[test]
+    fn extra_readers_replay_the_download_and_keep_it_open() {
+        let (feed, mut stream) = channel(false, Some(6));
+        assert!(feed.push(b"abcdef"));
+        let mut again = stream.reader().unwrap();
+        let mut first = Vec::new();
+        stream.read_to_end(&mut first).unwrap();
+        drop(stream);
+        assert!(!feed.closed());
+        let mut second = Vec::new();
+        again.read_to_end(&mut second).unwrap();
+        assert_eq!(first, second);
+        drop(again);
+        assert!(feed.closed());
+        assert!(channel(true, None).1.reader().is_none());
     }
 
     #[test]

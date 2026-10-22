@@ -433,6 +433,7 @@ func _paint_actions() -> void:
 	for key in _plugin_tabs:
 		_paint_active(_plugin_tabs[key]["button"], _screen == key)
 	for key in _view_buttons:
+		_view_buttons[key].visible = Plugins.is_cover_view_shown(key)
 		_paint_active(_view_buttons[key], Plugins.cover_view == key)
 
 func _press_view(key: String) -> void:
@@ -444,7 +445,7 @@ func _press_view(key: String) -> void:
 
 func _on_cover_view_changed() -> void:
 	_paint_actions()
-	_apply_controls(_controls_amount)
+	_layout()
 	_update(MediaPlayer.get_playback_state())
 
 func _view_ratio() -> float:

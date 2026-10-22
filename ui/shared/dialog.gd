@@ -18,6 +18,7 @@ enum Style { NORMAL, PRIMARY, DANGER }
 var content := VBoxContainer.new()
 var footer := HBoxContainer.new()
 var dismissable := false
+var locked := false
 
 var _dim := ColorRect.new()
 var _center := CenterContainer.new()
@@ -230,6 +231,12 @@ static func menu(title: String, subtitle: String = "", cover_kind: String = "", 
 	spaced.add_theme_constant_override("margin_bottom", 24)
 	spaced.add_child(header)
 	dialog.content.add_child(spaced)
+	return dialog
+
+static func busy(title: String, subtitle: String = "") -> Dialog:
+	var dialog := menu(title, subtitle)
+	dialog.dismissable = false
+	dialog.locked = true
 	return dialog
 
 static func text_button(text: String, action: Callable) -> NariButton:

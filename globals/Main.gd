@@ -370,7 +370,8 @@ func focus_content() -> void:
 
 func go_back() -> bool:
 	if not _dialogs.is_empty():
-		_dialogs.back().close()
+		if not _dialogs.back().locked:
+			_dialogs.back().close()
 		return true
 	var focused: Node = focus_owner()
 	while focused:

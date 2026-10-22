@@ -204,6 +204,7 @@ func add_cover_view(spec: Dictionary) -> String:
 		"id": "%s.%s" % [id, spec.get("id", "view")],
 		"icon": texture(spec.get("icon")),
 		"title": str(spec.get("title", "")),
+		"provider": str(spec.get("provider", "")),
 		"available": false,
 		"texture": null,
 		"on_toggle": spec.get("on_toggle", Callable()),

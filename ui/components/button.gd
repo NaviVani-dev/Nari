@@ -196,13 +196,13 @@ func _init() -> void :
 	_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_row.add_child(_icon)
 	_row.add_child(_label)
-	add_child(_row)
+	add_child(_row, false, INTERNAL_MODE_FRONT)
 	_dot = Control.new()
 	_dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_dot.visible = false
 	_dot.draw.connect(_draw_dot)
 	_row.sort_children.connect(_dot.queue_redraw)
-	add_child(_dot)
+	add_child(_dot, false, INTERNAL_MODE_FRONT)
 	focus_entered.connect(_setup_theme)
 	focus_exited.connect(_setup_theme)
 	mouse_entered.connect(_hover.bind(true))

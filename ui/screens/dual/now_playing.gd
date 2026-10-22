@@ -199,6 +199,7 @@ func _paint_tabs() -> void:
 	for key in _plugin_tabs:
 		_paint_tab(_plugin_tabs[key]["button"], _area == key)
 	for key in _view_buttons:
+		_view_buttons[key].visible = Plugins.is_cover_view_shown(key)
 		_paint_tab(_view_buttons[key], Plugins.cover_view == key)
 
 func _paint_tab(button: NariButton, active: bool) -> void:
@@ -370,6 +371,7 @@ func _on_cover_view_changed() -> void:
 		_lyrics_transition.kill()
 	song_cover.custom_minimum_size = _cover_size()
 	_paint_tabs()
+	_fit_tab_bar()
 	_update(MediaPlayer.get_playback_state())
 
 func _cover_size() -> Vector2:

@@ -50,6 +50,7 @@ var _trace_location: = RegEx.create_from_string(TRACE_LOCATION)
 func _ready() -> void :
 	add_child(_http)
 	_track_session()
+	MediaPlayer.music_provider_changed.connect(_on_provider_changed)
 	DirAccess.make_dir_recursive_absolute(DIR)
 	scan()
 	SettingsManager.changed.connect( func(section: String, key: String, _value: Variant):
@@ -88,12 +89,16 @@ func cover_texture() -> Texture2D:
 	return _cover_view(cover_view).get("texture")
 
 func is_cover_view_available(key: String) -> bool:
-	return _cover_view(key).get("available", false)
+	return _cover_view(key).get("available", false) and is_cover_view_shown(key)
+
+func is_cover_view_shown(key: String) -> bool:
+	var wanted: = str(_cover_view(key).get("provider", ""))
+	return wanted.is_empty() or MediaPlayer.provider != null and MediaPlayer.provider.id == wanted
 
 func toggle_cover_view(key: String) -> void:
 	if cover_view == key:
 		set_cover_view("")
-	elif _cover_view(key).get("available", false):
+	elif is_cover_view_available(key):
 		set_cover_view(key)
 
 func set_cover_view(key: String) -> void:
@@ -112,7 +117,13 @@ func update_cover_view(key: String, field: String, value: Variant) -> void:
 	if entry.is_empty():
 		return
 	entry[field] = value
-	if cover_view == key and not entry["available"]:
+	if cover_view == key and not is_cover_view_available(key):
+		set_cover_view("")
+	else:
+		cover_view_changed.emit()
+
+func _on_provider_changed() -> void:
+	if not cover_view.is_empty() and not is_cover_view_available(cover_view):
 		set_cover_view("")
 	else:
 		cover_view_changed.emit()
