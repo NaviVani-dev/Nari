@@ -632,6 +632,9 @@ pub fn to_lua(lua: &Lua, variant: &Variant) -> mlua::Result<Value> {
             let callable: Callable = variant.to();
             let guard = sandbox(lua);
             let function = lua.create_function(move |lua, args: MultiValue| {
+                if !callable.is_valid() {
+                    return Ok(Value::Nil);
+                }
                 let arguments = args
                     .into_iter()
                     .map(|value| to_variant(lua, value))
