@@ -92,10 +92,19 @@ func is_cover_view_available(key: String) -> bool:
 	return _cover_view(key).get("available", false) and is_cover_view_shown(key)
 
 func is_cover_view_shown(key: String) -> bool:
-	var wanted: = str(_cover_view(key).get("provider", ""))
+	var entry: = _cover_view(key)
+	if entry.get("hide_unavailable", false) and not entry.get("available", false):
+		return false
+	var wanted: = str(entry.get("provider", ""))
 	return wanted.is_empty() or MediaPlayer.provider != null and MediaPlayer.provider.id == wanted
 
 func toggle_cover_view(key: String) -> void:
+	var entry: = _cover_view(key)
+	if entry.get("momentary", false):
+		var pressed: Callable = entry.get("on_toggle", Callable())
+		if is_cover_view_available(key) and pressed.is_valid():
+			pressed.call(true)
+		return
 	if cover_view == key:
 		set_cover_view("")
 	elif is_cover_view_available(key):

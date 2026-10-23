@@ -206,6 +206,8 @@ func add_cover_view(spec: Dictionary) -> String:
 		"title": str(spec.get("title", "")),
 		"provider": str(spec.get("provider", "")),
 		"available": false,
+		"hide_unavailable": bool(spec.get("hide_unavailable", false)),
+		"momentary": bool(spec.get("momentary", false)),
 		"texture": null,
 		"on_toggle": spec.get("on_toggle", Callable()),
 	}
