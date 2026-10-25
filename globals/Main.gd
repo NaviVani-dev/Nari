@@ -185,6 +185,12 @@ func change_page(page: Pages, data: Dictionary = {}, keep_history: bool = true, 
 	_page = instance
 	page_changed.emit(page, data)
 
+func has_second_screen() -> bool:
+	return Engine.has_singleton("AynThor") and Engine.get_singleton("AynThor").has_second_screen()
+
+func can_toggle_dual() -> bool:
+	return OS.has_feature("pc") or has_second_screen()
+
 func set_dual(enabled: bool) -> void:
 	InputGlyphs.set_dual(enabled)
 	if dual == enabled:

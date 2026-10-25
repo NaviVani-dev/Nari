@@ -112,7 +112,7 @@ class LibrarySection extends Section:
 		artist_info = _fetch("artist_info", artist_info)
 
 class GeneralSection extends Section:
-	var dual_screen: = true:
+	var dual_screen: = false:
 		set(value):
 			dual_screen = value
 			_store("dual_screen", value)

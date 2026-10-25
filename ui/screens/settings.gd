@@ -93,23 +93,17 @@ func _fit_showcase() -> void:
 	glyph.offset_bottom = _glyph_rest
 
 func _load() -> void:
-	var fresh := _sectioned(_entries_of(_category) + (Plugins.settings_entries(_category) if not _category.is_empty() else []))
+	var fresh := sectioned(_entries_of(_category) + (Plugins.settings_entries(_category) if not _category.is_empty() else []))
 	if _same_shape(fresh):
 		_update_in_place(fresh)
 		return
 	var previous: int = list.get_selected()
 	_entries = fresh
-	var headers := PackedInt32Array()
-	for index in _entries.size():
-		if _entries[index].has("header"):
-			headers.append(index)
-	list.container.headers = headers
+	list.container.headers = headers_of(_entries)
 	list.shape_of = func(entry: Dictionary): return entry.has("slider")
 	list.set_items(_entries, _create_item)
 	_selected = -1
-	var start := clampi(previous if previous >= 0 else focus_index, 0, _entries.size() - 1)
-	while start + 1 < _entries.size() and _entries[start].has("header"):
-		start += 1
+	var start := first_item(_entries, previous if previous >= 0 else focus_index)
 	_select(start)
 	list.focus_item(start)
 
@@ -133,7 +127,7 @@ func _update_in_place(fresh: Array) -> void:
 	if _selected >= 0:
 		_write_caption()
 
-func _sectioned(entries: Array) -> Array:
+static func sectioned(entries: Array) -> Array:
 	var sections := {}
 	for entry: Dictionary in entries:
 		var section := str(entry.get("section", ""))
@@ -146,14 +140,30 @@ func _sectioned(entries: Array) -> Array:
 			grouped.append_array(sections[section])
 	return grouped
 
-func _create_item(entry: Dictionary) -> Control:
+static func headers_of(entries: Array) -> PackedInt32Array:
+	var headers := PackedInt32Array()
+	for index in entries.size():
+		if entries[index].has("header"):
+			headers.append(index)
+	return headers
+
+static func first_item(entries: Array, start: int) -> int:
+	var index := clampi(start, 0, entries.size() - 1)
+	while index + 1 < entries.size() and entries[index].has("header"):
+		index += 1
+	return index
+
+static func create_entry(entry: Dictionary, changed: Callable) -> Control:
 	if entry.has("header"):
 		var header: Control = SECTION.instantiate()
 		header.get_node("%Title").text = entry["header"]
 		return header
 	if entry.has("plugin"):
 		return PluginItem.create(entry)
-	return SettingItem.create(entry, SettingItem.refresh_list.bind(list))
+	return SettingItem.create(entry, changed)
+
+func _create_item(entry: Dictionary) -> Control:
+	return create_entry(entry, SettingItem.refresh_list.bind(list))
 
 func _entries_of(category: String) -> Array:
 	match category:
@@ -182,11 +192,7 @@ func _entries_of(category: String) -> Array:
 				]))
 			return playback
 		"general":
-			var screens: Array = []
-			if OS.has_feature("pc"):
-				screens.append(SettingItem.toggle("Dual-screen window", "Opens the bottom screen in its own window, for a second monitor or a touch display", preload("res://assets/icons/music_note_dual.svg"), "general", "dual_screen"))
-			else:
-				screens.append(SettingItem.toggle("Dual-screen integration", "Uses both screens when a second one is connected (HDMI or cast)", preload("res://assets/icons/music_note_dual.svg"), "general", "dual_screen"))
+			var screens: Array = [dual_screen_entry()]
 			if Main.dual and not OS.has_feature("pc"):
 				screens.append(_choice("Select main screen", "Choose which screen shows the top of the app", preload("res://assets/icons/repeat.svg"), "general", "swap_screens",
 					[false, true], {false: "Top", true: "Bottom"}))
@@ -316,6 +322,11 @@ static func _section(name: String, entries: Array) -> Array:
 		entry["section"] = name
 	return entries
 
+static func dual_screen_entry() -> Dictionary:
+	if OS.has_feature("pc"):
+		return SettingItem.toggle("Dual-screen window", "Opens the bottom screen in its own window, for a second monitor or a touch display", preload("res://assets/icons/music_note_dual.svg"), "general", "dual_screen")
+	return SettingItem.toggle("Dual-screen integration", "Uses both screens when a second one is connected (HDMI or cast)", preload("res://assets/icons/music_note_dual.svg"), "general", "dual_screen")
+
 static func lyrics_provider_entry(refresh: Callable) -> Dictionary:
 	return {
 		"title": "Lyrics provider",
@@ -376,6 +387,16 @@ static func library_entries(setup: bool) -> Array:
 			var dialog := Dialog.menu("Music provider")
 			for provider in MediaPlayer.providers:
 				dialog.add_option(provider.display_name, MediaPlayer.use_provider.bind(provider.id) if setup or provider == MediaPlayer.provider else _confirm_provider.bind(provider), provider.icon if provider.icon else preload("res://assets/icons/music_library.svg"))
+			if setup:
+				var more := NariLabel.new()
+				more.text = "Want more providers? Try installing a plugin on Settings!"
+				more.font_size = 32
+				more.weight = 600
+				more.modulate.a = 0.6
+				more.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+				more.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+				dialog.footer.add_child(more)
+				dialog.footer.show()
 			dialog.popup(),
 	}])
 	if MediaPlayer.provider:

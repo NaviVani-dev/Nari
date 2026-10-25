@@ -102,8 +102,6 @@ func _ready() -> void:
 	ThemeEngine.apply_theme()
 	Themes.wait_for_media()
 	Main.register_screens(top_view if top_view else self, bottom_view, %TopScreenContainer, get_node_or_null("%BottomScreenContainer"))
-	if not Main.setup_done:
-		SettingsManager.general.dual_screen = screens.has_second_screen
 	if screens.ayn_thor_plugin and not SettingsManager.general.dual_screen:
 		screens.ayn_thor_plugin.destroy_screen()
 	_update_layout()
@@ -480,7 +478,7 @@ func _mount_theme_overlays() -> void:
 		bottom_view.add_child(THEME_OVERLAYS.instantiate())
 
 func _single_screen() -> bool:
-	return OS.has_feature("pc") or not (Engine.has_singleton("AynThor") and Engine.get_singleton("AynThor").has_second_screen())
+	return OS.has_feature("pc") or not Main.has_second_screen()
 
 func _flatten_screens() -> void:
 	$DSManager.main_screen = null

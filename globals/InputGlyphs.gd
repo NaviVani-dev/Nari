@@ -182,6 +182,10 @@ func _ready() -> void:
 		return
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	Input.joy_connection_changed.connect(_on_joy_connection_changed)
+	var joypads := Input.get_connected_joypads()
+	if not joypads.is_empty():
+		_set_active_device(joypads[0])
+		set_gamepad(true)
 
 func observe(event: InputEvent) -> void:
 	if event is InputEventJoypadButton and event.pressed:
@@ -230,8 +234,11 @@ func _swap_action_buttons() -> void:
 func action_of(glyph: Glyph) -> StringName:
 	return ACTIONS.get(glyph, &"")
 
-func _on_joy_connection_changed(_device: int, connected: bool) -> void:
-	if not connected and Input.get_connected_joypads().is_empty() and active_device != Device.XBOX_SERIES:
+func _on_joy_connection_changed(device: int, connected: bool) -> void:
+	if connected:
+		_set_active_device(device)
+		set_gamepad(true)
+	elif Input.get_connected_joypads().is_empty() and active_device != Device.XBOX_SERIES:
 		active_device = Device.XBOX_SERIES
 		device_changed.emit(active_device)
 
