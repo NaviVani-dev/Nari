@@ -45,7 +45,12 @@ const MAX_CACHED_THUMBS: = 96
 const MAX_CACHED_ANIMATED: = 2
 const LOADING_DELAY: = 0.4
 const LOADING_POLL: = 0.1
-const PROVIDERS_DIR: = "res://systems/music/providers"
+const PROVIDERS: = [
+	preload("res://systems/music/providers/local_provider.gd"),
+	preload("res://systems/music/providers/plex_provider.gd"),
+	preload("res://systems/music/providers/subsonic_provider.gd"),
+	preload("res://systems/music/providers/jellyfin_provider.gd"),
+]
 
 const _CONTEXT_NAMES: = {
 	Context.ALL: "all",
@@ -204,13 +209,8 @@ func _send_discord() -> void :
 	}))
 
 func _discover_providers() -> void :
-	for file in ResourceLoader.list_directory(PROVIDERS_DIR):
-		if not file.ends_with(".gd"):
-			continue
-		var script: Script = load(PROVIDERS_DIR.path_join(file))
-		var found: Variant = script.new() if script and script.can_instantiate() else null
-		if found is MusicProvider:
-			register_provider(found)
+	for script: GDScript in PROVIDERS:
+		register_provider(script.new())
 
 func register_provider(entry: MusicProvider) -> void :
 	entry.http = HTTPService.new()
