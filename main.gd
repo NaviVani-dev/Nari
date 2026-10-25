@@ -88,7 +88,7 @@ func _ready() -> void:
 			InputGlyphs.swap_face = bool(value)
 		elif section == "general" and key == "nintendo_layout":
 			InputGlyphs.swap_actions = bool(value)
-		elif section == "general" and key == "avoid_notch":
+		elif section == "general" and key in ["avoid_notch", "avoid_system_bars"]:
 			_update_insets()
 		elif section == "theme" and key == "reduce_motion":
 			_refresh_motion()
@@ -189,7 +189,8 @@ func _update_insets() -> void:
 	var insets := Vector4.ZERO
 	var sources: Array = []
 	if screens.ayn_thor_plugin:
-		sources.append(screens.ayn_thor_plugin.system_bar_insets())
+		if SettingsManager.general.avoid_system_bars:
+			sources.append(screens.ayn_thor_plugin.system_bar_insets())
 		if SettingsManager.general.avoid_notch:
 			sources.append(screens.ayn_thor_plugin.display_cutout_insets())
 	elif SettingsManager.general.avoid_notch:

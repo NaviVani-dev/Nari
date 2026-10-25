@@ -148,6 +148,10 @@ class GeneralSection extends Section:
 		set(value):
 			avoid_notch = value
 			_store("avoid_notch", value)
+	var avoid_system_bars: = true:
+		set(value):
+			avoid_system_bars = value
+			_store("avoid_system_bars", value)
 	var swap_face_glyphs: = false:
 		set(value):
 			swap_face_glyphs = value
@@ -202,6 +206,7 @@ class GeneralSection extends Section:
 		offline_mode = _fetch("offline_mode", offline_mode)
 		developer_mode = _fetch("developer_mode", developer_mode)
 		avoid_notch = _fetch("avoid_notch", avoid_notch)
+		avoid_system_bars = _fetch("avoid_system_bars", avoid_system_bars)
 		swap_face_glyphs = _fetch("swap_face_glyphs", swap_face_glyphs)
 		nintendo_layout = _fetch("nintendo_layout", nintendo_layout)
 		clock_format = _fetch("clock_format", clock_format)

@@ -192,6 +192,7 @@ func _entries_of(category: String) -> Array:
 					[false, true], {false: "Top", true: "Bottom"}))
 			if not OS.has_feature("pc"):
 				screens.append(SettingItem.toggle("Avoid the notch", "Keeps the app clear of the camera cutout", preload("res://assets/icons/home.svg"), "general", "avoid_notch"))
+				screens.append(SettingItem.toggle("Avoid Android elements", "Keeps the app clear of the space Android reserves for system bars", preload("res://assets/icons/home.svg"), "general", "avoid_system_bars"))
 			if OS.has_feature("pc"):
 				screens.append(_choice("Window mode", "How the app window fills your screen", preload("res://assets/icons/home.svg"), "general", "window_mode",
 					WINDOW_MODES.keys(), WINDOW_MODES))
