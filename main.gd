@@ -453,7 +453,10 @@ func _notification(what: int) -> void:
 		if DevTools.console_open():
 			DevTools.toggle_console()
 		elif not _go_back():
-			_quit()
+			if Engine.has_singleton("AndroidRuntime"):
+				Engine.get_singleton("AndroidRuntime").getActivity().moveTaskToBack(true)
+			else:
+				_quit()
 	elif what == NOTIFICATION_APPLICATION_FOCUS_IN:
 		_focused = true
 		_refresh_motion()
