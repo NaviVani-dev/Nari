@@ -29,10 +29,15 @@ OPENMPT_VERSION = "0.8.9"
 OPENMPT_SHA256 = "9273b88b67973cc69e54d748ab1b749399d6d07695f1c37d0c59f88b4106074f"
 MACOS_SDK_VERSION = "14.5"
 MACOS_SDK_SHA256 = "6e146275d19f027faa2e8354da5e0267513abf013b8f16ad65a231653a2b1c5d"
+IOS_SDK_VERSION = "26.5"
+IOS_SDK_SHA256 = "bed0f155d84e98ad8273b3bd57a0816ae5e772e1aa8539e6d79476221ce33173"
+IOS_TARGET = "aarch64-apple-ios"
+IOS_MINIMUM = "17.0"
 WINDOWS_TARGET = "x86_64-pc-windows-gnu"
 ANDROID_API = 26
 LINUX_IMAGE = "music-service-linux-builder"
 MACOS_IMAGE = "nari-macos-builder"
+IOS_IMAGE = "nari-ios-builder"
 IN_CONTAINER = bool(os.environ.get("MUSIC_SERVICE_IN_CONTAINER"))
 
 FFMPEG_LIBS = {"avutil": 60, "avcodec": 62, "avformat": 62, "swscale": 9}
@@ -119,10 +124,10 @@ def ninja():
     return binary
 
 
-def meson_cross_file(system, cpu, c, ar, ranlib, strip, flags=()):
+def meson_cross_file(system, cpu, c, ar, ranlib, strip, flags=(), link_flags=()):
     listed = lambda values: "[" + ", ".join(f"'{value}'" for value in values) + "]"
     return (f"[binaries]\nc = {listed([c])}\nar = '{ar}'\nranlib = '{ranlib}'\nstrip = '{strip}'\n\n"
-            f"[built-in options]\nc_args = {listed(flags)}\nc_link_args = {listed(flags)}\n\n"
+            f"[built-in options]\nc_args = {listed(flags)}\nc_link_args = {listed([*flags, *link_flags])}\n\n"
             f"[host_machine]\nsystem = '{system}'\ncpu_family = '{cpu}'\ncpu = '{cpu}'\nendian = 'little'\n")
 
 
@@ -192,7 +197,7 @@ def cargo_target_dir():
 
 
 def cargo_build(*args, env=None):
-    run("cargo", "build", "--release", *args, cwd=CRATE, env=env)
+    run("cargo", "build", "--release", "-j", JOBS, *args, cwd=CRATE, env=env)
 
 
 def container(engine, image, function, target_dir):
@@ -387,6 +392,69 @@ def build_macos():
                 output(install_name_tool, "-change", ffmpeg_prefix(folder) / "lib" / dylib, f"@loader_path/{dylib}", file)
 
 
+def ios_image(engine):
+    macos_image(engine)
+    sdk_dir = work_dir(WORK) / "ios-sdk"
+    sdk = sdk_dir / f"iPhoneOS{IOS_SDK_VERSION}.sdk.zip"
+    if not sdk.exists():
+        download(f"https://github.com/xybp888/iOS-SDKs/releases/download/iOS{IOS_SDK_VERSION}-SDKs/{sdk.name}", sdk)
+    if hashlib.sha256(sdk.read_bytes()).hexdigest() != IOS_SDK_SHA256:
+        fail(f"{sdk} doesn't match its sha256, delete it and try again")
+    build_image(engine, IOS_IMAGE, PLUGIN / "ios-builder.Containerfile", sdk_dir)
+
+
+def build_ios():
+    if not IN_CONTAINER:
+        engine = container_engine()
+        ios_image(engine)
+        return container(engine, IOS_IMAGE, "build_ios", "container-ios")
+
+    sdk = os.environ["IOS_SDK"]
+    flags = [f"--target=arm64-apple-ios{IOS_MINIMUM}", f"-isysroot{sdk}"]
+    dav1d = build_dav1d("ios-arm64", "aarch64", cross={
+        "system": "darwin", "c": "clang", "ar": "llvm-ar", "ranlib": "llvm-ranlib", "strip": "llvm-strip",
+        "flags": flags, "link_flags": ["-fuse-ld=lld"]})
+    build_ffmpeg("ios-arm64", "--enable-cross-compile", "--target-os=darwin", "--arch=aarch64",
+                 "--cc=clang", "--cxx=clang++", "--ar=llvm-ar", "--ranlib=llvm-ranlib", "--nm=llvm-nm", "--strip=llvm-strip",
+                 f"--extra-cflags={' '.join(flags)}", f"--extra-ldflags={' '.join(flags)} -fuse-ld=lld",
+                 "--disable-shared", "--enable-static", *MACOS_FFMPEG_OPTIONS, dav1d=dav1d)
+    info("cargo build (ios arm64)")
+    frameworks = ["VideoToolbox", "CoreMedia", "CoreVideo", "CoreFoundation", "CoreServices", "Security"]
+    link = [*flags, "-fuse-ld=lld", f"-L{dav1d / 'lib'}", "-ldav1d", *[part for name in frameworks for part in ("-framework", name)]]
+    cargo_build("--target", IOS_TARGET, env={
+        "SDKROOT": sdk,
+        "IPHONEOS_DEPLOYMENT_TARGET": IOS_MINIMUM,
+        "FFMPEG_DIR": ffmpeg_prefix("ios-arm64"),
+        "CC_aarch64_apple_ios": "clang",
+        "CXX_aarch64_apple_ios": "clang++",
+        "AR_aarch64_apple_ios": "llvm-ar",
+        "CFLAGS_aarch64_apple_ios": " ".join(flags),
+        "CXXFLAGS_aarch64_apple_ios": " ".join(flags),
+        "CARGO_TARGET_AARCH64_APPLE_IOS_LINKER": "clang",
+        "CARGO_TARGET_AARCH64_APPLE_IOS_RUSTFLAGS": " ".join(f"-Clink-arg={part}" for part in link),
+        "BINDGEN_EXTRA_CLANG_ARGS_aarch64_apple_ios": f"--sysroot={sdk} -isystem {sdk}/usr/include --target=arm64-apple-ios{IOS_MINIMUM}",
+    })
+
+    framework = BIN / "ios" / "libnari.framework"
+    shutil.rmtree(framework, ignore_errors=True)
+    framework.mkdir(parents=True)
+    shutil.copy(cargo_target_dir() / IOS_TARGET / "release" / "libnari.dylib", framework / "libnari")
+    run("llvm-install-name-tool", "-id", "@rpath/libnari.framework/libnari", framework / "libnari")
+    (framework / "Info.plist").write_text(
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n'
+        '<plist version="1.0">\n<dict>\n'
+        '\t<key>CFBundleExecutable</key>\n\t<string>libnari</string>\n'
+        '\t<key>CFBundleIdentifier</key>\n\t<string>io.github.navivani-dev.nari.libnari</string>\n'
+        '\t<key>CFBundleName</key>\n\t<string>libnari</string>\n'
+        '\t<key>CFBundlePackageType</key>\n\t<string>FMWK</string>\n'
+        '\t<key>CFBundleShortVersionString</key>\n\t<string>1.0</string>\n'
+        '\t<key>CFBundleVersion</key>\n\t<string>1</string>\n'
+        '\t<key>CFBundleSupportedPlatforms</key>\n\t<array>\n\t\t<string>iPhoneOS</string>\n\t</array>\n'
+        f'\t<key>MinimumOSVersion</key>\n\t<string>{IOS_MINIMUM}</string>\n'
+        '</dict>\n</plist>\n')
+
+
 def build_aar():
     gradle_binary = gradle()
     info(f"Building the MusicService AAR with {gradle_binary}")
@@ -410,4 +478,5 @@ def build():
     build_windows()
     build_android()
     build_macos()
+    build_ios()
     build_aar()

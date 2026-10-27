@@ -939,7 +939,16 @@ fn best_lyrics_by_stem(entries: &[(String, PathBuf, std::fs::Metadata)]) -> Hash
     best
 }
 
+#[cfg(any(target_os = "macos", target_os = "ios"))]
+pub fn original_cover(song: &Song) -> Option<Vec<u8>> {
+    cover_sources(song).into_iter().find_map(|bytes| covers::to_scaled_jpeg(&bytes, covers::ORIGINAL_SIZE))
+}
+
 fn extract_cover(song: &Song, full: &std::path::Path) -> Option<Vec<u8>> {
+    cover_sources(song).into_iter().find_map(|bytes| cover_jpeg(&bytes, full))
+}
+
+fn cover_sources(song: &Song) -> Vec<Vec<u8>> {
     let mut sources = Vec::new();
     if song.own_cover {
         sources.extend(meta::artwork(&song.uri, &song.file_name));
@@ -950,7 +959,7 @@ fn extract_cover(song: &Song, full: &std::path::Path) -> Option<Vec<u8>> {
     if song.has_embedded_cover && !song.own_cover {
         sources.extend(meta::artwork(&song.uri, &song.file_name));
     }
-    sources.into_iter().find_map(|bytes| cover_jpeg(&bytes, full))
+    sources
 }
 
 fn cover_jpeg(bytes: &[u8], full: &std::path::Path) -> Option<Vec<u8>> {

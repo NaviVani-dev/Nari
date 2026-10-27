@@ -8,6 +8,8 @@ use std::thread::{self, JoinHandle};
 
 pub const COVER_SIZE: u32 = 720;
 pub const THUMB_SIZE: u32 = 256;
+#[cfg(any(target_os = "macos", target_os = "ios"))]
+pub const ORIGINAL_SIZE: u32 = 2048;
 pub const CACHE_REVISION: u32 = 2;
 const JPEG_QUALITY: u8 = 90;
 const WORKERS: usize = 2;

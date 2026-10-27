@@ -53,6 +53,8 @@ impl Folders {
                 path: PathBuf::new(),
             });
         folders.path = path;
+        #[cfg(target_os = "ios")]
+        folders.music.iter().chain(&folders.ignored).for_each(crate::ios::resume);
         let legacy_system = folders.source.take().is_none_or(|source| source != LEGACY_PICKER);
         if !cfg!(target_os = "android")
             && legacy_system

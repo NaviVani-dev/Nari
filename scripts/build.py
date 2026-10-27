@@ -12,6 +12,7 @@ import sys
 import venv
 
 import aynthor
+import ios
 import metadata
 import music_service
 from common import BUILD, ROOT, TOOLS, download, extract_zip, fail, godot, info, preset_overrides, run, warn, work_dir
@@ -27,7 +28,7 @@ DESKTOP = {
 }
 LINUX_ARCHITECTURES = {"linux": ("amd64", "x86_64"), "linux-arm64": ("arm64", "aarch64")}
 APPIMAGETOOL = "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-{}.AppImage"
-ALL = ["metadata", "plugins", *DESKTOP, "android", "aab", "pck"]
+ALL = ["metadata", "plugins", *DESKTOP, "android", "aab", "ios", "pck"]
 FLATPAK_URL = "https://cdn.narimusic.com/flatpak/repo/"
 FLATHUB_REPO = "https://flathub.org/repo/flathub.flatpakrepo"
 FLATPAK_SKIP = [
@@ -135,6 +136,17 @@ def has_release_keystore():
         return True
     credentials = ROOT / ".godot" / "export_credentials.cfg"
     return credentials.exists() and re.search(r'^keystore/release="[^"]+"', credentials.read_text(), flags=re.M)
+
+
+def export_ios(debug):
+    project = BUILD / "ios"
+    shutil.rmtree(project, ignore_errors=True)
+    project.mkdir(parents=True)
+    template = f'"{ios.template().as_posix()}"'
+    godot_export("iOS", project / "Nari.ipa", debug, options={
+        "custom_template/debug": template, "custom_template/release": template, "application/app_store_team_id": '"UNSIGNED00"'})
+    ios.package(project, BUILD / "Nari-ios.ipa")
+    info("Install build/Nari-ios.ipa with SideStore, AltStore or Sideloadly")
 
 
 def export_aab():
@@ -280,6 +292,8 @@ def main():
             godot_export("Android", BUILD / "Nari.apk", args.debug, options={"permissions/custom_permissions": SIDELOAD_PERMISSIONS})
         elif target == "aab":
             export_aab()
+        elif target == "ios":
+            export_ios(args.debug)
         elif target == "pck":
             export_pck()
         elif target == "flatpak":

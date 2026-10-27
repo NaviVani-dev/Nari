@@ -568,6 +568,11 @@ impl Player {
             .unwrap_or_default()
     }
 
+    #[cfg(any(target_os = "macos", target_os = "ios"))]
+    pub fn local_song(&self) -> Option<Arc<Song>> {
+        self.items.get(self.index).filter(|song| !self.remote.contains_key(&song.id)).cloned()
+    }
+
     #[cfg_attr(not(target_os = "android"), allow(dead_code))]
     pub fn command(&mut self, name: &str, value: i64) {
         match name {

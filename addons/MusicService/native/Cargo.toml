@@ -53,11 +53,21 @@ material-colors = { version = "0.5.0", features = ["quantize"] }
 [target.'cfg(not(target_os = "android"))'.dependencies]
 discord-rich-presence = "1.1"
 notify = "8.2.0"
+
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 rfd = { version = "0.17.2", default-features = false, features = ["xdg-portal"] }
 
 [target.'cfg(target_os = "android")'.dependencies]
 jni = "0.21.1"
 ndk-context = "0.1.1"
+
+[target.'cfg(target_os = "ios")'.dependencies]
+block2 = "0.6"
+objc2 = "0.6"
+objc2-avf-audio = { version = "0.3", default-features = false, features = ["std", "AVAudioSession", "AVAudioSessionTypes"] }
+objc2-foundation = "0.3"
+objc2-media-player = "0.3"
+objc2-ui-kit = "0.3"
 
 [profile.release]
 opt-level = 3

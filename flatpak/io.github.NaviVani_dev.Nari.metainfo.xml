@@ -25,51 +25,51 @@
 
   <screenshots>
     <screenshot type="default">
-      <image>https://raw.githubusercontent.com/NaviVani-dev/Nari/v1.0.0/metadata/screenshots/pc/1.png</image>
+      <image>https://raw.githubusercontent.com/NaviVani-dev/Nari/v1.1.0/metadata/screenshots/pc/1.png</image>
       <caption>Home</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/NaviVani-dev/Nari/v1.0.0/metadata/screenshots/pc/2.png</image>
+      <image>https://raw.githubusercontent.com/NaviVani-dev/Nari/v1.1.0/metadata/screenshots/pc/2.png</image>
       <caption>Now playing</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/NaviVani-dev/Nari/v1.0.0/metadata/screenshots/pc/3.png</image>
+      <image>https://raw.githubusercontent.com/NaviVani-dev/Nari/v1.1.0/metadata/screenshots/pc/3.png</image>
       <caption>Synced lyrics</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/NaviVani-dev/Nari/v1.0.0/metadata/screenshots/pc/4.png</image>
+      <image>https://raw.githubusercontent.com/NaviVani-dev/Nari/v1.1.0/metadata/screenshots/pc/4.png</image>
       <caption>Your albums</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/NaviVani-dev/Nari/v1.0.0/metadata/screenshots/pc/5.png</image>
+      <image>https://raw.githubusercontent.com/NaviVani-dev/Nari/v1.1.0/metadata/screenshots/pc/5.png</image>
       <caption>Album details</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/NaviVani-dev/Nari/v1.0.0/metadata/screenshots/pc/6.png</image>
+      <image>https://raw.githubusercontent.com/NaviVani-dev/Nari/v1.1.0/metadata/screenshots/pc/6.png</image>
       <caption>All your songs</caption>
     </screenshot>
     <screenshot environment="plasma-mobile">
-      <image>https://raw.githubusercontent.com/NaviVani-dev/Nari/v1.0.0/metadata/screenshots/phone/1.png</image>
+      <image>https://raw.githubusercontent.com/NaviVani-dev/Nari/v1.1.0/metadata/screenshots/phone/1.png</image>
       <caption>Home</caption>
     </screenshot>
     <screenshot environment="plasma-mobile">
-      <image>https://raw.githubusercontent.com/NaviVani-dev/Nari/v1.0.0/metadata/screenshots/phone/2.png</image>
+      <image>https://raw.githubusercontent.com/NaviVani-dev/Nari/v1.1.0/metadata/screenshots/phone/2.png</image>
       <caption>Now playing</caption>
     </screenshot>
     <screenshot environment="plasma-mobile">
-      <image>https://raw.githubusercontent.com/NaviVani-dev/Nari/v1.0.0/metadata/screenshots/phone/3.png</image>
+      <image>https://raw.githubusercontent.com/NaviVani-dev/Nari/v1.1.0/metadata/screenshots/phone/3.png</image>
       <caption>Synced lyrics</caption>
     </screenshot>
     <screenshot environment="plasma-mobile">
-      <image>https://raw.githubusercontent.com/NaviVani-dev/Nari/v1.0.0/metadata/screenshots/phone/4.png</image>
+      <image>https://raw.githubusercontent.com/NaviVani-dev/Nari/v1.1.0/metadata/screenshots/phone/4.png</image>
       <caption>Your albums</caption>
     </screenshot>
     <screenshot environment="plasma-mobile">
-      <image>https://raw.githubusercontent.com/NaviVani-dev/Nari/v1.0.0/metadata/screenshots/phone/5.png</image>
+      <image>https://raw.githubusercontent.com/NaviVani-dev/Nari/v1.1.0/metadata/screenshots/phone/5.png</image>
       <caption>Album details</caption>
     </screenshot>
     <screenshot environment="plasma-mobile">
-      <image>https://raw.githubusercontent.com/NaviVani-dev/Nari/v1.0.0/metadata/screenshots/phone/6.png</image>
+      <image>https://raw.githubusercontent.com/NaviVani-dev/Nari/v1.1.0/metadata/screenshots/phone/6.png</image>
       <caption>All your songs</caption>
     </screenshot>
   </screenshots>
@@ -94,6 +94,15 @@
   </content_rating>
 
   <releases>
+    <release version="1.1.0" date="2026-10-25">
+      <description>
+        <p>Jellyfin support</p>
+        <p>Improved Nari's LUA API</p>
+        <p>Improved video playback</p>
+        <p>Improved the Search screen</p>
+        <p>Added specific Android fixes</p>
+      </description>
+    </release>
     <release version="1.0.0" date="2026-09-26">
       <description>
         <p>First release.</p>

@@ -1,7 +1,9 @@
-#![cfg_attr(target_os = "android", allow(dead_code, unused_imports))]
+#![cfg_attr(any(target_os = "android", target_os = "ios"), allow(dead_code, unused_imports))]
 
 #[cfg(target_os = "android")]
 mod android;
+#[cfg(target_os = "ios")]
+mod ios;
 mod analysis;
 mod animation;
 mod motion;

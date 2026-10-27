@@ -284,7 +284,12 @@ mod native {
         destroy: unsafe extern "C" fn(*mut c_void),
     }
 
-    #[cfg(not(target_os = "linux"))]
+    #[cfg(target_os = "ios")]
+    fn api() -> Option<&'static Api> {
+        None
+    }
+
+    #[cfg(any(windows, target_os = "macos"))]
     fn api() -> Option<&'static Api> {
         use crate::engine::*;
         static API: Api = Api { ready: nari_webview_ready, create: nari_webview_create, send: nari_webview_send, free: nari_webview_free, destroy: nari_webview_destroy };
