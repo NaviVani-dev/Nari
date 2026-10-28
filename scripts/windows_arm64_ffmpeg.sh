@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Called by Windows Python with Windows paths, inside an ARM64 MSVC developer environment.
-export PATH="$(cygpath -u "$MSVC_BIN"):$PATH:/usr/bin"
+export PATH="$(cygpath -u "$MSVC_BIN"):/usr/bin:$PATH"
 source_dir=$(cygpath -u "$1")
 build_dir=$(cygpath -u "$2")
 prefix=$(cygpath -m "$3")
