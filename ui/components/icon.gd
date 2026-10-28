@@ -72,6 +72,8 @@ func _process(_delta: float) -> void:
 		_sharpen()
 
 func _apply_color() -> void:
+	if not Engine.is_editor_hint():
+		Themes.shade(self, "icon")
 	if not themed or not use_custom_color and ThemeEngine.current_theme == null:
 		return
 	self_modulate = Color.WHITE if ThemeEngine.icons_colored else ThemeEngine.resolve(use_custom_color, custom_color, color)

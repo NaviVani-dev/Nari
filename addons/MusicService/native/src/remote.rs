@@ -1,6 +1,6 @@
 use std::io::{self, Read};
 use std::sync::OnceLock;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use crate::stream::{Feed, Stream};
 
@@ -8,6 +8,8 @@ const CHUNK: usize = 64 * 1024;
 const RANGE: u64 = 1024 * 1024;
 const LOOKAHEAD: u64 = 512 * 1024;
 const RETRIES: u32 = 3;
+const MAX_BACKOFF: u32 = 4;
+const WAIT_STEP: Duration = Duration::from_millis(200);
 const LIVE_RETRIES: u32 = 5;
 const PLAYLIST_LIMIT: u64 = 1024 * 1024;
 const SEGMENT_LIMIT: u64 = 64 * 1024 * 1024;
@@ -170,14 +172,35 @@ fn drain(feed: &Feed, mut reader: Box<dyn Read + Send>, received: &mut u64) -> i
     Ok(())
 }
 
+#[derive(Debug)]
+struct Refused(u16);
+
+impl std::fmt::Display for Refused {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(formatter, "the server answered {} to a range", self.0)
+    }
+}
+
+impl std::error::Error for Refused {}
+
+fn refused(error: &io::Error) -> bool {
+    error.get_ref().is_some_and(|inner| inner.is::<Refused>())
+}
+
+fn rest(feed: &Feed, attempt: u32) {
+    let until = Instant::now() + Duration::from_secs(1 << attempt.min(MAX_BACKOFF));
+    while !feed.closed() && Instant::now() < until {
+        std::thread::sleep(WAIT_STEP);
+    }
+}
+
 fn request_range(url: &str, start: u64, end: u64) -> io::Result<Box<dyn Read + Send>> {
-    let response = agent()
-        .get(url)
-        .header("Range", format!("bytes={start}-{end}"))
-        .call()
-        .map_err(io::Error::other)?;
+    let response = agent().get(url).header("Range", format!("bytes={start}-{end}")).call().map_err(|error| match error {
+        ureq::Error::StatusCode(code) => io::Error::other(Refused(code)),
+        other => io::Error::other(other),
+    })?;
     if response.status().as_u16() != 206 {
-        return Err(io::Error::other(format!("the server answered {} to a range", response.status())));
+        return Err(io::Error::other(Refused(response.status().as_u16())));
     }
     Ok(Box::new(response.into_body().into_reader()))
 }
@@ -206,7 +229,8 @@ fn pump(feed: &Feed, mut reader: Box<dyn Read + Send>, at: &mut u64) -> io::Resu
 fn download_ranges(feed: &Feed, first: Box<dyn Read + Send>, url: &str, total: u64) -> io::Result<()> {
     let mut at = 0u64;
     let mut next = Ok(first);
-    let mut failures = 0;
+    let mut refusals = 0;
+    let mut stalls = 0;
     loop {
         let start = at;
         let outcome = next.and_then(|reader| pump(feed, reader, &mut at));
@@ -214,17 +238,17 @@ fn download_ranges(feed: &Feed, first: Box<dyn Read + Send>, url: &str, total: u
             return Ok(());
         }
         match outcome {
-            _ if at > start => failures = 0,
-            Ok(()) => failures += 1,
-            Err(error) => {
-                failures += 1;
-                if failures > RETRIES {
+            _ if at > start => (refusals, stalls) = (0, 0),
+            Err(error) if refused(&error) => {
+                refusals += 1;
+                if refusals > RETRIES {
                     return Err(error);
                 }
             }
-        }
-        if failures > RETRIES {
-            return Err(io::Error::other("the server stopped sending the stream"));
+            _ => {
+                rest(feed, stalls);
+                stalls += 1;
+            }
         }
         let Some(from) = feed
             .wanted()
@@ -446,6 +470,42 @@ mod tests {
         let mut all = Vec::new();
         source.read_to_end(&mut all).unwrap();
         assert_eq!(all.len(), body.len());
+        assert!(all == body);
+    }
+
+    #[test]
+    fn dropped_connections_wait_for_the_network_and_resume() {
+        let body: Vec<u8> = (0..(RANGE as u32 + 4_321)).map(|value| (value % 239) as u8).collect();
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let address = listener.local_addr().unwrap();
+        let served = body.clone();
+        std::thread::spawn(move || {
+            for (attempt, connection) in listener.incoming().enumerate() {
+                let mut stream = connection.unwrap();
+                let mut request = [0u8; 2048];
+                let size = stream.read(&mut request).unwrap();
+                if attempt == 1 {
+                    continue;
+                }
+                let request = String::from_utf8_lossy(&request[..size]).to_lowercase();
+                let range = request.split("range: bytes=").nth(1).unwrap().split("\r\n").next().unwrap().to_owned();
+                let (start, end) = range.split_once('-').unwrap();
+                let start: usize = start.parse().unwrap();
+                let end: usize = end.parse::<usize>().unwrap().min(served.len() - 1);
+                let cut = if attempt == 0 { (end + 1) / 2 } else { end + 1 };
+                write!(
+                    stream,
+                    "HTTP/1.1 206 Partial Content\r\nContent-Length: {}\r\nContent-Range: bytes {start}-{end}/{}\r\nConnection: close\r\n\r\n",
+                    end + 1 - start,
+                    served.len()
+                )
+                .unwrap();
+                let _ = stream.write_all(&served[start..cut]);
+            }
+        });
+        let mut source = open(&format!("http://{address}/stream")).unwrap();
+        let mut all = Vec::new();
+        source.read_to_end(&mut all).unwrap();
         assert!(all == body);
     }
 

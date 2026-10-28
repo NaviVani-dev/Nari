@@ -37,6 +37,7 @@
     ]
   },
   "releases": [
+    { "version": "1.1.0", "code": 2, "date": "2026-10-25", "notes": ["Jellyfin support", "Improved Nari's LUA API", "Improved video playback", "Improved the Search screen", "Added specific Android fixes"] },
     { "version": "1.0.0", "code": 1, "date": "2026-09-26", "notes": ["First release."] }
   ]
 }

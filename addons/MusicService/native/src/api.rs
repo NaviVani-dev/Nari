@@ -50,8 +50,13 @@ impl IObject for MusicService {
         let bus = Bus::new();
         #[cfg(target_os = "android")]
         crate::android::attach(bus.sender());
+        #[cfg(target_os = "ios")]
+        crate::ios::start_audio_session();
         let root = PathBuf::from(ProjectSettings::singleton().globalize_path("user://").to_string());
+        #[cfg(not(target_os = "ios"))]
         let music = PathBuf::from(Os::singleton().get_system_dir(SystemDir::MUSIC).to_string());
+        #[cfg(target_os = "ios")]
+        let music = PathBuf::new();
         crate::vault::init(root.clone());
         crate::history::init(root.clone());
         crate::analysis::init(root.clone());
@@ -1146,7 +1151,22 @@ impl MusicService {
         crate::android::pick(kind.id());
     }
 
-    #[cfg(not(target_os = "android"))]
+    #[cfg(target_os = "ios")]
+    fn pick_folder(&self, kind: FolderKind) {
+        let library = self.library.clone();
+        let events = self.bus.sender();
+        crate::ios::pick_folder(move |picked| {
+            let uri = picked.as_ref().map(|folder| folder.uri.clone()).unwrap_or_default();
+            let success = picked.is_some_and(|folder| library.add_folder(kind, folder));
+            let _ = events.send(Event::FolderSelected {
+                kind: kind.id().to_owned(),
+                success,
+                uri,
+            });
+        });
+    }
+
+    #[cfg(not(any(target_os = "android", target_os = "ios")))]
     fn pick_folder(&self, kind: FolderKind) {
         let library = self.library.clone();
         let events = self.bus.sender();
@@ -1284,7 +1304,12 @@ fn extract_zip(zip_path: &str, target: &str) -> Result<(), String> {
     archive.extract(target).map_err(|error| error.to_string())
 }
 
-#[cfg(not(target_os = "android"))]
+#[cfg(target_os = "ios")]
+fn pick_file_in_background(_filter: &'static str, _extensions: &[&str], deliver: impl FnOnce(String) + Send + 'static) {
+    deliver(String::new());
+}
+
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
 fn pick_file_in_background(filter: &'static str, extensions: &[&str], deliver: impl FnOnce(String) + Send + 'static) {
     let extensions: Vec<String> = extensions.iter().map(|extension| extension.to_string()).collect();
     std::thread::spawn(move || {

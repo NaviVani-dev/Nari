@@ -23,5 +23,4 @@ func _process(delta: float) -> void:
 	var progress := clampf(_elapsed / FADE_TIME, 0.0, 1.0)
 	color.a = 1.0 - smoothstep(0.0, 1.0, progress)
 	if progress >= 1.0:
-		Main.finish_boot()
 		get_parent().queue_free()

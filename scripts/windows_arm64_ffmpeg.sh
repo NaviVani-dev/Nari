@@ -7,7 +7,8 @@ source_dir=$(cygpath -u "$1")
 build_dir=$(cygpath -u "$2")
 prefix=$(cygpath -m "$3")
 jobs=$4
-shift 4
+export PKG_CONFIG_LIBDIR="$(cygpath -u "$5")/lib/pkgconfig"
+shift 5
 mkdir -p "$build_dir"
 cd "$build_dir"
 bash "$source_dir/configure" "$@" \

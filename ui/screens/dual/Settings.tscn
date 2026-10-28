@@ -142,6 +142,8 @@ theme_override_font_sizes/font_size = 64
 text = "Description"
 horizontal_alignment = 1
 autowrap_mode = 3
+text_overrun_behavior = 3
+max_lines_visible = 3
 script = ExtResource("2_label")
 font_size = 64
 

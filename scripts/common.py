@@ -3,10 +3,12 @@ import os
 import platform
 import re
 import shutil
+import struct
 import subprocess
 import sys
 import urllib.request
 import zipfile
+import zlib
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -17,7 +19,7 @@ TOOLS = BUILD / "tools"
 
 GODOT_VERSION = "4.7.2"
 GRADLE_VERSION = "9.5.0"
-JOBS = os.cpu_count() or 1
+JOBS = int(os.environ.get("NARI_JOBS") or os.cpu_count() or 1)
 PRESETS = ROOT / "export_presets.cfg"
 
 
@@ -41,6 +43,10 @@ load_env_file()
 
 def info(message):
     print(f"\033[0;34m==> {message}\033[0m", flush=True)
+
+
+def warn(message):
+    print(f"\033[0;33mwarning: {message}\033[0m", file=sys.stderr, flush=True)
 
 
 def fail(message):
@@ -102,6 +108,52 @@ def download(url, destination):
         shutil.copyfileobj(response, file)
     partial.replace(destination)
     return destination
+
+
+def fetch_range(url, start, end):
+    request = urllib.request.Request(url, headers={"Range": f"bytes={start}-{end}"})
+    with urllib.request.urlopen(request) as response:
+        return response.read()
+
+
+def download_zip_member(url, member, destination):
+    info(f"Downloading {member} from {url}")
+    with urllib.request.urlopen(urllib.request.Request(url, method="HEAD")) as response:
+        total = int(response.headers["Content-Length"])
+    tail = fetch_range(url, max(0, total - 65536), total - 1)
+    end = tail.rfind(b"PK\x05\x06")
+    size, offset = struct.unpack("<II", tail[end + 12:end + 20])
+    locator = tail.rfind(b"PK\x06\x07")
+    if locator >= 0:
+        record = struct.unpack("<Q", tail[locator + 8:locator + 16])[0]
+        size, offset = struct.unpack("<QQ", fetch_range(url, record + 40, record + 55))
+    directory = fetch_range(url, offset, offset + size - 1)
+    position = 0
+    while position < len(directory):
+        method = struct.unpack("<H", directory[position + 10:position + 12])[0]
+        packed, unpacked = struct.unpack("<II", directory[position + 20:position + 28])
+        name_size, extra_size, comment_size = struct.unpack("<HHH", directory[position + 28:position + 34])
+        local = struct.unpack("<I", directory[position + 42:position + 46])[0]
+        name = directory[position + 46:position + 46 + name_size].decode()
+        extra = directory[position + 46 + name_size:position + 46 + name_size + extra_size]
+        field = 0
+        while field < len(extra):
+            tag, length = struct.unpack("<HH", extra[field:field + 4])
+            if tag == 1:
+                values = list(struct.unpack(f"<{length // 8}Q", extra[field + 4:field + 4 + length]))
+                unpacked = values.pop(0) if unpacked == 0xFFFFFFFF else unpacked
+                packed = values.pop(0) if packed == 0xFFFFFFFF else packed
+                local = values.pop(0) if local == 0xFFFFFFFF else local
+            field += 4 + length
+        if name == member:
+            header = fetch_range(url, local, local + 29)
+            start = local + 30 + sum(struct.unpack("<HH", header[26:30]))
+            data = fetch_range(url, start, start + packed - 1)
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            destination.write_bytes(zlib.decompress(data, -15) if method == 8 else data)
+            return destination
+        position += 46 + name_size + extra_size + comment_size
+    fail(f"{member} isn't inside {url}")
 
 
 def extract_zip(archive, destination):
@@ -181,7 +233,7 @@ def build_image(engine, image, containerfile, context=None):
 
 
 def run_in_container(engine, image, module, function, env=None, mounts=()):
-    command = [engine, "run", "--rm", "-w", ROOT]
+    command = [engine, "run", "--rm", "-w", ROOT, "-e", f"NARI_JOBS={JOBS}"]
     for path in {str(ROOT), *map(str, mounts)}:
         command += ["-v", f"{path}:{path}:z"]
     for key, value in (env or {}).items():

@@ -140,6 +140,8 @@ func _load_cover() -> void:
 	if not is_inside_tree():
 		return
 	(%Custom.material as ShaderMaterial).set_shader_parameter("cover", texture)
+	if texture:
+		MediaPlayer.watch_cover(texture, %Custom)
 
 func _swap() -> void:
 	if _fade:

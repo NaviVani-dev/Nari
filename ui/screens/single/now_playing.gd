@@ -70,6 +70,7 @@ const QUIET_ACTIONS: Array[StringName] = [&"play_pause", &"previous_track", &"ne
 @onready var queue_empty: EmptyMessage = _build_queue_notice()
 @onready var lyrics_visualizer: LyricsVisualizer = %LyricsVisualizer
 @onready var effects_area: BoxContainer = %EffectsArea
+@onready var effects_locked: NariLabel = %EffectsLocked
 @onready var effects_presets: EffectsPresets = %EffectsPresets
 @onready var plugin_effects: EffectsPresets = %PluginEffects
 @onready var soundboard_area: SoundboardGrid = _build_soundboard()
@@ -82,6 +83,7 @@ const QUIET_ACTIONS: Array[StringName] = [&"play_pause", &"previous_track", &"ne
 @onready var _screens := {"queue": queue_area, "lyrics": lyrics_visualizer, "effects": effects_area, "soundboard": soundboard_area}
 
 var _plugin_tabs := {}
+var _view_buttons := {}
 var _queue_version := 0
 var _queue_signature := "uninitialized"
 var _queue_index := -1
@@ -103,6 +105,8 @@ func _ready() -> void:
 	UI.link_current_song(song_title, song_artist)
 	for key in _plugin_tabs:
 		_screens[key] = _plugin_tabs[key]["area"]
+	Plugins.output_changed.connect(_swap_effects)
+	_swap_effects()
 	ThemeEngine.follow(backdrop, func(): backdrop.self_modulate = ThemeEngine.get_color(ThemeEngine.Colors.BackgroundGradient))
 	song_title.marquee = true
 	song_artist.marquee = true
@@ -135,6 +139,7 @@ func _ready() -> void:
 		if _seeking:
 			song_current_time.text = MediaPlayer.format_duration(int(value)))
 	MediaPlayer.playback_changed.connect(_update)
+	Plugins.cover_view_changed.connect(_on_cover_view_changed)
 	MediaPlayer.library_changed.connect(func():
 		_lyrics_song_id = ""
 		_update(MediaPlayer.get_playback_state()))
@@ -211,7 +216,11 @@ func _apply_controls(amount: float) -> void:
 		content.modulate.a = amount
 		slot.custom_minimum_size.y = content.get_combined_minimum_size().y * amount * (_dock_scale() if content == dock else 1.0)
 	if staged.visible:
-		cover_frame.custom_minimum_size = Vector2.ONE * lerpf(_cover_side(false), _cover_side(true), amount)
+		var ratio := _view_ratio()
+		var side := lerpf(_cover_side(false), _cover_side(true), amount)
+		var width := minf(side * ratio, maxf(_lane(), side))
+		cover_frame.ratio = ratio
+		cover_frame.custom_minimum_size = Vector2(width, width / ratio)
 
 func _process(delta: float) -> void:
 	_elapsed += delta
@@ -259,6 +268,8 @@ func _update(state: Dictionary) -> void:
 	for target in [song_cover, mini_cover]:
 		if song.is_empty():
 			target.clear()
+		elif target == song_cover and Plugins.cover_texture():
+			target.show_texture(Plugins.cover_texture())
 		else:
 			var cover := MediaPlayer.cover_of(song)
 			target.show_cover(cover[0], cover[1])
@@ -295,6 +306,13 @@ func _mount_plugin_tabs(toggle: Callable) -> void:
 		(tab["build"] as Callable).call(area)
 		_plugin_tabs[key] = {"button": button, "area": area, "title": str(tab.get("title", ""))}
 		button.pressed.connect(toggle.bind(key))
+	for view in Plugins.cover_views:
+		var key := str(view["id"])
+		var button: NariButton = soundboard_button.duplicate(Node.DUPLICATE_SCRIPTS)
+		button.icon = view["icon"]
+		soundboard_button.add_sibling(button)
+		_view_buttons[key] = button
+		button.pressed.connect(_press_view.bind(key))
 
 func _build_soundboard() -> SoundboardGrid:
 	var grid: SoundboardGrid = SOUNDBOARD_GRID.instantiate()
@@ -337,6 +355,17 @@ func _press_tab(screen: String) -> void:
 		return
 	_toggle_screen(screen)
 
+func _swap_effects() -> void:
+	var shown: Control = _screens["effects"]
+	var wanted: Control = effects_locked if Plugins.is_output_connected() else effects_area
+	if shown == wanted:
+		return
+	_screens["effects"] = wanted
+	if _screen == "effects":
+		shown.hide()
+		wanted.show()
+		stage_action.visible = wanted == effects_area
+
 func _toggle_screen(screen: String) -> void:
 	var leaving: Control = _screens.get(_screen)
 	_screen = "" if screen == _screen else screen
@@ -348,7 +377,7 @@ func _toggle_screen(screen: String) -> void:
 		_fade_backdrop()
 		stage_title.text = SCREEN_TITLES.get(_screen, _plugin_tabs.get(_screen, {}).get("title", ""))
 		stage_header.visible = _screen != "lyrics"
-		stage_action.visible = _screen == "queue" or _screen == "effects"
+		stage_action.visible = _screen == "queue" or (_screen == "effects" and _screens["effects"] == effects_area)
 		stage_action.icon = CLEAR_ICON if _screen == "queue" else RESET_ICON
 		if _screen == "queue":
 			_load_queue()
@@ -417,6 +446,25 @@ func _paint_actions() -> void:
 	_paint_active(visualizers_button, _visualizer >= 0)
 	for key in _plugin_tabs:
 		_paint_active(_plugin_tabs[key]["button"], _screen == key)
+	for key in _view_buttons:
+		_view_buttons[key].visible = Plugins.is_cover_view_shown(key)
+		_paint_active(_view_buttons[key], Plugins.cover_view == key)
+
+func _press_view(key: String) -> void:
+	if Plugins.cover_view != key and not Plugins.is_cover_view_available(key):
+		return
+	if Plugins.cover_view != key:
+		_show_cover()
+	Plugins.toggle_cover_view(key)
+
+func _on_cover_view_changed() -> void:
+	_paint_actions()
+	_layout()
+	_update(MediaPlayer.get_playback_state())
+
+func _view_ratio() -> float:
+	var view := Plugins.cover_texture()
+	return view.get_width() / maxf(view.get_height(), 1.0) if view and view.get_height() > 0 else 1.0
 
 func _paint_active(button: NariButton, active: bool) -> void:
 	button.indicator = active

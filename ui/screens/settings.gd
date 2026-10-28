@@ -93,23 +93,17 @@ func _fit_showcase() -> void:
 	glyph.offset_bottom = _glyph_rest
 
 func _load() -> void:
-	var fresh := _sectioned(_entries_of(_category) + (Plugins.settings_entries(_category) if not _category.is_empty() else []))
+	var fresh := sectioned(_entries_of(_category) + (Plugins.settings_entries(_category) if not _category.is_empty() else []))
 	if _same_shape(fresh):
 		_update_in_place(fresh)
 		return
 	var previous: int = list.get_selected()
 	_entries = fresh
-	var headers := PackedInt32Array()
-	for index in _entries.size():
-		if _entries[index].has("header"):
-			headers.append(index)
-	list.container.headers = headers
+	list.container.headers = headers_of(_entries)
 	list.shape_of = func(entry: Dictionary): return entry.has("slider")
 	list.set_items(_entries, _create_item)
 	_selected = -1
-	var start := clampi(previous if previous >= 0 else focus_index, 0, _entries.size() - 1)
-	while start + 1 < _entries.size() and _entries[start].has("header"):
-		start += 1
+	var start := first_item(_entries, previous if previous >= 0 else focus_index)
 	_select(start)
 	list.focus_item(start)
 
@@ -133,7 +127,7 @@ func _update_in_place(fresh: Array) -> void:
 	if _selected >= 0:
 		_write_caption()
 
-func _sectioned(entries: Array) -> Array:
+static func sectioned(entries: Array) -> Array:
 	var sections := {}
 	for entry: Dictionary in entries:
 		var section := str(entry.get("section", ""))
@@ -146,14 +140,30 @@ func _sectioned(entries: Array) -> Array:
 			grouped.append_array(sections[section])
 	return grouped
 
-func _create_item(entry: Dictionary) -> Control:
+static func headers_of(entries: Array) -> PackedInt32Array:
+	var headers := PackedInt32Array()
+	for index in entries.size():
+		if entries[index].has("header"):
+			headers.append(index)
+	return headers
+
+static func first_item(entries: Array, start: int) -> int:
+	var index := clampi(start, 0, entries.size() - 1)
+	while index + 1 < entries.size() and entries[index].has("header"):
+		index += 1
+	return index
+
+static func create_entry(entry: Dictionary, changed: Callable) -> Control:
 	if entry.has("header"):
 		var header: Control = SECTION.instantiate()
 		header.get_node("%Title").text = entry["header"]
 		return header
 	if entry.has("plugin"):
 		return PluginItem.create(entry)
-	return SettingItem.create(entry, SettingItem.refresh_list.bind(list))
+	return SettingItem.create(entry, changed)
+
+func _create_item(entry: Dictionary) -> Control:
+	return create_entry(entry, SettingItem.refresh_list.bind(list))
 
 func _entries_of(category: String) -> Array:
 	match category:
@@ -182,16 +192,13 @@ func _entries_of(category: String) -> Array:
 				]))
 			return playback
 		"general":
-			var screens: Array = []
-			if OS.has_feature("pc"):
-				screens.append(SettingItem.toggle("Dual-screen window", "Opens the bottom screen in its own window, for a second monitor or a touch display", preload("res://assets/icons/music_note_dual.svg"), "general", "dual_screen"))
-			else:
-				screens.append(SettingItem.toggle("Dual-screen integration", "Uses both screens when a second one is connected (HDMI or cast)", preload("res://assets/icons/music_note_dual.svg"), "general", "dual_screen"))
+			var screens: Array = [dual_screen_entry()]
 			if Main.dual and not OS.has_feature("pc"):
 				screens.append(_choice("Select main screen", "Choose which screen shows the top of the app", preload("res://assets/icons/repeat.svg"), "general", "swap_screens",
 					[false, true], {false: "Top", true: "Bottom"}))
 			if not OS.has_feature("pc"):
 				screens.append(SettingItem.toggle("Avoid the notch", "Keeps the app clear of the camera cutout", preload("res://assets/icons/home.svg"), "general", "avoid_notch"))
+				screens.append(SettingItem.toggle("Avoid Android elements", "Keeps the app clear of the space Android reserves for system bars", preload("res://assets/icons/home.svg"), "general", "avoid_system_bars"))
 			if OS.has_feature("pc"):
 				screens.append(_choice("Window mode", "How the app window fills your screen", preload("res://assets/icons/home.svg"), "general", "window_mode",
 					WINDOW_MODES.keys(), WINDOW_MODES))
@@ -214,6 +221,7 @@ func _entries_of(category: String) -> Array:
 			general.append_array(_section("Interface", [
 				SettingItem.toggle("Nintendo button layout", "B confirms and A goes back, and X and Y trade places too", preload("res://assets/glyphs/XboxSeries/xbox_button_b.svg"), "general", "nintendo_layout"),
 				SettingItem.toggle("Swap button glyphs", "Shows A/B and X/Y swapped, for controllers with a Nintendo layout", preload("res://assets/glyphs/XboxSeries/xbox_button_a.svg"), "general", "swap_face_glyphs"),
+				SettingItem.toggle("Haptics", "Vibrates your controller or phone as you move around the app", preload("res://assets/icons/motion.svg"), "general", "haptics"),
 				_choice("Clock format", "How the time is shown in the top bar", preload("res://assets/icons/time.svg"), "general", "clock_format",
 					["24h", "12h"], {"24h": "24 hours", "12h": "12 hours"}),
 			]))
@@ -240,6 +248,7 @@ func _entries_of(category: String) -> Array:
 					UI_SCALE_RANGE, func(scale: float): return "%sx" % _number(scale)),
 				_choice("Home appearance", "The carousel on the home screen", preload("res://assets/icons/home.svg"), "theme", "home_view",
 					HomeView.NAMES.keys(), HomeView.NAMES),
+				home_entries_entry(SettingItem.refresh_list.bind(list)),
 				_choice("Now Playing pill", "The player shown at the bottom of every screen", preload("res://assets/icons/music_note.svg"), "theme", "pill",
 					["comfy", "compact", "slim"], {"comfy": "Comfy", "compact": "Compact", "slim": "Slim"}),
 				_choice("Show media controls on Now Playing", "Hides the controls after a few seconds without input", preload("res://assets/icons/play.svg"), "theme", "now_playing_controls",
@@ -253,6 +262,8 @@ func _entries_of(category: String) -> Array:
 					[30, 60, 120, 144, 0], {30: "30 fps", 60: "60 fps", 120: "120 fps", 144: "144 fps", 0: "Unlimited"}),
 				_choice("Background quality", "Select how often the animated background moves", preload("res://assets/icons/fps.svg"), "performance", "background_quality",
 					["high", "medium", "low"], {"high": "High", "medium": "Medium", "low": "Low"}),
+				_choice("Video decoding", "How animated backgrounds and covers are decoded", preload("res://assets/icons/fps.svg"), "performance", "video_decoding",
+					["auto", "software"], {"auto": "Hardware when available", "software": "Software only"}),
 			])
 		"lyrics":
 			return _section("Sources", [SettingsScreen.lyrics_provider_entry(SettingItem.refresh_list.bind(list))]) + _section("Display", [
@@ -312,6 +323,11 @@ static func _section(name: String, entries: Array) -> Array:
 		entry["section"] = name
 	return entries
 
+static func dual_screen_entry() -> Dictionary:
+	if OS.has_feature("pc"):
+		return SettingItem.toggle("Dual-screen window", "Opens the bottom screen in its own window, for a second monitor or a touch display", preload("res://assets/icons/music_note_dual.svg"), "general", "dual_screen")
+	return SettingItem.toggle("Dual-screen integration", "Uses both screens when a second one is connected (HDMI or cast)", preload("res://assets/icons/music_note_dual.svg"), "general", "dual_screen")
+
 static func lyrics_provider_entry(refresh: Callable) -> Dictionary:
 	return {
 		"title": "Lyrics provider",
@@ -334,6 +350,34 @@ static func lyrics_provider_entry(refresh: Callable) -> Dictionary:
 		"reset": func(): SettingsManager.lyrics.reset("providers"),
 	}
 
+static func home_entries_entry(refresh: Callable) -> Dictionary:
+	return {
+		"title": "Home entries",
+		"description": "Choose which entries the home carousel shows",
+		"icon": preload("res://assets/icons/home.svg"),
+		"value": func(): return "%d hidden" % SettingsManager.theme.hidden_home.size(),
+		"action": func():
+			var dialog := Dialog.menu("Home entries")
+			var list: ScrollList = ItemMenu.SCROLL_LIST.instantiate()
+			list.separation = 0
+			list.follow_focus = true
+			dialog.content.add_child(list)
+			dialog.closed.connect(refresh)
+			dialog.popup()
+			var entries := HomeView.entries(true).filter(func(entry: Dictionary): return entry.get("page") != Main.Pages.Settings)
+			list.set_items(entries, func(entry: Dictionary) -> NariButton:
+				var key := HomeView.key(entry)
+				return dialog.make_toggle(str(entry["title"]), not SettingsManager.theme.hidden_home.has(key), func(enabled: bool):
+					var hidden := Array(SettingsManager.theme.hidden_home)
+					hidden.erase(key)
+					if not enabled:
+						hidden.append(key)
+					SettingsManager.theme.hidden_home = PackedStringArray(hidden), entry["icon"]))
+			list.custom_minimum_size.y = list.container.cell_height * minf(entries.size(), ItemMenu.VISIBLE_OPTIONS)
+			dialog.add_button("Accept", Callable(), Dialog.Style.PRIMARY),
+		"reset": func(): SettingsManager.theme.reset("hidden_home"),
+	}
+
 static func library_entries(setup: bool) -> Array:
 	var entries: Array = _section("Source", [{
 		"title": "Music provider",
@@ -344,6 +388,16 @@ static func library_entries(setup: bool) -> Array:
 			var dialog := Dialog.menu("Music provider")
 			for provider in MediaPlayer.providers:
 				dialog.add_option(provider.display_name, MediaPlayer.use_provider.bind(provider.id) if setup or provider == MediaPlayer.provider else _confirm_provider.bind(provider), provider.icon if provider.icon else preload("res://assets/icons/music_library.svg"))
+			if setup:
+				var more := NariLabel.new()
+				more.text = "Want more providers? Try installing a plugin on Settings!"
+				more.font_size = 32
+				more.weight = 600
+				more.modulate.a = 0.6
+				more.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+				more.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+				dialog.footer.add_child(more)
+				dialog.footer.show()
 			dialog.popup(),
 	}])
 	if MediaPlayer.provider:
@@ -439,7 +493,7 @@ func _theme_entries() -> Array:
 			"plugin": id,
 			"section": "Installed",
 			"enabled": active,
-			"action": PluginInfo.open.bind(id, Themes),
+			"action": Themes.activate.bind(id) if Themes.is_builtin(id) else PluginInfo.open.bind(id, Themes),
 			"settings": Main.change_page.bind(Main.Pages.Settings, {"category": "theme", "theme": id}) if active and not Themes.settings_for(id).is_empty() else Callable(),
 		})
 	return entries
@@ -455,7 +509,8 @@ func _theme_setting_entry(setting: Dictionary, id: String) -> Dictionary:
 		"action": func(): SettingsManager.set_value(section, key, Themes.next_setting_value(id, setting)),
 		"reset": func(): SettingsManager.set_value(section, key, setting.get("default")),
 	}
-	if str(setting.get("type", "")) == "choice":
+	var labels := Themes.setting_options(setting).map(func(option: Dictionary): return str(option.get("name", option.get("id", ""))))
+	if str(setting.get("type", "")) == "choice" and not labels.all(func(label: String): return label in ["On", "Off"]):
 		entry.erase("action")
 		entry["choices"] = {
 			"options": Themes.setting_options(setting).map(func(option: Dictionary): return {"value": str(option.get("id", "")), "label": str(option.get("name", option.get("id", "")))}),

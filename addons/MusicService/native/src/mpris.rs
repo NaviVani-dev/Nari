@@ -12,10 +12,10 @@ pub struct Media {
     pub seeks: u64,
 }
 
-#[cfg(any(target_os = "linux", target_os = "macos"))]
+#[cfg(any(target_os = "linux", target_os = "macos", target_os = "ios"))]
 pub use platform::Mpris;
 
-#[cfg(not(any(target_os = "linux", target_os = "macos")))]
+#[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "ios")))]
 pub struct Mpris;
 
 static FORWARDED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
@@ -24,7 +24,7 @@ pub fn links_forwarded() -> bool {
     FORWARDED.load(std::sync::atomic::Ordering::Relaxed)
 }
 
-#[cfg(not(any(target_os = "linux", target_os = "macos")))]
+#[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "ios")))]
 impl Mpris {
     pub fn new(_: std::sync::Weak<std::sync::Mutex<crate::player::Player>>, _: std::sync::mpsc::Sender<crate::events::Event>) -> Option<Self> {
         None
@@ -33,7 +33,7 @@ impl Mpris {
     pub fn update(&self, _: Media) {}
 }
 
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "ios"))]
 mod platform {
     use super::Media;
     use crate::events::Event;
@@ -42,8 +42,11 @@ mod platform {
     use objc2::rc::Retained;
     use objc2::runtime::{AnyObject, ProtocolObject};
     use objc2::AllocAnyThread;
+    #[cfg(target_os = "macos")]
     use objc2_app_kit::NSImage;
-    use objc2_foundation::{NSCopying, NSMutableDictionary, NSNumber, NSSize, NSString};
+    #[cfg(target_os = "ios")]
+    use objc2_ui_kit::UIImage;
+    use objc2_foundation::{NSCopying, NSData, NSMutableDictionary, NSNumber, NSSize, NSString};
     use objc2_media_player::{
         MPChangePlaybackPositionCommandEvent, MPMediaItemArtwork, MPMediaItemPropertyAlbumTitle, MPMediaItemPropertyArtist,
         MPMediaItemPropertyArtwork, MPMediaItemPropertyPlaybackDuration, MPMediaItemPropertyTitle, MPNowPlayingInfoCenter,
@@ -57,9 +60,14 @@ mod platform {
     type Handler = RcBlock<dyn Fn(NonNull<MPRemoteCommandEvent>) -> MPRemoteCommandHandlerStatus>;
 
     pub struct Mpris {
+        #[cfg(target_os = "macos")]
+        now_playing: NowPlaying,
+        _handlers: Vec<Handler>,
+    }
+
+    struct NowPlaying {
         player: Weak<Mutex<Player>>,
         art: RefCell<(String, Option<Retained<MPMediaItemArtwork>>)>,
-        _handlers: Vec<Handler>,
     }
 
     fn with(player: &Weak<Mutex<Player>>, action: impl FnOnce(&mut MutexGuard<'_, Player>)) -> MPRemoteCommandHandlerStatus {
@@ -106,10 +114,51 @@ mod platform {
                     with(&weak, |player| player.seek_to((seconds * 1000.0).clamp(0.0, i32::MAX as f64) as i32))
                 });
             }
-            Some(Self { player, art: RefCell::new((String::new(), None)), _handlers: handlers })
+            #[cfg(target_os = "ios")]
+            watch(player);
+            Some(Self {
+                #[cfg(target_os = "macos")]
+                now_playing: NowPlaying::new(player),
+                _handlers: handlers,
+            })
         }
 
+        #[cfg(target_os = "macos")]
         pub fn update(&self, media: Media) {
+            self.now_playing.update(media);
+        }
+
+        #[cfg(target_os = "ios")]
+        pub fn update(&self, _: Media) {}
+    }
+
+    #[cfg(target_os = "ios")]
+    fn watch(player: Weak<Mutex<Player>>) {
+        std::thread::spawn(move || {
+            let now_playing = NowPlaying::new(player.clone());
+            let mut shown = Media::default();
+            while let Some(current) = player.upgrade() {
+                let media = {
+                    let mut player = current.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+                    player.tick();
+                    player.media()
+                };
+                drop(current);
+                if media != shown {
+                    shown = media.clone();
+                    now_playing.update(media);
+                }
+                std::thread::sleep(std::time::Duration::from_millis(250));
+            }
+        });
+    }
+
+    impl NowPlaying {
+        fn new(player: Weak<Mutex<Player>>) -> Self {
+            Self { player, art: RefCell::new((String::new(), None)) }
+        }
+
+        fn update(&self, media: Media) {
             unsafe {
                 let center = MPNowPlayingInfoCenter::defaultCenter();
                 let remote = MPRemoteCommandCenter::sharedCommandCenter();
@@ -117,6 +166,7 @@ mod platform {
                 remote.previousTrackCommand().setEnabled(media.has_song);
                 if !media.has_song {
                     center.setNowPlayingInfo(None);
+                    #[cfg(target_os = "macos")]
                     center.setPlaybackState(MPNowPlayingPlaybackState::Stopped);
                     return;
                 }
@@ -133,27 +183,45 @@ mod platform {
                 put(MPMediaItemPropertyPlaybackDuration, &NSNumber::new_f64(media.length_ms as f64 / 1000.0));
                 put(MPNowPlayingInfoPropertyElapsedPlaybackTime, &NSNumber::new_f64(position as f64 / 1000.0));
                 put(MPNowPlayingInfoPropertyPlaybackRate, &NSNumber::new_f64(if media.playing { 1.0 } else { 0.0 }));
-                if let Some(artwork) = self.artwork(&media.art) {
+                if let Some(artwork) = self.artwork(&media) {
                     put(MPMediaItemPropertyArtwork, &artwork);
                 }
                 center.setNowPlayingInfo(Some(&info));
+                #[cfg(target_os = "macos")]
                 center.setPlaybackState(if media.playing { MPNowPlayingPlaybackState::Playing } else { MPNowPlayingPlaybackState::Paused });
             }
         }
 
-        fn artwork(&self, path: &str) -> Option<Retained<MPMediaItemArtwork>> {
+        fn artwork(&self, media: &Media) -> Option<Retained<MPMediaItemArtwork>> {
+            let key = format!("{}:{}", media.id, media.art);
             let mut cached = self.art.borrow_mut();
-            if cached.0 != path {
-                let image = (!path.is_empty()).then(|| NSImage::initWithContentsOfFile(NSImage::alloc(), &NSString::from_str(path))).flatten();
-                cached.1 = image.map(|image| {
-                    let size = image.size();
-                    let handler = RcBlock::new(move |_: NSSize| NonNull::from(&*image));
-                    unsafe { MPMediaItemArtwork::initWithBoundsSize_requestHandler(MPMediaItemArtwork::alloc(), size, &handler) }
-                });
-                cached.0 = path.to_owned();
+            if cached.0 != key {
+                cached.1 = [self.original(), std::fs::read(&media.art).ok()].into_iter().flatten().find_map(|bytes| artwork_of(&bytes));
+                cached.0 = key;
             }
             cached.1.clone()
         }
+
+        fn original(&self) -> Option<Vec<u8>> {
+            let song = self.player.upgrade()?.lock().unwrap_or_else(|poisoned| poisoned.into_inner()).local_song()?;
+            crate::library::original_cover(&song)
+        }
+    }
+
+    #[cfg(target_os = "macos")]
+    fn artwork_of(bytes: &[u8]) -> Option<Retained<MPMediaItemArtwork>> {
+        let image = NSImage::initWithData(NSImage::alloc(), &NSData::with_bytes(bytes))?;
+        let size = image.size();
+        let handler = RcBlock::new(move |_: NSSize| NonNull::from(&*image));
+        Some(unsafe { MPMediaItemArtwork::initWithBoundsSize_requestHandler(MPMediaItemArtwork::alloc(), size, &handler) })
+    }
+
+    #[cfg(target_os = "ios")]
+    fn artwork_of(bytes: &[u8]) -> Option<Retained<MPMediaItemArtwork>> {
+        let image = UIImage::imageWithData(&NSData::with_bytes(bytes))?;
+        let size = unsafe { image.size() };
+        let handler = RcBlock::new(move |_: NSSize| NonNull::from(&*image));
+        Some(unsafe { objc2::msg_send![MPMediaItemArtwork::alloc(), initWithBoundsSize: size, requestHandler: &*handler] })
     }
 
     impl Drop for Mpris {

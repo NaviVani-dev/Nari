@@ -38,6 +38,7 @@ const TAB_BAR_GAP := 24.0
 @onready var queue_empty: EmptyMessage = _build_queue_notice()
 @onready var soundboard_area: SoundboardGrid = _build_soundboard()
 @onready var effects_area: HBoxContainer = %EffectsArea
+@onready var effects_locked: NariLabel = %EffectsLocked
 @onready var effects_pages: PagesContainer = %Pages
 @onready var plugin_effects: EffectsPresets = %PluginEffects
 @onready var effects_previous: NariButton = %LeftButton
@@ -56,6 +57,7 @@ const TAB_BAR_GAP := 24.0
 @onready var _areas := {"queue": queue_area, "effects": effects_area, "soundboard": soundboard_area}
 
 var _plugin_tabs := {}
+var _view_buttons := {}
 var _queue_version := 0
 var _queue_signature := "uninitialized"
 var _queue_index := -1
@@ -89,6 +91,8 @@ func _ready() -> void:
 	_mount_plugin_tabs(_show_area)
 	for key in _plugin_tabs:
 		_areas[key] = _plugin_tabs[key]["area"]
+	Plugins.output_changed.connect(_swap_effects)
+	_swap_effects()
 	lyrics_button.pressed.connect(func():
 		if not (_show_lyrics and lyrics_visualizer.recenter()):
 			_toggle_lyrics())
@@ -109,6 +113,7 @@ func _ready() -> void:
 		if _seeking:
 			song_current_time.text = MediaPlayer.format_duration(int(value)))
 	MediaPlayer.playback_changed.connect(_update)
+	Plugins.cover_view_changed.connect(_on_cover_view_changed)
 	MediaPlayer.library_changed.connect(func():
 		_lyrics_song_id = ""
 		_update(MediaPlayer.get_playback_state()))
@@ -147,7 +152,7 @@ func _refresh_actions() -> void:
 	var shown: Array = []
 	if _area == "queue":
 		shown.append({"text": "Clear", "icon": CLEAR_ICON, "action": func(): Dialog.confirm("Clear the upcoming songs?", "Clear", MediaPlayer.clear_upcoming, true)})
-	elif _area == "effects":
+	elif _area == "effects" and _areas["effects"] == effects_area:
 		shown.append({"glyph": InputGlyphs.Glyph.X, "text": "Reset", "icon": RESET_ICON, "action": MediaPlayer.reset_music_distortion})
 	for child in actions.get_children():
 		child.queue_free()
@@ -196,9 +201,24 @@ func _paint_tabs() -> void:
 	_paint_tab(visualizers_button, _visualizer >= 0)
 	for key in _plugin_tabs:
 		_paint_tab(_plugin_tabs[key]["button"], _area == key)
+	for key in _view_buttons:
+		_view_buttons[key].visible = Plugins.is_cover_view_shown(key)
+		_paint_tab(_view_buttons[key], Plugins.cover_view == key)
 
 func _paint_tab(button: NariButton, active: bool) -> void:
 	button.indicator = active
+
+func _swap_effects() -> void:
+	var shown: Control = _areas["effects"]
+	var wanted: Control = effects_locked if Plugins.is_output_connected() else effects_area
+	if shown == wanted:
+		return
+	_areas["effects"] = wanted
+	if _area == "effects":
+		shown.hide()
+		wanted.modulate.a = 1.0
+		wanted.show()
+		_refresh_actions()
 
 func _show_area(area: String) -> void:
 	if area == _area:
@@ -278,6 +298,8 @@ func _update(state: Dictionary) -> void:
 
 	if song.is_empty():
 		song_cover.clear()
+	elif Plugins.cover_texture():
+		song_cover.show_texture(Plugins.cover_texture())
 	else:
 		var cover := MediaPlayer.cover_of(song)
 		song_cover.show_cover(cover[0], cover[1])
@@ -351,6 +373,28 @@ func _mount_plugin_tabs(toggle: Callable) -> void:
 		(tab["build"] as Callable).call(area)
 		_plugin_tabs[key] = {"button": button, "area": area, "title": str(tab.get("title", ""))}
 		button.pressed.connect(toggle.bind(key))
+	for view in Plugins.cover_views:
+		var key := str(view["id"])
+		var button: NariButton = soundboard_button.duplicate(Node.DUPLICATE_SCRIPTS)
+		button.icon = view["icon"]
+		soundboard_button.add_sibling(button)
+		_view_buttons[key] = button
+		button.pressed.connect(Plugins.toggle_cover_view.bind(key))
+
+func _on_cover_view_changed() -> void:
+	if _lyrics_transition and _lyrics_transition.is_valid():
+		_lyrics_transition.kill()
+	song_cover.custom_minimum_size = _cover_size()
+	_paint_tabs()
+	_fit_tab_bar()
+	_update(MediaPlayer.get_playback_state())
+
+func _cover_size() -> Vector2:
+	var base := LYRICS_COVER_SIZE if _show_lyrics else COVER_SIZE
+	var view := Plugins.cover_texture()
+	if not view or view.get_width() <= 0:
+		return base
+	return Vector2(base.x, base.x * view.get_height() / float(view.get_width()))
 
 func _build_soundboard() -> SoundboardGrid:
 	var grid: SoundboardGrid = SOUNDBOARD_GRID.instantiate()
@@ -369,7 +413,7 @@ func _toggle_lyrics() -> void:
 	lyrics_visualizer.modulate.a = 0.0 if _show_lyrics else 1.0
 	song_details.modulate.a = 0.0 if not _show_lyrics else 1.0
 	_lyrics_transition = create_tween().set_parallel(true)
-	_lyrics_transition.tween_property(song_cover, "custom_minimum_size", LYRICS_COVER_SIZE if _show_lyrics else COVER_SIZE, 0.55).set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_OUT)
+	_lyrics_transition.tween_property(song_cover, "custom_minimum_size", _cover_size(), 0.55).set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_OUT)
 	if _show_lyrics:
 		_lyrics_transition.tween_property(lyrics_visualizer, "modulate:a", 1.0, 0.35).set_delay(0.08).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	else:

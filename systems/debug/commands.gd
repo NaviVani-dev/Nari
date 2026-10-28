@@ -46,6 +46,9 @@ static func install(tools: Node) -> void:
 	add.call("stats", "Shows or hides the performance stats (F3)", func(_args: PackedStringArray) -> Variant:
 		tools.stats.visible = not tools.stats.visible
 		return null)
+	add.call("motion", "Lists the animated backgrounds and covers that are playing", func(_args: PackedStringArray) -> Variant:
+		var players := tools.get_tree().get_nodes_in_group(MotionPlayer.GROUP)
+		return "Nothing is playing" if players.is_empty() else "\n".join(players.map(func(player: MotionPlayer): return player.describe())))
 	add.call("restart", "Restarts Nari", func(_args: PackedStringArray) -> Variant:
 		tools.restart()
 		return null)

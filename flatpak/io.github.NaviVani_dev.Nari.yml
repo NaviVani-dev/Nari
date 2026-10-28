@@ -25,6 +25,22 @@ finish-args:
   - --filesystem=xdg-run/app/dev.vencord.Vesktop:create
 
 modules:
+  - name: dav1d
+    buildsystem: meson
+    config-opts:
+      - --default-library=static
+      - -Denable_tools=false
+      - -Denable_tests=false
+      - -Denable_examples=false
+    cleanup:
+      - /include
+      - /lib/pkgconfig
+      - /lib/*.a
+    sources:
+      - type: archive
+        url: https://downloads.videolan.org/pub/videolan/dav1d/1.5.4/dav1d-1.5.4.tar.xz
+        sha256: 686616b7c69eb88d44459391ab25cac13b6647a3b288835c5784e71c1514a5c5
+
   - name: ffmpeg
     buildsystem: autotools
     config-opts:
@@ -67,6 +83,9 @@ modules:
       - --enable-decoder=vp8
       - --enable-decoder=vp9
       - --enable-decoder=av1
+      - --enable-libdav1d
+      - --enable-decoder=libdav1d
+      - --pkg-config-flags=--static
     cleanup:
       - /include
       - /lib/pkgconfig
@@ -87,15 +106,14 @@ modules:
     sources:
       - type: git
         url: https://github.com/NaviVani-dev/Nari.git
-        tag: v1.0.0
-        commit: d8a79bd367170ab7e2d4f2eb240d5453c099f901
+        tag: v1.1.0
       - cargo-sources.json
       - type: archive
         url: https://lib.openmpt.org/files/libopenmpt/src/libopenmpt-0.8.9+release.makefile.tar.gz
         sha256: 9273b88b67973cc69e54d748ab1b749399d6d07695f1c37d0c59f88b4106074f
         dest: addons/MusicService/.build/libopenmpt
       - type: file
-        url: https://github.com/NaviVani-dev/Nari/releases/download/v1.0.0/Nari.pck
+        url: https://github.com/NaviVani-dev/Nari/releases/download/v1.1.0/Nari.pck
         sha256: 0395eb89aa84d362cc0b7102d137f81f10db5ca702924695ab1e853a0ff99250
       - type: script
         dest-filename: nari.sh

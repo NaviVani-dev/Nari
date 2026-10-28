@@ -29,3 +29,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends gnupg lsb-relea
     && apt-get install -y --no-install-recommends clang-20 lld-20 libclang-20-dev \
     && rm -rf /var/lib/apt/lists/*
 ENV PATH=/usr/lib/llvm-20/bin:$PATH
+
+RUN cd /opt/osxcross && ENABLE_COMPILER_RT_INSTALL=1 DISABLE_PARALLEL_ARCH_BUILD=1 JOBS=4 ./build_compiler_rt.sh \
+    && rm -rf /opt/osxcross/build

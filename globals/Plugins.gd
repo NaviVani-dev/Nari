@@ -4,6 +4,8 @@ signal plugins_changed
 signal install_finished(error: String)
 signal plugin_failed(entry: Dictionary)
 signal nari_ready
+signal cover_view_changed
+signal output_changed
 
 const DIR: = "user://plugins"
 const DATA_DIR: = "user://plugin_data"
@@ -27,6 +29,10 @@ var manifests: = {}
 var safe_mode: = false
 var home_entries: Array[Dictionary] = []
 var now_playing_tabs: Array[Dictionary] = []
+var cover_views: Array[Dictionary] = []
+var cover_view: = ""
+var outputs: Array[Dictionary] = []
+var output: = {}
 var settings_extras: Array[Dictionary] = []
 var effects: Array[Dictionary] = []
 var item_actions: Array[Dictionary] = []
@@ -44,6 +50,7 @@ var _trace_location: = RegEx.create_from_string(TRACE_LOCATION)
 func _ready() -> void :
 	add_child(_http)
 	_track_session()
+	MediaPlayer.music_provider_changed.connect(_on_provider_changed)
 	DirAccess.make_dir_recursive_absolute(DIR)
 	scan()
 	SettingsManager.changed.connect( func(section: String, key: String, _value: Variant):
@@ -77,6 +84,123 @@ func _start() -> void :
 	for plugin: NariPlugin in _active.values():
 		plugin._on_nari_ready()
 	nari_ready.emit()
+
+func cover_texture() -> Texture2D:
+	return _cover_view(cover_view).get("texture")
+
+func is_cover_view_available(key: String) -> bool:
+	return _cover_view(key).get("available", false) and is_cover_view_shown(key)
+
+func is_cover_view_shown(key: String) -> bool:
+	var entry: = _cover_view(key)
+	if entry.get("hide_unavailable", false) and not entry.get("available", false):
+		return false
+	var wanted: = str(entry.get("provider", ""))
+	return wanted.is_empty() or MediaPlayer.provider != null and MediaPlayer.provider.id == wanted
+
+func toggle_cover_view(key: String) -> void:
+	var entry: = _cover_view(key)
+	if entry.get("momentary", false):
+		var pressed: Callable = entry.get("on_toggle", Callable())
+		if is_cover_view_available(key) and pressed.is_valid():
+			pressed.call(true)
+		return
+	if cover_view == key:
+		set_cover_view("")
+	elif is_cover_view_available(key):
+		set_cover_view(key)
+
+func set_cover_view(key: String) -> void:
+	if key == cover_view:
+		return
+	var previous: = _cover_view(cover_view)
+	cover_view = key
+	cover_view_changed.emit()
+	for entry: Dictionary in [previous, _cover_view(key)]:
+		var toggled: Callable = entry.get("on_toggle", Callable())
+		if toggled.is_valid():
+			toggled.call(entry["id"] == cover_view)
+
+func update_cover_view(key: String, field: String, value: Variant) -> void:
+	var entry: = _cover_view(key)
+	if entry.is_empty():
+		return
+	entry[field] = value
+	if cover_view == key and not is_cover_view_available(key):
+		set_cover_view("")
+	else:
+		cover_view_changed.emit()
+
+func _on_provider_changed() -> void:
+	if not cover_view.is_empty() and not is_cover_view_available(cover_view):
+		set_cover_view("")
+	else:
+		cover_view_changed.emit()
+
+func scan_output(key: String) -> Array:
+	var found: Variant = await NariPlugin.resolve(_output(key).get("scan", Callable()), [])
+	var devices: = []
+	for device: Variant in found if found is Array else []:
+		if device is Dictionary and not str(device.get("id", "")).is_empty():
+			devices.append(device)
+	return devices
+
+func connect_output(key: String, device: Dictionary) -> void:
+	disconnect_output()
+	var entry: = _output(key)
+	if entry.is_empty():
+		return
+	var attempt: = {"key": key, "device": device, "phase": "connecting"}
+	output = attempt
+	output_changed.emit()
+	var result: Variant = await NariPlugin.resolve(entry["connect"], [device])
+	if output != attempt:
+		return
+	if result == true:
+		output["phase"] = "connected"
+		MediaPlayer.follow_output()
+		output_changed.emit()
+		return
+	output = {}
+	output_changed.emit()
+	if result is String and not (result as String).is_empty():
+		Dialog.confirm(result, "OK", Callable())
+
+func disconnect_output() -> void:
+	if output.is_empty():
+		return
+	var entry: = _output(output["key"])
+	release_output(output["key"])
+	var leave: Callable = entry.get("disconnect", Callable())
+	if leave.is_valid():
+		leave.call()
+
+func release_output(key: String) -> void:
+	if output.get("key") != key:
+		return
+	output = {}
+	MediaPlayer.follow_output()
+	output_changed.emit()
+
+func is_output_connected() -> bool:
+	return output.get("phase") == "connected"
+
+func output_volume(level: float) -> void:
+	var change: Callable = _output(output.get("key", "")).get("volume", Callable())
+	if is_output_connected() and change.is_valid():
+		change.call(level)
+
+func _output(key: String) -> Dictionary:
+	return _entry(outputs, key)
+
+func _cover_view(key: String) -> Dictionary:
+	return _entry(cover_views, key)
+
+static func _entry(registry: Array[Dictionary], key: String) -> Dictionary:
+	for entry in registry:
+		if entry["id"] == key:
+			return entry
+	return {}
 
 func is_nari_ready() -> bool:
 	return _nari_ready

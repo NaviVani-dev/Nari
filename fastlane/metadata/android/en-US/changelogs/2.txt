@@ -1,0 +1,5 @@
+Jellyfin support
+Improved Nari's LUA API
+Improved video playback
+Improved the Search screen
+Added specific Android fixes

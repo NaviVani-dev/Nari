@@ -37,6 +37,9 @@ class AynThorPlugin(godot: Godot) : GodotPlugin(godot) {
     private external fun nativeRemoveSurface()
 
     companion object {
+        private const val TYPE_INTERNAL = 1
+        private const val TYPE_EXTERNAL = 2
+
         init {
             System.loadLibrary("aynthor_native")
         }
@@ -67,10 +70,16 @@ class AynThorPlugin(godot: Godot) : GodotPlugin(godot) {
         get() = activity?.getSystemService(Context.DISPLAY_SERVICE) as? DisplayManager
 
     private fun findSecondDisplay(): Display? {
-        val manager = displayManager ?: return null
-        val presentationDisplays = manager.getDisplays(DisplayManager.DISPLAY_CATEGORY_PRESENTATION)
-        return presentationDisplays.firstOrNull()
-            ?: manager.displays.firstOrNull { it.displayId != Display.DEFAULT_DISPLAY }
+        val screens = displayManager?.displays?.filter(::isScreen) ?: return null
+        return screens.firstOrNull { it.flags and Display.FLAG_PRESENTATION != 0 } ?: screens.firstOrNull()
+    }
+
+    private fun isScreen(display: Display): Boolean {
+        val type = runCatching { Display::class.java.getMethod("getType").invoke(display) as Int }.getOrNull()
+        return display.displayId != Display.DEFAULT_DISPLAY &&
+            display.isValid &&
+            display.flags and Display.FLAG_PRIVATE == 0 &&
+            (type == null || type == TYPE_INTERNAL || type == TYPE_EXTERNAL)
     }
 
     private val displayListener = object : DisplayManager.DisplayListener {

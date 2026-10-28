@@ -112,7 +112,7 @@ class LibrarySection extends Section:
 		artist_info = _fetch("artist_info", artist_info)
 
 class GeneralSection extends Section:
-	var dual_screen: = true:
+	var dual_screen: = false:
 		set(value):
 			dual_screen = value
 			_store("dual_screen", value)
@@ -148,6 +148,10 @@ class GeneralSection extends Section:
 		set(value):
 			avoid_notch = value
 			_store("avoid_notch", value)
+	var avoid_system_bars: = true:
+		set(value):
+			avoid_system_bars = value
+			_store("avoid_system_bars", value)
 	var swap_face_glyphs: = false:
 		set(value):
 			swap_face_glyphs = value
@@ -156,6 +160,10 @@ class GeneralSection extends Section:
 		set(value):
 			nintendo_layout = value
 			_store("nintendo_layout", value)
+	var haptics: = true:
+		set(value):
+			haptics = value
+			_store("haptics", value)
 	var clock_format: = "24h":
 		set(value):
 			clock_format = value
@@ -202,8 +210,10 @@ class GeneralSection extends Section:
 		offline_mode = _fetch("offline_mode", offline_mode)
 		developer_mode = _fetch("developer_mode", developer_mode)
 		avoid_notch = _fetch("avoid_notch", avoid_notch)
+		avoid_system_bars = _fetch("avoid_system_bars", avoid_system_bars)
 		swap_face_glyphs = _fetch("swap_face_glyphs", swap_face_glyphs)
 		nintendo_layout = _fetch("nintendo_layout", nintendo_layout)
+		haptics = _fetch("haptics", haptics)
 		clock_format = _fetch("clock_format", clock_format)
 		window_mode = _fetch("window_mode", window_mode)
 		resolution = _fetch("resolution", resolution)
@@ -242,6 +252,10 @@ class ThemeSection extends Section:
 		set(value):
 			home_view = value
 			_store("home_view", value)
+	var hidden_home: = PackedStringArray(["Folders"]):
+		set(value):
+			hidden_home = value
+			_store("hidden_home", value)
 
 	func _init() -> void :
 		super ("theme")
@@ -254,6 +268,7 @@ class ThemeSection extends Section:
 		active = _fetch("active", active)
 		pill = _fetch("pill", pill)
 		home_view = _fetch("home_view", home_view)
+		hidden_home = PackedStringArray(_fetch("hidden_home", hidden_home))
 
 class PlaybackSection extends Section:
 	var normalize_volume: = false:
@@ -319,6 +334,10 @@ class PerformanceSection extends Section:
 		set(value):
 			battery_saving = value
 			_store("battery_saving", value)
+	var video_decoding: = "auto":
+		set(value):
+			video_decoding = value
+			_store("video_decoding", value)
 
 	func _init() -> void :
 		super ("performance")
@@ -328,6 +347,7 @@ class PerformanceSection extends Section:
 		background = _fetch("background", background)
 		background_quality = _fetch("background_quality", background_quality)
 		battery_saving = _fetch("battery_saving", battery_saving)
+		video_decoding = _fetch("video_decoding", video_decoding)
 
 class DiscordSection extends Section:
 	var enabled: = false:

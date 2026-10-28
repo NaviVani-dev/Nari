@@ -22,6 +22,7 @@ enum Context{ALL, ALBUM, ARTIST, PLAYLIST, QUEUE}
 enum MusicEffect{NONE, CONCERT, RADIO, ROBOT, HELIUM, SENIOR, EIGHT_BIT, INSTRUMENTAL, ACAPELLA, GRAMOPHONE}
 
 const TAPE_SCRUB: = preload("res://systems/music/tape_scrub.gd")
+const HINT_KINDS: = {"artist": 1, "album": 2, "track": 4}
 const RADIO_SIZE: = 50
 const RADIO_ARTIST_SHARE: = 15
 const SEARCH_ORDER: = ["title", "artist", "album"]
@@ -42,11 +43,14 @@ const COLLECT_LIMIT: = 1000
 const MAX_CACHED_TEXTURES: = 12
 const MAX_CACHED_THUMBS: = 96
 const MAX_CACHED_ANIMATED: = 2
-const ANIMATED_COVER_FRAMES: = 48
-const ANIMATED_COVER_SIZE: = 512
 const LOADING_DELAY: = 0.4
 const LOADING_POLL: = 0.1
-const PROVIDERS_DIR: = "res://systems/music/providers"
+const PROVIDERS: = [
+	preload("res://systems/music/providers/local_provider.gd"),
+	preload("res://systems/music/providers/plex_provider.gd"),
+	preload("res://systems/music/providers/subsonic_provider.gd"),
+	preload("res://systems/music/providers/jellyfin_provider.gd"),
+]
 
 const _CONTEXT_NAMES: = {
 	Context.ALL: "all",
@@ -91,6 +95,7 @@ var _library_cache: Dictionary = {}
 var _textures: Dictionary = {}
 var _thumb_textures: Dictionary = {}
 var _texture_requests: Dictionary = {}
+var _cover_players: Dictionary = {}
 var _spectrum_warned: = false
 var library_loading: = false
 var _likes: = {}
@@ -120,18 +125,32 @@ func _ready() -> void :
 	SettingsManager.changed.connect(func(section: String, key: String, _value: Variant):
 		if section == "general" and key == "offline_mode":
 			offline_changed.emit()
-			_on_library_changed())
+			_on_library_changed()
+		elif section == "performance" and key == "video_decoding":
+			for cover_key: String in _cover_players.keys():
+				_forget_cover(_textures, cover_key))
 	_connect_native()
 	if not _native:
 		_l.warn("The native music service is unavailable, playback and the music library stay empty")
 	_try_resume.call_deferred()
 
 func set_volume(value: float, save: bool = true) -> void:
+	if Plugins.is_output_connected():
+		Plugins.output_volume(value)
+		volume_changed.emit(value)
+		return
 	if _native and _native.has_method("setAppVolume"):
 		_native.setAppVolume(value)
 	if save and not is_casting():
 		SettingsManager.playback.volume = value
 	volume_changed.emit(value)
+
+func follow_output() -> void:
+	if Plugins.is_output_connected():
+		if _native and _native.has_method("setAppVolume"):
+			_native.setAppVolume(0.0)
+	else:
+		set_volume(SettingsManager.playback.volume, false)
 
 func _connect_native() -> void :
 	if _native or not Engine.has_singleton("MusicService"):
@@ -190,19 +209,14 @@ func _send_discord() -> void :
 	}))
 
 func _discover_providers() -> void :
-	for file in ResourceLoader.list_directory(PROVIDERS_DIR):
-		if not file.ends_with(".gd"):
-			continue
-		var script: Script = load(PROVIDERS_DIR.path_join(file))
-		var found: Variant = script.new() if script and script.can_instantiate() else null
-		if found is MusicProvider:
-			register_provider(found)
+	for script: GDScript in PROVIDERS:
+		register_provider(script.new())
 
 func register_provider(entry: MusicProvider) -> void :
 	entry.http = HTTPService.new()
 	add_child(entry.http)
 	providers.append(entry)
-	entry.settings_changed.connect(func(): load("res://ui/screens/discover.gd").forget(entry.id))
+	entry.settings_changed.connect(_forget_discover.bind(entry.id))
 	_l.log("Found music provider '%s'" % entry.id)
 	if provider and entry.id == SettingsManager.library.provider and entry != provider:
 		use_provider(entry.id)
@@ -611,6 +625,19 @@ func search(query: String, filters: Dictionary = {}) -> Dictionary:
 		if not wanted.has("album"):
 			artists = (await get_artists()).filter(func(artist: Dictionary): return _search_key(str(artist.get("name", ""))).contains(artist_name))
 	return {"tracks": ranked[0] + ranked[1] + ranked[2], "albums": albums, "artists": artists}
+
+func get_hints(query: String) -> Array:
+	if provider == null or query.strip_edges().is_empty():
+		return []
+	var given: Variant = await provider.get_hints(query) if not offline_mode() else null
+	if given is Array:
+		return given
+	var found: = await search(query)
+	var hints: Array = []
+	for kind: String in HINT_KINDS:
+		for item: Dictionary in found.get(kind + "s", []).slice(0, HINT_KINDS[kind]):
+			hints.append({"kind": kind, "item": item})
+	return hints
 
 func _passes(keys: Dictionary, wanted: Dictionary, in_playlist: bool) -> bool:
 	for key: String in wanted:
@@ -1156,7 +1183,7 @@ func _load_cover_texture(kind: String, id: String, thumb: bool, request: MusicPr
 	else:
 		var path: = await _request_cover(kind, id, thumb)
 		if not thumb and not path.is_empty():
-			texture = await AnimationLoader.load(path.get_basename() + ".anim", ANIMATED_COVER_FRAMES, ANIMATED_COVER_SIZE)
+			texture = await _animated_cover(kind + ":" + id, path.get_basename() + ".anim")
 		if texture == null and not path.is_empty():
 			image = await Worker.run(_load_image.bind(path))
 	if texture == null and image:
@@ -1164,12 +1191,35 @@ func _load_cover_texture(kind: String, id: String, thumb: bool, request: MusicPr
 	var cache: Dictionary = _thumb_textures if thumb else _textures
 	cache[kind + ":" + id] = texture
 	if cache.size() > (MAX_CACHED_THUMBS if thumb else MAX_CACHED_TEXTURES):
-		cache.erase(cache.keys()[0])
-	var animated: = cache.keys().filter( func(key: String): return cache[key] is AnimatedTexture)
+		_forget_cover(cache, cache.keys()[0])
+	var animated: = cache.keys().filter( func(key: String): return _cover_players.has(key)) if not thumb else []
 	if animated.size() > MAX_CACHED_ANIMATED:
-		cache.erase(animated[0])
+		_forget_cover(cache, animated[0])
 	_texture_requests.erase(kind + ":" + id + (":thumb" if thumb else ""))
 	request.finish(texture)
+
+func _animated_cover(key: String, file: String) -> Texture2D:
+	var player: = MotionPlayer.create(file)
+	if player == null:
+		return null
+	add_child(player)
+	var error: String = await player.settled
+	if not error.is_empty():
+		player.queue_free()
+		return null
+	_cover_players[key] = player
+	return player.texture
+
+func _forget_cover(cache: Dictionary, key: String) -> void :
+	cache.erase(key)
+	if is_same(cache, _textures) and _cover_players.has(key):
+		_cover_players[key].release()
+		_cover_players.erase(key)
+
+func watch_cover(texture: Texture2D, viewer: CanvasItem) -> void :
+	for player: MotionPlayer in _cover_players.values():
+		if player.texture == texture:
+			player.watch(viewer)
 
 func _artist_image(artist_id: String, thumb: bool) -> Image:
 	if provider and provider.streams:
@@ -1324,6 +1374,9 @@ func _on_library_ready(success: bool, error: String) -> void :
 
 func _on_provider_settings_changed() -> void :
 	music_provider_changed.emit()
+
+func _forget_discover(provider_id: String) -> void :
+	load("res://ui/screens/discover.gd").forget(provider_id)
 
 func _on_now_playing_requested() -> void:
 	if _native.takeNowPlayingRequest():

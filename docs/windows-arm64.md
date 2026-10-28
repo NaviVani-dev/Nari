@@ -20,7 +20,8 @@ Install these prerequisites:
 - Python 3 and Rust, with `rustup target add aarch64-pc-windows-msvc`.
 - Visual Studio C++ Build Tools with the ARM64 compiler/libraries and Windows SDK.
 - LLVM with libclang; set `LIBCLANG_PATH` to its `bin` directory for bindgen.
-- MSYS2 with `make` and `diffutils` installed in the MSYS environment.
+- MSYS2 with `make`, `diffutils` and `pkgconf` installed in the MSYS environment.
+- Ninja on PATH (Meson is downloaded automatically if it is not installed).
 - Godot matching `GODOT_VERSION` in `scripts/common.py`, with its export templates.
 
 Open a Visual Studio developer environment targeting ARM64 (either an ARM64 host
@@ -33,10 +34,12 @@ python scripts/build.py plugins-windows-arm64
 python scripts/build.py windows-arm64
 ```
 
-The first command downloads checksum-verified FFmpeg and libopenmpt sources,
+The first command downloads checksum-verified FFmpeg, dav1d and libopenmpt sources,
 builds the native dependencies, and stages them in
-`addons/MusicService/bin/windows/arm64/`. FFmpeg assembly is disabled for this
-initial MSVC path to avoid requiring a separate assembler. The second command
+`addons/MusicService/bin/windows/arm64/`. FFmpeg and dav1d assembly are disabled for this
+initial MSVC path to avoid requiring a separate assembler. dav1d is linked statically
+into FFmpeg for AV1 decoding, and the Windows hardware-decoding options from `dev`
+are enabled. The second command
 creates `build/Nari-windows-arm64.zip`. Add `--debug` to export a debug executable.
 These targets are explicit: the existing `all` build is unchanged because it
 uses a different toolchain environment.

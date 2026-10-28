@@ -27,6 +27,10 @@ pub extern "system" fn JNI_OnLoad(vm: JavaVM, _reserved: *mut c_void) -> jint {
     JNI_VERSION_1_6
 }
 
+pub fn java_vm() -> Option<*mut c_void> {
+    VM.get().map(|vm| vm.get_java_vm_pointer().cast())
+}
+
 pub fn attach(events: Sender<Event>) {
     *EVENTS.lock().unwrap() = Some(events);
 }

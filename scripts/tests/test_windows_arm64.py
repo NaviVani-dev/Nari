@@ -61,6 +61,11 @@ class WindowsArm64Tests(unittest.TestCase):
 
     def test_presets_and_dependency_paths(self):
         text = (ROOT / "export_presets.cfg").read_text()
+        presets = re.findall(r'^\[preset\.(\d+)\]$', text, re.M)
+        self.assertEqual(len(presets), len(set(presets)))
+        self.assertIn('name="iOS"', text)
+        self.assertIn("ios", build.ALL)
+        self.assertNotIn("windows-arm64", build.ALL)
         self.assertEqual(len(re.findall(r'^name="Windows \(arm64\)"$', text, re.M)), 1)
         changed = override_preset(text, "Windows (arm64)", {"custom_features": '"channel_github"'})
         block = next(block for block in re.split(r'(?m)^(?=\[preset\.\d+\]$)', changed)

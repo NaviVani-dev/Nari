@@ -303,6 +303,7 @@ func _change_page_title(page: Main.Pages, data: Dictionary) -> void :
 		Main.Pages.Albums: _t = "Albums"
 		Main.Pages.Artists: _t = "Artists"
 		Main.Pages.Playlists: _t = "Playlists"
+		Main.Pages.Folders: _t = "Folders"
 		Main.Pages.Settings: _t = _settings_title(data)
 		Main.Pages.NowPlaying: _t = "Now Playing"
 		Main.Pages.Search: _t = "Search"

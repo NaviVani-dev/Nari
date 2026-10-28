@@ -18,6 +18,7 @@ enum Style { NORMAL, PRIMARY, DANGER }
 var content := VBoxContainer.new()
 var footer := HBoxContainer.new()
 var dismissable := false
+var locked := false
 
 var _dim := ColorRect.new()
 var _center := CenterContainer.new()
@@ -65,6 +66,8 @@ func _fit_width() -> void:
 		_panel.custom_minimum_size.x = minf(WIDTH, _dim.size.x - EDGE * 2.0)
 
 func _wrap(node: Node) -> void:
+	if node is FlowContainer:
+		return
 	if node is NariButton:
 		if not node.clip_text:
 			node.clip_text = true
@@ -96,11 +99,14 @@ func focus() -> void:
 
 func _fade(target: float) -> Tween:
 	_dim.modulate.a = 1.0 - target
+	var tween := create_tween().set_parallel(true)
+	tween.tween_property(_dim, "modulate:a", target, FADE)
+	if Themes.active.has("dialog_transition"):
+		Main.animate(tween, _center, Main.transition("dialog_transition"), target > 0.0, get_viewport().get_visible_rect().size.y)
+		return tween.chain()
 	_center.offset_top = SLIDE * target
 	_center.offset_bottom = SLIDE * target
 	var curve := Tween.EASE_OUT if target > 0.0 else Tween.EASE_IN
-	var tween := create_tween().set_parallel(true)
-	tween.tween_property(_dim, "modulate:a", target, FADE)
 	for side in ["offset_top", "offset_bottom"]:
 		tween.tween_property(_center, side, SLIDE * (1.0 - target), FADE).set_trans(Tween.TRANS_CUBIC).set_ease(curve)
 	return tween.chain()
@@ -225,6 +231,12 @@ static func menu(title: String, subtitle: String = "", cover_kind: String = "", 
 	spaced.add_theme_constant_override("margin_bottom", 24)
 	spaced.add_child(header)
 	dialog.content.add_child(spaced)
+	return dialog
+
+static func busy(title: String, subtitle: String = "") -> Dialog:
+	var dialog := menu(title, subtitle)
+	dialog.dismissable = false
+	dialog.locked = true
 	return dialog
 
 static func text_button(text: String, action: Callable) -> NariButton:

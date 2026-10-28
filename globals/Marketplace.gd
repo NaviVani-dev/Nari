@@ -4,8 +4,8 @@ signal index_changed
 signal install_finished(id: String, error: String)
 
 const INDEX: = "https://cdn.narimusic.com/index.json"
-const MIRROR: = "https://narimusic.com/"
-const MIRROR_FILES: = MIRROR + "api/files/"
+const MIRRORS: = ["https://nari-website.pages.dev/", "https://narimusic.com/"]
+const FILES: = "api/files/"
 const CDN_TIMEOUT: = 6.0
 const RECORD_FILE: = "user://marketplace.json"
 const CACHE_DIR: = "user://marketplace_cache"
@@ -19,7 +19,7 @@ var failed: = false
 var _index_url: = INDEX
 var _base: = ""
 var _custom: = false
-var _mirror: = false
+var _mirror: = ""
 var _fetched_at: = -STALE_AFTER_MS
 var _icons: = {}
 var _installing: = {}
@@ -60,16 +60,20 @@ func refresh(force: = false) -> void :
 	index_changed.emit()
 
 func _fetch_index() -> HTTPService.HTTPResponse:
-	if not _mirror:
-		var direct: = await _http.request(_index_url, PackedStringArray(), HTTPClient.METHOD_GET, "", 0, CDN_TIMEOUT if not _custom else HTTPService.TIMEOUT)
-		if _custom or (direct and (direct.succeeded() or direct.code == 404)):
-			return direct
-		_l.warn("The marketplace's CDN didn't answer, reading it through %s" % MIRROR)
-	var mirrored: = await _http.request(MIRROR_FILES + "index.json", PackedStringArray(), HTTPClient.METHOD_GET, "", 1)
-	if mirrored and (mirrored.succeeded() or mirrored.code == 404):
-		_mirror = true
-		_base = MIRROR_FILES
-	return mirrored
+	if _custom:
+		return await _http.request(_index_url, PackedStringArray(), HTTPClient.METHOD_GET, "", 0, HTTPService.TIMEOUT)
+	var order: = MIRRORS.duplicate()
+	order.sort_custom(func(mirror: String, _other: String): return mirror == _mirror)
+	for mirror: String in order:
+		var mirrored: = await _http.request(mirror + FILES + "index.json", PackedStringArray(), HTTPClient.METHOD_GET, "", 0, CDN_TIMEOUT)
+		if mirrored and (mirrored.succeeded() or mirrored.code == 404):
+			_mirror = mirror
+			_base = mirror + FILES
+			return mirrored
+		_l.warn("The marketplace didn't answer at %s" % mirror)
+	_mirror = ""
+	_base = INDEX.get_base_dir() + "/"
+	return await _http.request(INDEX, PackedStringArray(), HTTPClient.METHOD_GET, "", 0, CDN_TIMEOUT)
 
 func _read(index: Dictionary) -> Dictionary:
 	var found: = {}
@@ -103,9 +107,9 @@ func url(path: String) -> String:
 
 func _download_url(manifest: Dictionary) -> String:
 	var link: = url(str(manifest.get("download", "")))
-	if not _mirror or not link.contains("/api/download/"):
+	if _mirror.is_empty() or not link.contains("/api/download/"):
 		return link
-	return MIRROR + link.substr(link.find("api/download/")) + "?via=api"
+	return _mirror + link.substr(link.find("api/download/")) + "?via=api"
 
 func downloads_text(count: int) -> String:
 	if count >= 1000:

@@ -7,6 +7,7 @@ signal stage_changed
 
 const DIR: = "user://themes"
 const STAGING_DIR: = "user://theme_staging"
+const MEDIA_WAIT_MSEC: = 1500
 const API: = 1
 const ASSETS_FOLDER: = "assets"
 const GLYPHS_FOLDER: = "glyphs"
@@ -14,12 +15,12 @@ const ICONS_TARGET: = "res://assets/icons"
 const SCRIPT_FILE: = "main.lua"
 const SCRIPT_PREFIX: = "theme_"
 const IMPORT_DEPTH: = 8
-const STYLE_KINDS: = ["panel", "button"]
+const STYLE_KINDS: = ["panel", "button", "progress"]
 const AXIS_STRETCH: = {"stretch": StyleBoxTexture.AXIS_STRETCH_MODE_STRETCH, "tile": StyleBoxTexture.AXIS_STRETCH_MODE_TILE, "tile_fit": StyleBoxTexture.AXIS_STRETCH_MODE_TILE_FIT}
 const FILTERS: = {"nearest": CanvasItem.TEXTURE_FILTER_NEAREST, "linear": CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS}
 const ADAPT_MODES: = ["allow", "off", "force"]
 const GLYPH: = preload("res://assets/icons/theme.svg")
-const LOOK_KEYS: = ["styles", "shape", "font", "font_pixelated", "font_shadow", "mode", "adapt", "icons_colored", "filters", "icons", "glyphs"]
+const LOOK_KEYS: = ["styles", "shape", "font", "font_pixelated", "font_shadow", "mode", "adapt", "icons_colored", "filters", "icons", "glyphs", "shaders"]
 const IMAGE_EXTENSIONS: = ["png", "jpg", "jpeg", "webp"]
 const LAYER_TYPES: = ["color", "blobs", "tint", "triangles", "dots", "image", "cover", "shader"]
 const DEFAULT_LAYERS: = [{"type": "color"}, {"type": "blobs"}, {"type": "tint"}, {"type": "triangles"}, {"type": "dots"}]
@@ -52,7 +53,7 @@ var _page: = "home"
 var _follows_page: = false
 var _swapped: = {}
 var _held: = {}
-var _media_jobs: Array[Dictionary] = []
+var _players: = {}
 var _script: NariPlugin
 var _script_theme: = ""
 var _script_overrides: = {}
@@ -62,7 +63,6 @@ var _booted: = false
 var _l: = Log.new("Themes", Color("c58af2"))
 
 func _ready() -> void :
-	set_process(false)
 	DirAccess.make_dir_recursive_absolute(DIR)
 	_scan()
 	_apply(false)
@@ -72,6 +72,8 @@ func _ready() -> void :
 			_apply(true)
 		elif section == "performance" and key == "background":
 			_hold_still()
+		elif section == "performance" and key == "video_decoding":
+			_reload_media()
 		elif section == settings_section(active_id()):
 			if _script:
 				_script.emit_event("setting", [key, value])
@@ -91,9 +93,6 @@ func _boot() -> void :
 	if _script:
 		active = _resolve(manifest)
 		_paint(false)
-
-func _exit_tree() -> void :
-	wait_for_media()
 
 func active_id() -> String:
 	return str(active.get("id", ""))
@@ -129,10 +128,24 @@ func install(zip_path: String) -> String:
 		return "Nari could not write the theme files"
 	DirAccess.remove_absolute(zip_path)
 	_l.log("Installed theme '%s' %s" % [id, manifest.get("version", "")])
+	_warn_unplayable(target)
 	_scan()
 	if id == active_id():
 		_apply(true)
 	return ""
+
+func _warn_unplayable(root: String) -> void :
+	if not MotionPlayer.available():
+		return
+	var checked: = PackedStringArray()
+	for layer in layers_of(read_manifest(root)):
+		var file: = str(layer.get("file", ""))
+		if str(layer["type"]) != "image" or file.is_empty() or checked.has(file):
+			continue
+		checked.append(file)
+		var problem: String = ClassDB.class_call_static("NariMotion", "probe", ProjectSettings.globalize_path(root.path_join(file)))
+		if not problem.is_empty():
+			_l.warn("The theme background '%s' can't be played on this device: %s" % [file, problem])
 
 func is_builtin(id: String) -> bool:
 	return BUILTIN.has(id)
@@ -168,9 +181,8 @@ func load_screenshot(id: String, source: String) -> Texture2D:
 	return await Plugins.load_screenshot(id, source)
 
 func wait_for_media() -> void :
-	for job in _media_jobs.duplicate():
-		while not _advance_job(job, true):
-			OS.delay_msec(5)
+	for player: MotionPlayer in _players.values():
+		player.prime(MEDIA_WAIT_MSEC)
 
 static func read_manifest(root: String) -> Dictionary:
 	return _with_imports(root, Package.manifest_at(root), {}, 0)
@@ -243,6 +255,7 @@ func _paint(animate: bool) -> void :
 
 func _repaint() -> void :
 	_restyle(true)
+	stage_changed.emit()
 
 func _restyle(announce: bool) -> void :
 	var previous: = active
@@ -700,11 +713,12 @@ func _load_styles() -> void :
 		box.axis_stretch_horizontal = AXIS_STRETCH.get(str(settings.get("stretch", "stretch")), StyleBoxTexture.AXIS_STRETCH_MODE_STRETCH)
 		box.axis_stretch_vertical = box.axis_stretch_horizontal
 		styles[kind] = {"box": box, "padding": _sides(settings.get("padding", [])), "modulate": bool(settings.get("modulate", true)), "filter": Icon.filter_of(texture)}
-		var focus: = load_image(str(settings["focus"])) if settings.has("focus") else null
-		if focus:
-			var focused: = box.duplicate() as StyleBoxTexture
-			focused.texture = focus
-			styles[kind]["focus"] = focused
+		for state in ["focus", "fill"]:
+			var other: = load_image(str(settings[state])) if settings.has(state) else null
+			if other:
+				var alternate: = box.duplicate() as StyleBoxTexture
+				alternate.texture = other
+				styles[kind][state] = alternate
 
 static func _sides(value: Variant) -> PackedFloat32Array:
 	var sides: = PackedFloat32Array([0.0, 0.0, 0.0, 0.0])
@@ -759,76 +773,131 @@ func shader_of(file: String) -> Shader:
 	_shaders[file] = loaded
 	return loaded
 
+func draw_bar(item: CanvasItem, rect: Rect2, ratio: float, base: = Transform2D.IDENTITY) -> bool:
+	var themed: Dictionary = styles.get("progress", {})
+	if not themed.has("fill"):
+		return false
+	var track: StyleBoxTexture = themed["box"]
+	var scale: = rect.size.y / maxf(track.texture.get_height(), 1.0)
+	var local: = Rect2(rect.position / scale, rect.size / scale)
+	if item.texture_filter != themed["filter"]:
+		item.texture_filter = themed["filter"]
+	item.draw_set_transform_matrix(base.scaled_local(Vector2(scale, scale)))
+	item.draw_style_box(track, local)
+	if ratio > 0.0:
+		item.draw_style_box(themed["fill"], Rect2(local.position, Vector2(local.size.x * ratio, local.size.y)))
+	item.draw_set_transform_matrix(base)
+	return true
+
+func enabled(section: String, kind: String) -> bool:
+	return _dict(active, section).get(kind, true) != false
+
+func motion_of(kind: String) -> Dictionary:
+	return _dict(_dict(active, "motion"), kind)
+
+func drift(kind: String) -> Vector3:
+	var motion: = motion_of(kind)
+	if motion.is_empty() or Main.reduce_motion:
+		return Vector3.ZERO
+	var time: = Time.get_ticks_msec() / 1000.0
+	return Vector3(
+		float(motion.get("x", 0.0)) * sin(float(motion.get("x_speed", 1.0)) * time),
+		float(motion.get("y", 0.0)) * sin(float(motion.get("y_speed", 1.0)) * time),
+		float(motion.get("rotation", 0.0)) * sin(float(motion.get("rotation_speed", 1.0)) * time))
+
+func sway(control: Control, kind: String) -> void:
+	var offset: = drift(kind)
+	pose(control, Vector2(offset.x, offset.y) * control.size, offset.z)
+
+static func pose(control: Control, position: Vector2, rotation: float, scale: float = 1.0) -> void:
+	control.offset_transform_enabled = position != Vector2.ZERO or rotation != 0.0 or scale != 1.0
+	control.offset_transform_visual_only = true
+	control.offset_transform_pivot_ratio = Vector2.ONE * 0.5
+	control.offset_transform_position = position
+	control.offset_transform_rotation = rotation
+	control.offset_transform_scale = Vector2.ONE * scale
+
+func shade(item: CanvasItem, kind: String) -> void:
+	var material: ShaderMaterial = item.get_meta(&"theme_material") if item.has_meta(&"theme_material") else ShaderMaterial.new()
+	item.set_meta(&"theme_material", material)
+	if dress(kind, material, null) or item.material == material:
+		item.material = material if material.shader else null
+
+func dress(kind: String, material: ShaderMaterial, fallback: Shader) -> bool:
+	var entry: = _dict(_dict(active, "shaders"), kind)
+	var shader: = shader_of(str(entry.get("file", "")))
+	material.shader = shader if shader else fallback
+	var uniforms: = _dict(entry, "uniforms")
+	for uniform: Variant in uniforms:
+		material.set_shader_parameter(str(uniform), uniform_value(uniforms[uniform]))
+	return shader != null
+
 func texture_of(file: String) -> Texture2D:
 	return _textures.get(file)
+
+func watch(file: String, viewer: CanvasItem) -> void :
+	if _players.has(file):
+		_players[file].watch(viewer)
 
 func _load_backgrounds() -> void :
 	var root: = str(active.get("path", ""))
 	if root != _texture_root:
 		_texture_root = root
-		_textures = {}
+		_clear_media()
 		_shaders = {}
 		_samplers = {}
 	layers = layers_of(active)
 	overlays = overlays_of(active)
-	var missing: = PackedStringArray()
+	var files: = PackedStringArray()
 	for layer in layers:
 		var file: = str(layer.get("file", ""))
-		if str(layer["type"]) == "image" and not file.is_empty() and not _textures.has(file) and not missing.has(file):
-			missing.append(file)
-	if not missing.is_empty():
-		_load_media(missing)
+		if str(layer["type"]) == "image" and not file.is_empty() and not files.has(file):
+			files.append(file)
+	for file: String in _textures.keys():
+		if not files.has(file):
+			_forget_media(file)
+	for file in files:
+		if not _textures.has(file):
+			_load_media(file)
 	backgrounds_changed.emit()
 
-func _load_media(files: PackedStringArray) -> void :
-	var job: = {"files": files, "root": _texture_root, "ids": [], "results": [], "task": -1, "loaded": []}
-	for file in files:
-		var id: = AnimationLoader.start(ProjectSettings.globalize_path(_texture_root.path_join(file)))
-		job["ids"].append(id)
-		job["results"].append(null if id >= 0 else {})
-		job["loaded"].append(null)
-		_textures[file] = null
-	_media_jobs.append(job)
-	if not _advance_job(job):
-		set_process(true)
+func _load_media(file: String) -> void :
+	_textures[file] = null
+	var player: = MotionPlayer.create(_texture_root.path_join(file))
+	if player == null:
+		_l.warn("The theme background '%s' could not be loaded" % file)
+		return
+	player.playing = str(SettingsManager.performance.background) != "simple"
+	player.on_demand = true
+	player.settled.connect(_on_media_settled.bind(file, player))
+	_players[file] = player
+	add_child(player)
 
-func _advance_job(job: Dictionary, block: bool = false) -> bool:
-	var results: Array = job["results"]
-	if job["task"] < 0:
-		for index in results.size():
-			if results[index] == null:
-				results[index] = AnimationLoader.take(job["ids"][index])
-		if results.has(null):
-			return false
-		var loaded: Array = job["loaded"]
-		job["task"] = WorkerThreadPool.add_task(func():
-			for index in results.size():
-				loaded[index] = _texture_of(results[index]))
-	if not block and not WorkerThreadPool.is_task_completed(job["task"]):
-		return false
-	WorkerThreadPool.wait_for_task_completion(job["task"])
-	_media_jobs.erase(job)
-	if job["root"] == _texture_root:
-		for index in job["files"].size():
-			_textures[job["files"][index]] = job["loaded"][index]
-		_hold_still()
-		backgrounds_changed.emit()
-	return true
+func _on_media_settled(error: String, file: String, player: MotionPlayer) -> void :
+	if _players.get(file) != player:
+		return
+	if not error.is_empty():
+		_l.warn("The theme background '%s' could not be loaded: %s" % [file, error])
+		return
+	_textures[file] = player.texture
+	_l.log("Theme background '%s' plays with %s" % [file, player.describe()])
+	backgrounds_changed.emit()
 
-func _process(_delta: float) -> void :
-	for job in _media_jobs.duplicate():
-		_advance_job(job)
-	set_process(not _media_jobs.is_empty())
+func _forget_media(file: String) -> void :
+	if _players.has(file):
+		_players[file].queue_free()
+		_players.erase(file)
+	_textures.erase(file)
+
+func _clear_media() -> void :
+	for file: String in _textures.keys():
+		_forget_media(file)
+
+func _reload_media() -> void :
+	_clear_media()
+	_load_backgrounds()
 
 func _hold_still() -> void :
 	var still: = str(SettingsManager.performance.background) == "simple"
-	for texture: Variant in _textures.values():
-		if texture is AnimatedTexture:
-			texture.pause = still
-			if still:
-				texture.current_frame = 0
-
-func _texture_of(data: Dictionary) -> Texture2D:
-	if data.has("error"):
-		_l.warn.call_deferred("A theme background could not be loaded: %s" % data["error"])
-	return AnimationLoader.texture_of(data)
+	for player: MotionPlayer in _players.values():
+		player.playing = not still

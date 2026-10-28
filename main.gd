@@ -88,7 +88,7 @@ func _ready() -> void:
 			InputGlyphs.swap_face = bool(value)
 		elif section == "general" and key == "nintendo_layout":
 			InputGlyphs.swap_actions = bool(value)
-		elif section == "general" and key == "avoid_notch":
+		elif section == "general" and key in ["avoid_notch", "avoid_system_bars"]:
 			_update_insets()
 		elif section == "theme" and key == "reduce_motion":
 			_refresh_motion()
@@ -102,8 +102,6 @@ func _ready() -> void:
 	ThemeEngine.apply_theme()
 	Themes.wait_for_media()
 	Main.register_screens(top_view if top_view else self, bottom_view, %TopScreenContainer, get_node_or_null("%BottomScreenContainer"))
-	if not Main.setup_done:
-		SettingsManager.general.dual_screen = screens.has_second_screen
 	if screens.ayn_thor_plugin and not SettingsManager.general.dual_screen:
 		screens.ayn_thor_plugin.destroy_screen()
 	_update_layout()
@@ -189,7 +187,8 @@ func _update_insets() -> void:
 	var insets := Vector4.ZERO
 	var sources: Array = []
 	if screens.ayn_thor_plugin:
-		sources.append(screens.ayn_thor_plugin.system_bar_insets())
+		if SettingsManager.general.avoid_system_bars:
+			sources.append(screens.ayn_thor_plugin.system_bar_insets())
 		if SettingsManager.general.avoid_notch:
 			sources.append(screens.ayn_thor_plugin.display_cutout_insets())
 	elif SettingsManager.general.avoid_notch:
@@ -218,6 +217,8 @@ func _update_layout() -> void:
 	Main.set_dual(dual)
 	if bottom_view is Window:
 		_show_bottom_window(dual)
+	elif bottom_view is SubViewport and not screens.ayn_thor_plugin:
+		bottom_view.render_target_update_mode = SubViewport.UPDATE_ALWAYS if dual else SubViewport.UPDATE_DISABLED
 
 func _wake() -> void:
 	_last_input_msec = Time.get_ticks_msec()
@@ -450,7 +451,10 @@ func _notification(what: int) -> void:
 		if DevTools.console_open():
 			DevTools.toggle_console()
 		elif not _go_back():
-			_quit()
+			if Engine.has_singleton("AndroidRuntime"):
+				Engine.get_singleton("AndroidRuntime").getActivity().moveTaskToBack(true)
+			else:
+				_quit()
 	elif what == NOTIFICATION_APPLICATION_FOCUS_IN:
 		_focused = true
 		_refresh_motion()
@@ -474,7 +478,7 @@ func _mount_theme_overlays() -> void:
 		bottom_view.add_child(THEME_OVERLAYS.instantiate())
 
 func _single_screen() -> bool:
-	return OS.has_feature("pc") or not (Engine.has_singleton("AynThor") and Engine.get_singleton("AynThor").has_second_screen())
+	return OS.has_feature("pc") or not Main.has_second_screen()
 
 func _flatten_screens() -> void:
 	$DSManager.main_screen = null

@@ -50,7 +50,7 @@ pub fn app_volume() -> f32 {
 const NEUTRAL_THRESHOLD: f32 = 1e-4;
 const OPUS_MAX_FRAMES: usize = 5760;
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct Media {
     pub uri: String,
     pub name: String,
@@ -153,6 +153,35 @@ struct Shared {
     capacity: usize,
 }
 
+impl Shared {
+    fn new(rate: u32, capacity: usize) -> Self {
+        Self {
+            ring: Mutex::new(Ring {
+                samples: VecDeque::new(),
+                written: 0,
+                consumed: 0,
+                markers: VecDeque::new(),
+                flushes: 0,
+            }),
+            spectrum: Mutex::new(Spectrum::new()),
+            playing: AtomicBool::new(false),
+            volume: AtomicU32::new(1.0f32.to_bits()),
+            effect: AtomicU8::new(0),
+            speed: AtomicU32::new(1.0f32.to_bits()),
+            pitch: AtomicU32::new(1.0f32.to_bits()),
+            lost: AtomicBool::new(false),
+            equalizer: Mutex::new(Vec::new()),
+            equalizer_version: AtomicU32::new(0),
+            rack: Mutex::new(Vec::new()),
+            rack_version: AtomicU32::new(0),
+            watches: Mutex::new(Vec::new()),
+            settled: AtomicU64::new(0),
+            rate,
+            capacity: capacity,
+        }
+    }
+}
+
 enum Output {
     Device(#[allow(dead_code)] cpal::Stream),
     Pacer(Option<JoinHandle<()>>),
@@ -182,30 +211,7 @@ impl Engine {
             None
         };
         let rate = local.as_ref().map_or(CAST_RATE, |(_, supported)| supported.sample_rate());
-        let shared = Arc::new(Shared {
-            ring: Mutex::new(Ring {
-                samples: VecDeque::new(),
-                written: 0,
-                consumed: 0,
-                markers: VecDeque::new(),
-                flushes: 0,
-            }),
-            spectrum: Mutex::new(Spectrum::new()),
-            playing: AtomicBool::new(false),
-            volume: AtomicU32::new(1.0f32.to_bits()),
-            effect: AtomicU8::new(0),
-            speed: AtomicU32::new(1.0f32.to_bits()),
-            pitch: AtomicU32::new(1.0f32.to_bits()),
-            lost: AtomicBool::new(false),
-            equalizer: Mutex::new(Vec::new()),
-            equalizer_version: AtomicU32::new(0),
-            rack: Mutex::new(Vec::new()),
-            rack_version: AtomicU32::new(0),
-            watches: Mutex::new(Vec::new()),
-            settled: AtomicU64::new(0),
-            rate,
-            capacity: (rate as u64 * BUFFER_MS / 1000) as usize * CHANNELS,
-        });
+        let shared = Arc::new(Shared::new(rate, (rate as u64 * BUFFER_MS / 1000) as usize * CHANNELS));
 
         let quit = Arc::new(AtomicBool::new(false));
         let output = match (local, cast) {
@@ -576,11 +582,49 @@ struct Source {
     live: bool,
     title: Option<String>,
     length: Option<u64>,
+    media: Media,
+    spare: Option<crate::stream::Stream>,
 }
 
 impl Source {
     fn open(media: &Media, index: usize, rate: u32) -> Result<Self, String> {
-        let (mut source, watch) = open_input(&media.uri)?;
+        match origin(&media.uri)? {
+            Origin::Stream(stream) => Self::from_stream(media, stream, index, rate),
+            Origin::File(path) => {
+                let file = crate::storage::open(&path).map_err(|error| error.to_string())?;
+                Self::from_input(media, Box::new(file), None, None, index, rate)
+            }
+        }
+    }
+
+    fn replay(&mut self, index: usize, rate: u32) -> Result<Self, String> {
+        match self.spare.take() {
+            Some(stream) => Self::from_stream(&self.media, stream, index, rate),
+            None => Self::open(&self.media, index, rate),
+        }
+    }
+
+    fn from_stream(media: &Media, stream: crate::stream::Stream, index: usize, rate: u32) -> Result<Self, String> {
+        let spare = stream.reader();
+        let watch = stream.watch();
+        Self::from_input(media, Box::new(stream), Some(watch), spare, index, rate)
+    }
+
+    fn from_input(
+        media: &Media,
+        source: Box<dyn MediaSource>,
+        watch: Option<crate::stream::Watch>,
+        spare: Option<crate::stream::Stream>,
+        index: usize,
+        rate: u32,
+    ) -> Result<Self, String> {
+        let mut opened = Self::decode(media, source, watch, index, rate)?;
+        opened.media = media.clone();
+        opened.spare = spare;
+        Ok(opened)
+    }
+
+    fn decode(media: &Media, mut source: Box<dyn MediaSource>, watch: Option<crate::stream::Watch>, index: usize, rate: u32) -> Result<Self, String> {
         if let Some(name) = [&media.name, &media.uri].into_iter().find(|name| crate::synth::handles(name)) {
             let mut bytes = Vec::new();
             std::io::Read::read_to_end(&mut source, &mut bytes).map_err(|error| error.to_string())?;
@@ -672,6 +716,8 @@ impl Source {
             live: false,
             title: None,
             length: None,
+            media: Media::default(),
+            spare: None,
         })
     }
 
@@ -866,23 +912,31 @@ impl Decoder {
     }
 }
 
-pub fn open_input(uri: &str) -> Result<(Box<dyn MediaSource>, Option<crate::stream::Watch>), String> {
+enum Origin {
+    Stream(crate::stream::Stream),
+    File(String),
+}
+
+fn origin(uri: &str) -> Result<Origin, String> {
     let resolved = match crate::remote::is_remote(uri) {
         true => None,
         false => crate::plugins::resolve(uri).transpose()?,
     };
     let uri = resolved.as_deref().unwrap_or(uri);
-    let stream = match crate::plugins::open_source(uri) {
-        Some(opened) => Some(opened?),
-        None if crate::remote::is_remote(uri) => Some(crate::remote::open(uri).map_err(|error| error.to_string())?),
-        None => None,
-    };
-    match stream {
-        Some(stream) => {
+    match crate::plugins::open_source(uri) {
+        Some(opened) => opened.map(Origin::Stream),
+        None if crate::remote::is_remote(uri) => crate::remote::open(uri).map(Origin::Stream).map_err(|error| error.to_string()),
+        None => Ok(Origin::File(uri.to_owned())),
+    }
+}
+
+pub fn open_input(uri: &str) -> Result<(Box<dyn MediaSource>, Option<crate::stream::Watch>), String> {
+    match origin(uri)? {
+        Origin::Stream(stream) => {
             let watch = stream.watch();
             Ok((Box::new(stream), Some(watch)))
         }
-        None => Ok((Box::new(crate::storage::open(uri).map_err(|error| error.to_string())?), None)),
+        Origin::File(path) => Ok((Box::new(crate::storage::open(&path).map_err(|error| error.to_string())?), None)),
     }
 }
 
@@ -925,30 +979,7 @@ fn remember(shared: &Shared, source: &Source) {
 }
 
 pub fn decode_each(media: &Media, rate: u32, limit_frames: usize, mut sink: impl FnMut(&[f32])) -> Result<(), String> {
-    let shared = Shared {
-        ring: Mutex::new(Ring {
-            samples: VecDeque::new(),
-            written: 0,
-            consumed: 0,
-            markers: VecDeque::new(),
-            flushes: 0,
-        }),
-        spectrum: Mutex::new(Spectrum::new()),
-        playing: AtomicBool::new(false),
-        volume: AtomicU32::new(1.0f32.to_bits()),
-        effect: AtomicU8::new(0),
-        speed: AtomicU32::new(1.0f32.to_bits()),
-        pitch: AtomicU32::new(1.0f32.to_bits()),
-        lost: AtomicBool::new(false),
-        equalizer: Mutex::new(Vec::new()),
-        equalizer_version: AtomicU32::new(0),
-        rack: Mutex::new(Vec::new()),
-        rack_version: AtomicU32::new(0),
-            watches: Mutex::new(Vec::new()),
-        settled: AtomicU64::new(0),
-        rate,
-        capacity: 0,
-    };
+    let shared = Shared::new(rate, 0);
     let mut source = Source::open(media, 0, rate)?;
     let mut left = limit_frames.saturating_mul(CHANNELS);
     while left > 0 {
@@ -1117,11 +1148,12 @@ fn decode_loop(
             }
             Ok(None) => {
                 let finished = current.index;
+                let following = next.take().map(|(media, index)| {
+                    let opened = if media.uri == current.media.uri { current.replay(index, shared.rate) } else { Source::open(&media, index, shared.rate) };
+                    (index, opened)
+                });
                 source = None;
-                match next
-                    .take()
-                    .map(|(media, index)| (index, Source::open(&media, index, shared.rate)))
-                {
+                match following {
                     Some((index, Ok(opened))) => {
                         remember(&shared, &opened);
                         emitted_ms = 0.0;
@@ -1179,6 +1211,10 @@ mod tests {
         std::fs::write(path, bytes).unwrap();
     }
 
+    fn test_shared(rate: u32) -> Arc<Shared> {
+        Arc::new(Shared::new(rate, usize::MAX))
+    }
+
     fn decode_all(path: &Path, rate: u32) -> Vec<f32> {
         decode(&Media::of(path), rate, usize::MAX).unwrap()
     }
@@ -1190,30 +1226,7 @@ mod tests {
         let (first, second) = (directory.join("a.wav"), directory.join("b.wav"));
         write_sine(&first, 44100, 4410);
         write_sine(&second, 44100, 2205);
-        let shared = Arc::new(Shared {
-            ring: Mutex::new(Ring {
-                samples: VecDeque::new(),
-                written: 0,
-                consumed: 0,
-                markers: VecDeque::new(),
-                flushes: 0,
-            }),
-            spectrum: Mutex::new(Spectrum::new()),
-            playing: AtomicBool::new(false),
-            volume: AtomicU32::new(1.0f32.to_bits()),
-            effect: AtomicU8::new(0),
-            speed: AtomicU32::new(1.0f32.to_bits()),
-            pitch: AtomicU32::new(1.0f32.to_bits()),
-            lost: AtomicBool::new(false),
-            equalizer: Mutex::new(Vec::new()),
-            equalizer_version: AtomicU32::new(0),
-            rack: Mutex::new(Vec::new()),
-            rack_version: AtomicU32::new(0),
-            watches: Mutex::new(Vec::new()),
-            settled: AtomicU64::new(0),
-            rate: 44100,
-            capacity: usize::MAX,
-        });
+        let shared = test_shared(44100);
         let (commands, command_rx) = channel();
         let (event_tx, events) = channel();
         let quit = Arc::new(AtomicBool::new(false));
@@ -1243,6 +1256,57 @@ mod tests {
         let boundaries: Vec<(u64, usize)> = ring.markers.iter().map(|marker| (marker.frames, marker.index)).collect();
         assert_eq!(boundaries, vec![(0, 1), (4410, 2)]);
         std::fs::remove_dir_all(&directory).unwrap();
+    }
+
+    #[test]
+    fn repeating_a_stream_replays_the_download() {
+        let directory = std::env::temp_dir().join("music_service_replay_test");
+        std::fs::create_dir_all(&directory).unwrap();
+        let file = directory.join("loop.wav");
+        write_sine(&file, 44100, 4410);
+        let body = std::fs::read(&file).unwrap();
+        std::fs::remove_dir_all(&directory).unwrap();
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let address = listener.local_addr().unwrap();
+        std::thread::spawn(move || {
+            use std::io::{Read, Write};
+            let (mut stream, _) = listener.accept().unwrap();
+            let mut request = [0u8; 1024];
+            let _ = stream.read(&mut request);
+            write!(stream, "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n", body.len()).unwrap();
+            stream.write_all(&body).unwrap();
+        });
+        let media = Media { uri: format!("http://{address}/loop.wav"), name: "loop.wav".into() };
+        let shared = test_shared(44100);
+        let (commands, command_rx) = channel();
+        let (event_tx, events) = channel();
+        let quit = Arc::new(AtomicBool::new(false));
+        commands.send(Command::Load { media: media.clone(), start_ms: 0, index: 1, gap_ms: None, ticket: 1 }).unwrap();
+        commands.send(Command::Queue(Some((media, 1)))).unwrap();
+        let decoder = {
+            let (shared, quit) = (shared.clone(), quit.clone());
+            std::thread::spawn(move || decode_loop(shared, command_rx, event_tx, quit))
+        };
+        let next = || loop {
+            match events.recv_timeout(Duration::from_secs(5)).unwrap() {
+                EngineEvent::Length(..) => {}
+                event => break event,
+            }
+        };
+        let advanced = next();
+        let finished = next();
+        quit.store(true, Ordering::SeqCst);
+        decoder.join().unwrap();
+        assert!(matches!(advanced, EngineEvent::Advanced(1, 1)));
+        assert!(matches!(finished, EngineEvent::Finished(1)));
+        assert_eq!(shared.ring.lock().unwrap().written, 4410 * 2, "the second loop plays from the first download");
+    }
+
+    #[test]
+    fn videos_play_their_audio_track() {
+        let samples = decode_all(&Path::new(env!("CARGO_MANIFEST_DIR")).join("fixtures").join("motion_sound.mp4"), 48_000);
+        assert!((samples.len() as f64 / CHANNELS as f64 / 48_000.0 - 1.0).abs() < 0.05);
+        assert!(samples.iter().any(|sample| sample.abs() > 0.1));
     }
 
     #[test]

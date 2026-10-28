@@ -4,9 +4,8 @@ signal page_changed(page: Pages, data: Dictionary)
 signal insets_changed(insets: Vector4)
 signal dual_changed(enabled: bool)
 signal header_changed
-signal booted
 
-enum Pages { Home, Tracks, Albums, Artists, Playlists, Album, Artist, Playlist, NowPlaying, Settings, Soundboard, Welcome, Search, About, Discover, Web, Marketplace }
+enum Pages { Home, Tracks, Albums, Artists, Playlists, Album, Artist, Playlist, NowPlaying, Settings, Soundboard, Welcome, Search, About, Discover, Web, Marketplace, Folders }
 
 const PAGE_SCENES := {
 	Pages.Home: "Home",
@@ -26,6 +25,7 @@ const PAGE_SCENES := {
 	Pages.Discover: "Discover",
 	Pages.Web: "Web",
 	Pages.Marketplace: "Marketplace",
+	Pages.Folders: "Folders",
 }
 const SCREENS_PATH := "res://ui/screens/%s/%s.tscn"
 const FADE_TIME := 0.15
@@ -38,7 +38,6 @@ const SETUP_FILE := "user://OOBE.txt"
 const MARGINS := ["margin_left", "margin_top", "margin_right", "margin_bottom"]
 const BLEED_GROUP := "full_bleed"
 const PRELOAD_IDLE_MS := 600
-const BOOT_WAIT := 5.0
 
 var setup_done := FileAccess.file_exists(SETUP_FILE)
 var loading_held := true
@@ -69,13 +68,13 @@ var _had_song := false
 var _dialogs: Array[Dialog] = []
 var _content_hidden := false
 var _content_fade: Tween
-var _booted := false
 var _last_input := 0
 var _preloading := false
 var _preload_again := false
 
 func _ready() -> void:
 	get_tree().node_added.connect(_on_node_added)
+	get_tree().root.gui_focus_changed.connect(_on_control_hovered)
 	get_tree().root.window_input.connect(func(_event: InputEvent): _last_input = Time.get_ticks_msec())
 	loading_held = not setup_done or SettingsManager.general.boot_intro
 	_had_song = not str(MediaPlayer.get_playback_state().get("current_id", "")).is_empty()
@@ -87,12 +86,6 @@ func _ready() -> void:
 
 func _exit_tree() -> void:
 	Worker.finish()
-
-func finish_boot() -> void:
-	if _booted:
-		return
-	_booted = true
-	booted.emit()
 
 func _on_mode_changed(_gamepad: bool) -> void:
 	if InputGlyphs.navigating() or not _top_view:
@@ -167,7 +160,7 @@ func change_page(page: Pages, data: Dictionary = {}, keep_history: bool = true, 
 	for dialog in _dialogs.duplicate():
 		dialog.close()
 	if _page and keep_history and not _page.get("transient"):
-		_history.push_back({"page": current_page, "data": current_data, "focus": _page_focus()})
+		_history.push_back({"page": current_page, "data": _page_data(), "focus": _page_focus()})
 	if keep_history and not _going_forward:
 		_forward.clear()
 	hide_header()
@@ -193,6 +186,12 @@ func change_page(page: Pages, data: Dictionary = {}, keep_history: bool = true, 
 	_page = instance
 	page_changed.emit(page, data)
 
+func has_second_screen() -> bool:
+	return Engine.has_singleton("AynThor") and Engine.get_singleton("AynThor").has_second_screen()
+
+func can_toggle_dual() -> bool:
+	return OS.has_feature("pc") or has_second_screen()
+
 func set_dual(enabled: bool) -> void:
 	InputGlyphs.set_dual(enabled)
 	if dual == enabled:
@@ -211,9 +210,10 @@ func reload_page() -> void:
 	if not _page:
 		return
 	var focus := _page_focus()
+	var state := _page_data()
 	_slide_out(_page)
 	_page = null
-	change_page(current_page, current_data, false, focus)
+	change_page(current_page, state, false, focus)
 
 func set_insets(value: Vector4) -> void:
 	insets = value
@@ -259,6 +259,29 @@ func trigger_shortcut(event: InputEvent) -> bool:
 func _on_node_added(node: Node) -> void:
 	if node is SmoothScrollContainer:
 		node.add_child.call_deferred(EdgeScrollbar.new(node), false, Node.INTERNAL_MODE_BACK)
+	if node is Control:
+		var hovered: = _on_control_hovered.bind(node)
+		if not node.mouse_entered.is_connected(hovered):
+			node.mouse_entered.connect(hovered)
+	elif node is Viewport and not node.gui_focus_changed.is_connected(_on_control_hovered):
+		node.gui_focus_changed.connect(_on_control_hovered)
+	if node.has_signal("selection_changed") and not node.selection_changed.is_connected(_on_selection_changed):
+		node.selection_changed.connect(_on_selection_changed)
+
+func _on_selection_changed(_index: int) -> void:
+	haptic()
+
+func _on_control_hovered(control: Control) -> void:
+	if control.focus_mode != Control.FOCUS_NONE:
+		haptic()
+
+func haptic(strength: float = 1.0) -> void:
+	if not SettingsManager.general.haptics:
+		return
+	strength = clampf(strength, 0.0, 1.0)
+	for device in Input.get_connected_joypads():
+		Input.start_joy_vibration(device, 0.6 * strength, 0.3 * strength, 0.1)
+	Input.vibrate_handheld(15, 0.3 * strength)
 
 func frame_edge(node: Node) -> Vector2:
 	for view in _containers:
@@ -320,9 +343,6 @@ func preload_pages() -> void:
 		_preload_again = true
 		return
 	_preloading = true
-	if not _booted:
-		get_tree().create_timer(BOOT_WAIT).timeout.connect(finish_boot)
-		await booted
 	await _preload_pages()
 	_preloading = false
 	if _preload_again:
@@ -378,7 +398,8 @@ func focus_content() -> void:
 
 func go_back() -> bool:
 	if not _dialogs.is_empty():
-		_dialogs.back().close()
+		if not _dialogs.back().locked:
+			_dialogs.back().close()
 		return true
 	var focused: Node = focus_owner()
 	while focused:
@@ -393,7 +414,7 @@ func go_back() -> bool:
 		return false
 	var entry: Dictionary = _history.pop_back()
 	if _page and not _page.get("transient"):
-		_forward.push_back({"page": current_page, "data": current_data, "focus": _page_focus()})
+		_forward.push_back({"page": current_page, "data": _page_data(), "focus": _page_focus()})
 	change_page(entry["page"], entry["data"], false, entry["focus"])
 	return true
 
@@ -448,6 +469,9 @@ func _input_page() -> Control:
 		return null
 	return _page.bottom if dual else _page.top
 
+func _page_data() -> Dictionary:
+	return _page.history_data() if _page.has_method("history_data") else current_data
+
 func _page_focus() -> int:
 	var list = _page.get("list")
 	var selected: int = 0
@@ -482,9 +506,69 @@ func _scene(path: String) -> PackedScene:
 			_scenes[path] = load(path)
 	return _scenes[path]
 
-func _transition() -> String:
-	var style := str(Themes.active.get("page_transition", "slide"))
-	return style if PAGE_TRANSITIONS.has(style) else "slide"
+func transition(key: String = "page_transition") -> Dictionary:
+	var listed: Variant = Themes.active.get(key, "slide")
+	var style: Dictionary = listed.duplicate() if listed is Dictionary else {"type": str(listed)}
+	if not PAGE_TRANSITIONS.has(str(style.get("type", ""))):
+		style["type"] = "slide"
+	var material := ShaderMaterial.new()
+	style["material"] = material if Themes.dress("transition", material, null) else null
+	return style
+
+func _process(_delta: float) -> void:
+	for view: Node in _containers:
+		if is_instance_valid(view):
+			Themes.sway(_containers[view], "sway")
+			if view.has_node(HINTS_NAME):
+				Themes.sway(view.get_node(HINTS_NAME), "sway")
+
+static func _physics_curve(config: Dictionary) -> PackedFloat32Array:
+	var step := 1.0 / 60.0
+	var keep := exp(-float(config.get("damping", 50.0)) * step)
+	var distance := float(config.get("distance", 10.0))
+	var limit := float(config.get("max_speed", 70.0)) * step
+	var offset := distance
+	var speed := 0.0
+	var curve := PackedFloat32Array([1.0])
+	while (absf(offset) > 0.001 or absf(speed) > 0.001) and curve.size() < 600:
+		speed = clampf(keep * speed - (1.0 - keep) * offset * float(config.get("pull", 35.0)) * step, -limit, limit)
+		offset += speed
+		curve.append(offset / distance)
+	return curve
+
+func animate(tween: Tween, control: Control, style: Dictionary, entering: bool, distance: float) -> void:
+	var time := float(style.get("duration" if entering else "exit", style.get("duration", TRANSITION_TIME)))
+	var origin := control.position
+	var shift := -distance * float(style.get("shift", TRANSITION_SHIFT))
+	if style["type"] == "slide" and entering:
+		control.position.y = origin.y + shift
+	if style["type"] == "slide" and entering and style.get("physics") is Dictionary:
+		var curve := _physics_curve(style["physics"])
+		time = curve.size() / 60.0
+		tween.tween_method(func(left: float): control.position.y = origin.y + shift * curve[mini(int(left * 60.0), curve.size() - 1)], 0.0, time, time)
+	elif style["type"] == "slide":
+		tween.tween_property(control, "position:y", origin.y if entering else origin.y + shift, time) \
+			.set_trans(ClassDB.class_get_integer_constant("Tween", "TRANS_" + str(style.get("trans", "cubic")).to_upper())) \
+			.set_ease(ClassDB.class_get_integer_constant("Tween", "EASE_" + str(style.get("ease", "out" if entering else "in")).to_upper()))
+	if style["type"] != "none" and style.get("fade", true):
+		if entering:
+			control.modulate.a = 0.0
+		tween.tween_property(control, "modulate:a", 1.0 if entering else 0.0, time)
+	if entering and style.has("shake"):
+		var span := float(style.get("shake_time", 0.6))
+		tween.chain().tween_method(func(left: float):
+			control.position = origin + Vector2(sin(19.913 * left), sin(21.913 * left)) * float(style["shake"]) * pow(1.0 - left / span, 2.0), 0.0, span, span)
+	var material: ShaderMaterial = style["material"]
+	if material:
+		var overlay := ColorRect.new()
+		overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		overlay.material = material
+		material.set_shader_parameter("progress", 0.0 if entering else 1.0)
+		material.set_shader_parameter("entering", entering)
+		control.get_parent().add_child(overlay)
+		overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		tween.tween_property(material, "shader_parameter/progress", 1.0 if entering else 0.0, time)
+		tween.finished.connect(overlay.queue_free)
 
 func _slide_out(page: Page) -> void:
 	var top := page.top
@@ -495,18 +579,15 @@ func _slide_out(page: Page) -> void:
 				node.get_parent().queue_free()
 		if is_instance_valid(page):
 			page.queue_free()
-	var style := _transition()
-	if style == "none":
+	var style := transition()
+	if style["type"] == "none" and not style["material"] or float(style.get("exit", 1.0)) <= 0.0:
 		remove.call()
 		return
 	var tween := create_tween().set_parallel(true)
 	if is_instance_valid(top) and _top_view:
-		if style == "slide":
-			var shift := -_view_height(_top_view) * TRANSITION_SHIFT
-			tween.tween_property(top, "position:y", top.position.y + shift, TRANSITION_TIME).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
-		tween.tween_property(top, "modulate:a", 0.0, TRANSITION_TIME)
-	if is_instance_valid(bottom):
-		tween.tween_property(bottom, "modulate:a", 0.0, TRANSITION_TIME)
+		animate(tween, top, style, false, _view_height(_top_view))
+	if is_instance_valid(bottom) and style["type"] != "none":
+		tween.tween_property(bottom, "modulate:a", 0.0, float(style.get("exit", style.get("duration", TRANSITION_TIME))))
 	tween.chain().tween_callback(remove)
 
 func _viewport_of(view: Node) -> Viewport:
@@ -524,15 +605,8 @@ func _mount(control: Control, view: Node) -> void:
 	control.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_bleed(view, holder)
 	control.visible = not _content_hidden
-	control.modulate.a = 0.0 if _content_hidden else 1.0
-	var style := _transition()
-	if view != _top_view or style == "none":
-		control.modulate.a = 1.0
+	var style := transition()
+	control.modulate.a = 1.0
+	if view != _top_view or style["type"] == "none" and not style["material"]:
 		return
-	control.modulate.a = 0.0
-	var tween := create_tween().set_parallel(true)
-	if style == "slide":
-		var rest := control.position.y
-		control.position.y = rest - _view_height(view) * TRANSITION_SHIFT
-		tween.tween_property(control, "position:y", rest, TRANSITION_TIME).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	tween.tween_property(control, "modulate:a", 1.0, TRANSITION_TIME)
+	animate(control.create_tween().set_parallel(true), control, style, true, _view_height(_top_view))

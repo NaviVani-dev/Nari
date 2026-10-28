@@ -31,21 +31,34 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-pc-windows-msvc
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            addons/MusicService/native/target
+            addons/MusicService/.build
+          key: windows-arm64-msvc-${{ hashFiles('addons/MusicService/native/Cargo.lock', 'addons/MusicService/native/build.rs', 'scripts/music_service.py', 'scripts/windows_arm64*') }}
+          restore-keys: windows-arm64-msvc-
       - uses: msys2/setup-msys2@v2
         id: msys
         with:
           msystem: MSYS
-          install: make diffutils
+          install: make diffutils pkgconf
       - uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: amd64_arm64
       - name: Test build safeguards
         run: python -m unittest discover -s scripts/tests -v
-      - name: Build native libraries
+      - name: Build dav1d and FFmpeg
         env:
           MSYS2_BASH: '${{ steps.msys.outputs.msys2-location }}\usr\bin\bash.exe'
           LIBCLANG_PATH: 'C:\Program Files\LLVM\bin'
-        run: python scripts/build.py plugins-windows-arm64
+        run: python -c "import sys; sys.path.insert(0, 'scripts'); import music_service; music_service.build_windows_arm64_ffmpeg()"
+      - name: Build native music service
+        env:
+          LIBCLANG_PATH: 'C:\Program Files\LLVM\bin'
+        run: python -c "import sys; sys.path.insert(0, 'scripts'); import music_service; music_service.build_windows_arm64_service()"
       - name: Install matching Godot editor and ARM64 templates
         shell: pwsh
         run: |

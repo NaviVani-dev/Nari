@@ -2,3 +2,6 @@ The libavcodec, libavformat, libavutil and libswscale libraries next to libnari 
 FFmpeg 8.0.1 (https://ffmpeg.org/releases/ffmpeg-8.0.1.tar.xz), licensed under the LGPL 2.1 or
 later (see FFMPEG-LGPL.txt). They are unmodified, dynamically linked and built without GPL or
 nonfree parts by scripts/music_service.py, which lists the exact configure options.
+
+libavcodec includes dav1d 1.5.4 (https://code.videolan.org/videolan/dav1d), statically linked to decode AV1,
+licensed under the BSD 2-Clause license (see DAV1D-COPYING.txt).

@@ -639,6 +639,24 @@ unique_name_in_owner = true
 visible = false
 layout_mode = 1
 
+[node name="EffectsLocked" type="Label" parent="Top/Layout/Column/Main/Side/Stage/Screens" unique_id=1115235287]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "Not available!"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+script = ExtResource("3_label")
+weight = 700
+font_size = 64
+metadata/_custom_type_script = "uid://emohg8k7r26n"
+
 [node name="EffectsArea" type="BoxContainer" parent="Top/Layout/Column/Main/Side/Stage/Screens" unique_id=1900824779]
 unique_name_in_owner = true
 visible = false

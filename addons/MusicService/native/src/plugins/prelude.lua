@@ -137,6 +137,78 @@ function nari.visualizer(spec)
 	plugin:add_visualizer(spec)
 end
 
+function nari.output(spec)
+	if type(spec) ~= "table" or type(spec.scan) ~= "function" or type(spec.connect) ~= "function" then
+		error("nari.output() needs a table with scan and connect functions", 2)
+	end
+	local key = plugin:add_output(spec)
+	local output = {}
+	function output:release()
+		plugin:release_output(key)
+	end
+	function output:is_connected()
+		return plugin:output_connected(key)
+	end
+	return output
+end
+
+function nari.cover_view(spec)
+	if type(spec) ~= "table" or not spec.icon then
+		error("nari.cover_view() needs a table with an icon", 2)
+	end
+	local key = plugin:add_cover_view(spec)
+	local view = {}
+	function view:set_available(available)
+		plugin:cover_view_available(key, available == true)
+	end
+	function view:set_texture(texture)
+		plugin:cover_view_texture(key, texture)
+	end
+	function view:is_active()
+		return plugin:cover_view_active(key)
+	end
+	return view
+end
+
+function nari.video(source, options)
+	if type(source) ~= "string" or source == "" then
+		error("nari.video() needs a file or an http(s) URL", 2)
+	end
+	if source:match("^https?://") then
+		need("network", "nari.video() with a URL")
+	end
+	local id = plugin:open_video(source, options or {})
+	if id < 0 then
+		error("nari.video() can't open '" .. source .. "'", 2)
+	end
+	local video = {}
+	function video:texture()
+		return plugin:video_texture(id)
+	end
+	function video:play()
+		plugin:video_playing(id, true)
+	end
+	function video:pause()
+		plugin:video_playing(id, false)
+	end
+	function video:seek(seconds)
+		plugin:video_seek(id, seconds)
+	end
+	function video:position()
+		return plugin:video_position(id)
+	end
+	function video:length()
+		return plugin:video_length(id)
+	end
+	function video:watch(item)
+		plugin:video_watch(id, item)
+	end
+	function video:close()
+		plugin:close_video(id)
+	end
+	return video
+end
+
 function nari.command(name, description, handler)
 	if type(description) == "function" then
 		handler, description = description, ""

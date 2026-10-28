@@ -20,6 +20,7 @@ const START_SHARE := 0.6
 
 var locked := false
 var _step := 0
+var _entries: Array = []
 
 func _ready() -> void:
 	_step = int(data.get("step", 0))
@@ -85,7 +86,7 @@ func focus_content() -> void:
 	if _step == 0:
 		get_started.grab_focus()
 	elif _step < 4:
-		list.focus_item(0)
+		list.focus_item(SettingsScreen.first_item(_entries, 0))
 
 func _place() -> void:
 	var wide := top.size.x / maxf(top.size.y, 1.0) >= UI.WIDE_RATIO and UI.detail_width(top.size.x) > 0.0
@@ -115,25 +116,28 @@ func _load() -> void:
 			"title": title,
 			"description": description,
 			"icon": icon,
-			"value": func(): return "Allowed" if granted.call() else "Allow",
+			"checked": granted,
 			"action": request,
 		}
-	var entries: Array = [
+	_entries = SettingsScreen.sectioned([
 		[],
-		[
+		SettingsScreen._section("Required", [
 			permission.call("Notifications", "Control your music from the notifications", preload("res://assets/icons/notifications.svg"), MediaPlayer.has_notification_permission, MediaPlayer.request_notification_permission),
-			permission.call("Microphone (optional)", "Record your own sounds for the soundboard", preload("res://assets/icons/microphone.svg"), Soundboard.has_record_permission, Soundboard.request_record_permission),
-		],
+		]) + SettingsScreen._section("Optional", [
+			permission.call("Microphone", "Record your own sounds for the soundboard", preload("res://assets/icons/microphone.svg"), Soundboard.has_record_permission, Soundboard.request_record_permission),
+		]),
 		SettingsScreen.library_entries(true),
-		[
+		SettingsScreen._section("Appearance", [
 			SettingItem.toggle("Colors adapt to song", "Tints the app with the colors of the current song (if available)", preload("res://assets/icons/auto_theme.svg"), "theme", "adapt_to_song"),
+		]) + SettingsScreen._section("Lyrics", [
 			SettingsScreen.lyrics_provider_entry(_refresh),
 			SettingItem.toggle("Show romaji", "Adds a romanized line to supported lyrics", preload("res://assets/icons/romaji.svg"), "lyrics", "show_romaji"),
-		],
-	][_step]
-	list.set_items(entries, SettingItem.create.bind(_refresh), Callable(), previous >= 0)
+		]) + (SettingsScreen._section("Screens", [SettingsScreen.dual_screen_entry()]) if Main.can_toggle_dual() else []),
+	][_step])
+	list.container.headers = SettingsScreen.headers_of(_entries)
+	list.set_items(_entries, SettingsScreen.create_entry.bind(_refresh), Callable(), previous >= 0)
 	_refresh()
-	list.focus_item(clampi(previous if previous >= 0 else focus_index, 0, entries.size() - 1))
+	list.focus_item(SettingsScreen.first_item(_entries, previous if previous >= 0 else focus_index))
 
 func _refresh() -> void:
 	SettingItem.refresh_list(list)

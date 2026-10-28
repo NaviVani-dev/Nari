@@ -16,6 +16,8 @@ android.debug.arm64 = "res://addons/MusicService/bin/android/arm64/libnari.so"
 android.release.arm64 = "res://addons/MusicService/bin/android/arm64/libnari.so"
 android.debug.x86_64 = "res://addons/MusicService/bin/android/x86_64/libnari.so"
 android.release.x86_64 = "res://addons/MusicService/bin/android/x86_64/libnari.so"
+ios.debug = "res://addons/MusicService/bin/ios/libnari.framework"
+ios.release = "res://addons/MusicService/bin/ios/libnari.framework"
 
 windows.debug.arm64 = "res://addons/MusicService/bin/windows/arm64/nari.dll"
 windows.release.arm64 = "res://addons/MusicService/bin/windows/arm64/nari.dll"

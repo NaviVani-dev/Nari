@@ -411,7 +411,7 @@ func entrance_pending() -> bool:
 func play_entrance() -> void :
 	_stop_entrance()
 	_pending = false
-	if Engine.is_editor_hint() or not is_inside_tree():
+	if Engine.is_editor_hint() or not is_inside_tree() or not Themes.enabled("motion", "entrance"):
 		return
 	_generation += 1
 	var generation: = _generation

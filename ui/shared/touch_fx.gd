@@ -34,6 +34,8 @@ func _ready() -> void:
 	_glow.width = 128
 	_glow.height = 128
 	add_to_group(GROUP)
+	ThemeEngine.follow(self, Themes.shade.bind(self, "click"))
+	Themes.shade(self, "click")
 	get_viewport().size_changed.connect(_update_scale)
 	_update_scale()
 	set_process(false)
@@ -112,6 +114,8 @@ func _draw() -> void:
 		_blob(particle["position"], radius, Color(particle["color"], fade * 0.5))
 
 func _press(index: int, point: Vector2) -> void:
+	if not Themes.enabled("motion", "click"):
+		return
 	_touches[index] = {"position": point, "origin": point, "emitted": point, "age": 0.0, "ripple": 0.0, "release": -1.0}
 	burst(point)
 

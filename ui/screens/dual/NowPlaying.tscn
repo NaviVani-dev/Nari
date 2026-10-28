@@ -631,6 +631,24 @@ wheel_scroll_damper = SubResource("Resource_queuewheel")
 dragging_scroll_damper = SubResource("Resource_queuedrag")
 allow_horizontal_scroll = false
 
+[node name="EffectsLocked" type="Label" parent="Bottom/Layout/Content" unique_id=770451245]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "Not available!"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+script = ExtResource("3_xpdq6")
+weight = 700
+font_size = 64
+metadata/_custom_type_script = "uid://emohg8k7r26n"
+
 [node name="EffectsArea" type="HBoxContainer" parent="Bottom/Layout/Content" unique_id=1685560971]
 unique_name_in_owner = true
 visible = false

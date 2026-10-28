@@ -25,6 +25,7 @@ func _init() -> void :
 	streams = true
 	supports_quality = true
 	supports_likes = true
+	supports_folders = true
 	var config: = Vault.load_config(CONFIG_PATH)
 	_server = str(config.get_value("server", "url", ""))
 	_user = str(config.get_value("server", "user", ""))
@@ -116,6 +117,25 @@ func get_album(album_id: String) -> Dictionary:
 	var album: = _album(entry)
 	album["tracks"] = entry.get("song", []).map(_song)
 	return album
+
+func get_folder(folder_id: String) -> Dictionary:
+	var children: Array = []
+	if folder_id.is_empty():
+		for root in _field(await _api("getMusicFolders"), "musicFolders").get("musicFolder", []):
+			children.append({"id": "root:" + str(int(root.get("id", 0))), "name": root.get("name", ""), "isDir": true})
+	elif folder_id.begins_with("root:"):
+		var indexes: = _field(await _api("getIndexes", {"musicFolderId": folder_id.trim_prefix("root:")}), "indexes")
+		for index in indexes.get("index", []):
+			children.append_array(index.get("artist", []).map(func(entry: Dictionary): return entry.merged({"isDir": true})))
+		children.append_array(indexes.get("child", []))
+	else:
+		children = _field(await _api("getMusicDirectory", {"id": folder_id}), "directory").get("child", [])
+	var folders: Array = children.filter(func(entry: Dictionary): return entry.get("isDir", false))
+	var songs: Array = children.filter(func(entry: Dictionary): return not entry.get("isDir", false))
+	return {
+		"folders": folders.map(func(entry: Dictionary): return {"id": str(entry.get("id", "")), "name": str(entry.get("name", entry.get("title", "")))}),
+		"tracks": songs.map(_song),
+	}
 
 func get_artist(artist_id: String) -> Dictionary:
 	var entry: = _field(await _api("getArtist", {"id": artist_id}), "artist")

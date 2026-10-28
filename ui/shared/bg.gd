@@ -239,6 +239,8 @@ func _layer_node(layer: Dictionary) -> Control:
 			var file := str(layer.get("file", ""))
 			rect.texture = Themes.texture_of(file) if layer["type"] == "image" else _cover
 			rect.texture_filter = Themes.filter_of(file)
+			if layer["type"] == "image":
+				Themes.watch(file, rect)
 			var dim := ColorRect.new()
 			rect.add_child(_filled(dim))
 			rect.set_meta("opacity", layer.get("opacity", 1.0))
