@@ -221,6 +221,7 @@ func _entries_of(category: String) -> Array:
 			general.append_array(_section("Interface", [
 				SettingItem.toggle("Nintendo button layout", "B confirms and A goes back, and X and Y trade places too", preload("res://assets/glyphs/XboxSeries/xbox_button_b.svg"), "general", "nintendo_layout"),
 				SettingItem.toggle("Swap button glyphs", "Shows A/B and X/Y swapped, for controllers with a Nintendo layout", preload("res://assets/glyphs/XboxSeries/xbox_button_a.svg"), "general", "swap_face_glyphs"),
+				SettingItem.toggle("Haptics", "Vibrates your controller or phone as you move around the app", preload("res://assets/icons/motion.svg"), "general", "haptics"),
 				_choice("Clock format", "How the time is shown in the top bar", preload("res://assets/icons/time.svg"), "general", "clock_format",
 					["24h", "12h"], {"24h": "24 hours", "12h": "12 hours"}),
 			]))
