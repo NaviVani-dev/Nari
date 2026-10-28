@@ -156,6 +156,10 @@ class GeneralSection extends Section:
 		set(value):
 			nintendo_layout = value
 			_store("nintendo_layout", value)
+	var haptics: = true:
+		set(value):
+			haptics = value
+			_store("haptics", value)
 	var clock_format: = "24h":
 		set(value):
 			clock_format = value
@@ -204,6 +208,7 @@ class GeneralSection extends Section:
 		avoid_notch = _fetch("avoid_notch", avoid_notch)
 		swap_face_glyphs = _fetch("swap_face_glyphs", swap_face_glyphs)
 		nintendo_layout = _fetch("nintendo_layout", nintendo_layout)
+		haptics = _fetch("haptics", haptics)
 		clock_format = _fetch("clock_format", clock_format)
 		window_mode = _fetch("window_mode", window_mode)
 		resolution = _fetch("resolution", resolution)

@@ -76,6 +76,7 @@ var _preload_again := false
 
 func _ready() -> void:
 	get_tree().node_added.connect(_on_node_added)
+	get_tree().root.gui_focus_changed.connect(_on_control_hovered)
 	get_tree().root.window_input.connect(func(_event: InputEvent): _last_input = Time.get_ticks_msec())
 	loading_held = not setup_done or SettingsManager.general.boot_intro
 	_had_song = not str(MediaPlayer.get_playback_state().get("current_id", "")).is_empty()
@@ -259,6 +260,29 @@ func trigger_shortcut(event: InputEvent) -> bool:
 func _on_node_added(node: Node) -> void:
 	if node is SmoothScrollContainer:
 		node.add_child.call_deferred(EdgeScrollbar.new(node), false, Node.INTERNAL_MODE_BACK)
+	if node is Control:
+		var hovered: = _on_control_hovered.bind(node)
+		if not node.mouse_entered.is_connected(hovered):
+			node.mouse_entered.connect(hovered)
+	elif node is Viewport and not node.gui_focus_changed.is_connected(_on_control_hovered):
+		node.gui_focus_changed.connect(_on_control_hovered)
+	if node.has_signal("selection_changed") and not node.selection_changed.is_connected(_on_selection_changed):
+		node.selection_changed.connect(_on_selection_changed)
+
+func _on_selection_changed(_index: int) -> void:
+	haptic()
+
+func _on_control_hovered(control: Control) -> void:
+	if control.focus_mode != Control.FOCUS_NONE:
+		haptic()
+
+func haptic(strength: float = 1.0) -> void:
+	if not SettingsManager.general.haptics:
+		return
+	strength = clampf(strength, 0.0, 1.0)
+	for device in Input.get_connected_joypads():
+		Input.start_joy_vibration(device, 0.6 * strength, 0.3 * strength, 0.1)
+	Input.vibrate_handheld(15, 0.3 * strength)
 
 func frame_edge(node: Node) -> Vector2:
 	for view in _containers:
