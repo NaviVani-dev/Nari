@@ -13,6 +13,7 @@ mkdir -p "$build_dir"
 cd "$build_dir"
 bash "$source_dir/configure" "$@" \
     --prefix="$prefix" --shlibdir="$prefix/bin" \
-    --toolchain=msvc --arch=aarch64 --target-os=win64 --disable-asm --enable-cross-compile
+    --toolchain=msvc --arch=aarch64 --target-os=win64 --disable-asm --enable-cross-compile \
+    --extra-cflags=-MD --extra-cxxflags=-MD
 make -j"$jobs"
 make install
