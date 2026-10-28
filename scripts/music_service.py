@@ -329,6 +329,8 @@ def build_windows_arm64_dav1d():
     reconfigure = ["--reconfigure"] if (build / "build.ninja").exists() else []
     run(*meson(), "setup", *reconfigure, build, dav1d_source(), *options, env=tools)
     run(tools["NINJA"], "-C", build, f"-j{JOBS}", "install", env=tools)
+    # dav1d deliberately uses the .a suffix even for MSVC COFF archives.
+    shutil.copy(prefix / "lib/libdav1d.a", prefix / "lib/dav1d.lib")
     return prefix
 
 
@@ -340,7 +342,7 @@ def build_windows_arm64_ffmpeg():
             fail(f"{tool} not found: install Rust and the MSVC ARM64 C++ tools, then open an ARM64 developer prompt")
     bash = os.environ.get("MSYS2_BASH")
     if not bash or not Path(bash).is_file():
-        fail("Set MSYS2_BASH to MSYS2's usr/bin/bash.exe (with make and diffutils installed)")
+        fail("Set MSYS2_BASH to MSYS2's usr/bin/bash.exe (with make, diffutils and pkgconf installed)")
     fetch_sources()
     dav1d = build_windows_arm64_dav1d()
     prefix = ffmpeg_prefix("windows-arm64")
