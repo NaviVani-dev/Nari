@@ -14,6 +14,7 @@ const DESKTOP_ASSETS := {
 	"Linux.x86_64": "Nari-linux-x64.zip",
 	"Linux.arm64": "Nari-linux-arm.zip",
 	"Windows": "Nari-windows.zip",
+	"Windows.arm64": "Nari-windows-arm64.zip",
 	"macOS": "Nari-macos.zip",
 }
 const APK_ASSET := "Nari.apk"
@@ -213,6 +214,8 @@ func _install_download(latest: Dictionary) -> void:
 	DevTools.restart()
 
 func _desktop_key() -> String:
+	if OS.get_name() == "Windows" and Engine.get_architecture_name() in ["arm64", "aarch64"]:
+		return "Windows.arm64"
 	if OS.get_name() == "Linux":
 		return "Linux.arm64" if Engine.get_architecture_name() in ["arm64", "aarch64"] else "Linux.x86_64"
 	return OS.get_name()

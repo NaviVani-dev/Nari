@@ -17,6 +17,9 @@ android.release.arm64 = "res://addons/MusicService/bin/android/arm64/libnari.so"
 android.debug.x86_64 = "res://addons/MusicService/bin/android/x86_64/libnari.so"
 android.release.x86_64 = "res://addons/MusicService/bin/android/x86_64/libnari.so"
 
+windows.debug.arm64 = "res://addons/MusicService/bin/windows/arm64/nari.dll"
+windows.release.arm64 = "res://addons/MusicService/bin/windows/arm64/nari.dll"
+
 [dependencies]
 macos.debug = {
 	"res://addons/MusicService/bin/macos/libavutil.60.dylib": "",
@@ -97,4 +100,20 @@ android.release.x86_64 = {
 	"res://addons/MusicService/bin/android/x86_64/libavcodec.so": "",
 	"res://addons/MusicService/bin/android/x86_64/libavformat.so": "",
 	"res://addons/MusicService/bin/android/x86_64/libswscale.so": "",
+}
+
+windows.debug.arm64 = {
+	"res://addons/MusicService/bin/windows/arm64/avutil-60.dll": "",
+	"res://addons/MusicService/bin/windows/arm64/avcodec-62.dll": "",
+	"res://addons/MusicService/bin/windows/arm64/avformat-62.dll": "",
+	"res://addons/MusicService/bin/windows/arm64/swscale-9.dll": "",
+	"res://addons/MusicService/bin/windows/arm64/WebView2Loader.dll": "",
+}
+
+windows.release.arm64 = {
+	"res://addons/MusicService/bin/windows/arm64/avutil-60.dll": "",
+	"res://addons/MusicService/bin/windows/arm64/avcodec-62.dll": "",
+	"res://addons/MusicService/bin/windows/arm64/avformat-62.dll": "",
+	"res://addons/MusicService/bin/windows/arm64/swscale-9.dll": "",
+	"res://addons/MusicService/bin/windows/arm64/WebView2Loader.dll": "",
 }
