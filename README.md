@@ -116,7 +116,6 @@ the GitHub Actions workflow, and the hardware validation checklist.
 
 ## Credits
 
-
 - [Sonora](https://github.com/sonorahq/sonora), a native music client whose work on lyrics and music providers helped
   Nari a lot. Go check it out!
 - [Godot Engine](https://godotengine.org), [godot-rust](https://godot-rust.github.io), [FFmpeg](https://ffmpeg.org)

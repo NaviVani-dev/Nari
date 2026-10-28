@@ -222,6 +222,10 @@ def build_windows_arm64():
     run(bash, ROOT / "scripts/windows_arm64_ffmpeg.sh", ffmpeg_source(),
         WORK / "ffmpeg/build-windows-arm64", prefix, str(JOBS), *FFMPEG_OPTIONS,
         env={"MSVC_BIN": str(Path(shutil.which("cl")).parent)})
+    # FFmpeg installs MSVC import libraries beside the DLLs; ffmpeg-sys searches lib/.
+    (prefix / "lib").mkdir(parents=True, exist_ok=True)
+    for lib in FFMPEG_LIBS:
+        shutil.copy(prefix / "bin" / f"{lib}.lib", prefix / "lib")
     cargo_build("--locked", "--target", WINDOWS_ARM64_TARGET, env={"FFMPEG_DIR": prefix})
     release = cargo_target_dir() / WINDOWS_ARM64_TARGET / "release"
     out = BIN / "windows" / "arm64"
