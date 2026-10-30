@@ -24,11 +24,13 @@ DESKTOP = {
     "linux": ("Linux (x64)", "Nari-linux-x64.zip", "Nari.zip"),
     "linux-arm64": ("Linux (arm64)", "Nari-linux-arm.zip", "Nari.zip"),
     "windows": ("Windows (x64)", "Nari-windows.zip", "Nari.exe"),
+    "windows-arm64": ("Windows (arm64)", "Nari-windows-arm64.zip", "Nari.exe"),
     "macos": ("macOS", "Nari-macos.zip", "Nari.zip"),
 }
 LINUX_ARCHITECTURES = {"linux": ("amd64", "x86_64"), "linux-arm64": ("arm64", "aarch64")}
 APPIMAGETOOL = "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-{}.AppImage"
-ALL = ["metadata", "plugins", *DESKTOP, "android", "aab", "ios", "pck"]
+# ARM64 Windows uses a separate MSVC environment; keep it opt-in.
+ALL = ["metadata", "plugins", *[target for target in DESKTOP if target != "windows-arm64"], "android", "aab", "ios", "pck"]
 FLATPAK_URL = "https://cdn.narimusic.com/flatpak/repo/"
 FLATHUB_REPO = "https://flathub.org/repo/flathub.flatpakrepo"
 FLATPAK_SKIP = [
@@ -50,10 +52,16 @@ def godot_export(preset, destination, debug=False, channel="github", options=Non
 
 
 def export_desktop(target, debug):
+    if target == "windows-arm64":
+        music_service.validate_windows_arm64()
     preset, archive, exported = DESKTOP[target]
     staging = BUILD / "staging" / target
     shutil.rmtree(staging, ignore_errors=True)
     godot_export(preset, staging / exported, debug)
+    if target == "windows-arm64":
+        music_service.validate_arm64_files([staging / exported, *staging.rglob("*.dll")])
+        for notice in ("FFMPEG-NOTICE.txt", "DAV1D-COPYING.txt"):
+            shutil.copy(music_service.BIN / notice, staging)
     (BUILD / archive).unlink(missing_ok=True)
     if exported.endswith(".zip"):
         shutil.move(staging / exported, BUILD / archive)
@@ -271,8 +279,8 @@ def build_flatpak():
 
 def main():
     parser = argparse.ArgumentParser(usage="build.py [target ...] [--debug]")
-    parser.add_argument("targets", nargs="*", choices=[*ALL, "test", "flatpak", "all"], metavar="target",
-                        help=f"{', '.join(ALL)}, test, flatpak or all (default)")
+    parser.add_argument("targets", nargs="*", choices=[*ALL, "windows-arm64", "plugins-windows-arm64", "test", "flatpak", "all"], metavar="target",
+                        help=f"{', '.join(ALL)}, windows-arm64, plugins-windows-arm64, test, flatpak or all (default)")
     parser.add_argument("--debug", action="store_true", help="export debug builds instead of release")
     args = parser.parse_args()
 
@@ -284,6 +292,8 @@ def main():
         elif target == "plugins":
             music_service.build()
             aynthor.build()
+        elif target == "plugins-windows-arm64":
+            music_service.build_windows_arm64()
         elif target == "test":
             music_service.test()
         elif target in DESKTOP:

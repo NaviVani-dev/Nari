@@ -3,6 +3,7 @@ import os
 import platform
 import re
 import shutil
+import struct
 import sys
 from pathlib import Path
 
@@ -34,6 +35,7 @@ IOS_SDK_SHA256 = "bed0f155d84e98ad8273b3bd57a0816ae5e772e1aa8539e6d79476221ce331
 IOS_TARGET = "aarch64-apple-ios"
 IOS_MINIMUM = "17.0"
 WINDOWS_TARGET = "x86_64-pc-windows-gnu"
+WINDOWS_ARM64_TARGET = "aarch64-pc-windows-msvc"
 ANDROID_API = 26
 LINUX_IMAGE = "music-service-linux-builder"
 MACOS_IMAGE = "nari-macos-builder"
@@ -288,6 +290,95 @@ def build_windows():
     shutil.copy(loaders[0], BIN / "windows")
     stage_ffmpeg("windows-x86_64", BIN / "windows")
     shutil.copy(winpthread_dll(), BIN / "windows")
+
+
+def validate_arm64_files(files):
+    """Reject missing, malformed, x64 and ARM64EC binaries before packaging."""
+    for path in files:
+        try:
+            with Path(path).open("rb") as binary:
+                if binary.read(2) != b"MZ":
+                    raise ValueError("missing DOS header")
+                binary.seek(0x3C)
+                offset, = struct.unpack("<I", binary.read(4))
+                binary.seek(offset)
+                if binary.read(4) != b"PE\0\0":
+                    raise ValueError("missing PE header")
+                machine, = struct.unpack("<H", binary.read(2))
+                if machine != 0xAA64:
+                    raise ValueError(f"machine 0x{machine:04X}, expected ARM64 (0xAA64)")
+        except (OSError, ValueError, struct.error) as error:
+            fail(f"{path}: {error}. Rebuild with `just build plugins-windows-arm64`.")
+
+
+def validate_windows_arm64():
+    out = BIN / "windows" / "arm64"
+    required = ["nari.dll", "WebView2Loader.dll", *[f"{lib}-{major}.dll" for lib, major in FFMPEG_LIBS.items()]]
+    validate_arm64_files([out / name for name in required])
+    validate_arm64_files(out.glob("*.dll"))
+
+
+def build_windows_arm64_dav1d():
+    prefix = WORK / "dav1d/windows-arm64"
+    build = WORK / "dav1d/build-windows-arm64"
+    info("Building dav1d (Windows ARM64 MSVC)")
+    options = [f"--prefix={prefix}", "--libdir=lib", "--buildtype=release", "--default-library=static",
+               "-Db_vscrt=md", "-Denable_tools=false", "-Denable_tests=false", "-Denable_examples=false",
+               "-Denable_asm=false", "--cross-file", ROOT / "scripts/windows_arm64_msvc.ini"]
+    tools = {"NINJA": ninja()}
+    reconfigure = ["--reconfigure"] if (build / "build.ninja").exists() else []
+    run(*meson(), "setup", *reconfigure, build, dav1d_source(), *options, env=tools)
+    run(tools["NINJA"], "-C", build, f"-j{JOBS}", "install", env=tools)
+    # dav1d deliberately uses the .a suffix even for MSVC COFF archives.
+    shutil.copy(prefix / "lib/libdav1d.a", prefix / "lib/dav1d.lib")
+    return prefix
+
+
+def build_windows_arm64_ffmpeg():
+    if platform.system() != "Windows":
+        fail("Windows ARM64 uses MSVC: run this target from a Windows ARM64 developer environment")
+    for tool in ("cargo", "cl", "link"):
+        if not shutil.which(tool):
+            fail(f"{tool} not found: install Rust and the MSVC ARM64 C++ tools, then open an ARM64 developer prompt")
+    bash = os.environ.get("MSYS2_BASH")
+    if not bash or not Path(bash).is_file():
+        fail("Set MSYS2_BASH to MSYS2's usr/bin/bash.exe (with make, diffutils and pkgconf installed)")
+    fetch_sources()
+    dav1d = build_windows_arm64_dav1d()
+    prefix = ffmpeg_prefix("windows-arm64")
+    # MSVC FFmpeg needs a POSIX shell; Cargo and cc-rs use the developer environment directly.
+    run(bash, ROOT / "scripts/windows_arm64_ffmpeg.sh", ffmpeg_source(),
+        WORK / "ffmpeg/build-windows-arm64", prefix, str(JOBS), dav1d,
+        *FFMPEG_OPTIONS, *WINDOWS_FFMPEG_OPTIONS,
+        "--enable-libdav1d", "--enable-decoder=libdav1d", "--pkg-config=pkg-config", "--pkg-config-flags=--static",
+        env={"MSVC_BIN": str(Path(shutil.which("cl")).parent)})
+    # FFmpeg installs MSVC import libraries beside the DLLs; ffmpeg-sys searches lib/.
+    (prefix / "lib").mkdir(parents=True, exist_ok=True)
+    for lib in FFMPEG_LIBS:
+        shutil.copy(prefix / "bin" / f"{lib}.lib", prefix / "lib")
+    return prefix
+
+
+def build_windows_arm64():
+    build_windows_arm64_ffmpeg()
+    build_windows_arm64_service()
+
+
+def build_windows_arm64_service():
+    prefix = ffmpeg_prefix("windows-arm64")
+    cargo_build("--locked", "--target", WINDOWS_ARM64_TARGET,
+                env={"FFMPEG_DIR": prefix, "OPENMPT_SOURCE": openmpt_source()})
+    release = cargo_target_dir() / WINDOWS_ARM64_TARGET / "release"
+    out = BIN / "windows" / "arm64"
+    out.mkdir(parents=True, exist_ok=True)
+    loaders = sorted(release.glob("build/webview2-com-sys-*/out/arm64/WebView2Loader.dll"),
+                     key=lambda path: path.stat().st_mtime, reverse=True)
+    if not loaders:
+        fail("ARM64 WebView2Loader.dll not found in the Cargo build output")
+    shutil.copy(release / "nari.dll", out)
+    shutil.copy(loaders[0], out)
+    stage_ffmpeg("windows-arm64", out)
+    validate_windows_arm64()
 
 
 def build_android():

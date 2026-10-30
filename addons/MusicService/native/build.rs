@@ -33,7 +33,9 @@ fn openmpt() {
             build.define(name, value);
         }
     }
-    if std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("windows") {
+    if std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("windows")
+        && std::env::var("CARGO_CFG_TARGET_ENV").as_deref() == Ok("gnu")
+    {
         cpp.cpp_link_stdlib(None);
         let output = cpp.get_compiler().to_command().arg("-print-file-name=libstdc++.a").output().expect("the C++ compiler can't be run");
         let archive = PathBuf::from(String::from_utf8_lossy(&output.stdout).trim());
