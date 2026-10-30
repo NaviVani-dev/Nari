@@ -289,7 +289,8 @@ def main():
         elif target in DESKTOP:
             export_desktop(target, args.debug)
         elif target == "android":
-            godot_export("Android", BUILD / "Nari.apk", args.debug, options={"permissions/custom_permissions": SIDELOAD_PERMISSIONS})
+            godot_export("Android", BUILD / "Nari.apk", args.debug, options={
+                "permissions/custom_permissions": SIDELOAD_PERMISSIONS, "architectures/x86_64": "false"})
         elif target == "aab":
             export_aab()
         elif target == "ios":

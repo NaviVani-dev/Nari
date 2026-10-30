@@ -242,7 +242,55 @@ mod platform {
     }
 }
 
-#[cfg(not(any(target_os = "linux", windows, target_os = "android", target_os = "macos")))]
+#[cfg(target_os = "ios")]
+mod platform {
+    use super::{Battery, Network, NO_BATTERY, OFFLINE};
+    use std::ffi::CStr;
+
+    pub fn battery() -> Battery {
+        NO_BATTERY
+    }
+
+    pub fn network() -> Network {
+        let mut list: *mut libc::ifaddrs = std::ptr::null_mut();
+        if unsafe { libc::getifaddrs(&mut list) } != 0 {
+            return OFFLINE;
+        }
+        let mut online = false;
+        let mut entry = list;
+        while let Some(current) = unsafe { entry.as_ref() } {
+            entry = current.ifa_next;
+            let flags = current.ifa_flags as libc::c_int;
+            if flags & libc::IFF_UP == 0 || flags & libc::IFF_RUNNING == 0 || flags & libc::IFF_LOOPBACK != 0 || !routable(current.ifa_addr) {
+                continue;
+            }
+            let name = unsafe { CStr::from_ptr(current.ifa_name) }.to_bytes();
+            online |= name.starts_with(b"en") || name.starts_with(b"pdp_ip");
+        }
+        unsafe { libc::freeifaddrs(list) };
+        if online { Network { connection: "wireless", level: 4 } } else { OFFLINE }
+    }
+
+    fn routable(address: *const libc::sockaddr) -> bool {
+        let Some(address) = (unsafe { address.as_ref() }) else {
+            return false;
+        };
+        match address.sa_family as libc::c_int {
+            libc::AF_INET => true,
+            libc::AF_INET6 => {
+                let octets = unsafe { (*(address as *const libc::sockaddr as *const libc::sockaddr_in6)).sin6_addr.s6_addr };
+                !(octets[0] == 0xfe && octets[1] & 0xc0 == 0x80)
+            }
+            _ => false,
+        }
+    }
+
+    pub fn reduce_motion() -> bool {
+        false
+    }
+}
+
+#[cfg(not(any(target_os = "linux", windows, target_os = "android", target_os = "macos", target_os = "ios")))]
 mod platform {
     use super::{Battery, Network, NO_BATTERY, OFFLINE};
 

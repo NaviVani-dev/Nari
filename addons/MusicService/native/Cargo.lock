@@ -2522,6 +2522,7 @@ dependencies = [
  "jni 0.21.1",
  "kakasi",
  "ksni",
+ "libc",
  "libloading 0.8.9",
  "lofty",
  "material-colors",

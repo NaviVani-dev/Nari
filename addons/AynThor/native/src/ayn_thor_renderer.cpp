@@ -1,6 +1,5 @@
 #include "ayn_thor_renderer.h"
 #include <godot_cpp/variant/utility_functions.hpp>
-#include <godot_cpp/classes/rd_texture_format.hpp>
 #include <godot_cpp/classes/time.hpp>
 #include <mutex>
 
@@ -15,6 +14,108 @@ extern std::mutex g_window_mutex;
 
 namespace godot {
 
+#ifdef __ANDROID__
+static const char* VERTEX_SHADER = R"(#version 300 es
+uniform int rotation;
+out vec2 uv;
+void main() {
+    vec2 corner = vec2(float(gl_VertexID & 1), float(gl_VertexID >> 1));
+    gl_Position = vec4(corner * 2.0 - 1.0, 0.0, 1.0);
+    vec2 screen = vec2(corner.x, 1.0 - corner.y);
+    if (rotation == 1) {
+        uv = vec2(screen.y, 1.0 - screen.x);
+    } else if (rotation == 2) {
+        uv = 1.0 - screen;
+    } else if (rotation == 3) {
+        uv = vec2(1.0 - screen.y, screen.x);
+    } else {
+        uv = screen;
+    }
+}
+)";
+
+static const char* FRAGMENT_SHADER = R"(#version 300 es
+precision mediump float;
+uniform sampler2D source;
+in vec2 uv;
+out vec4 color;
+void main() {
+    color = vec4(texture(source, uv).rgb, 1.0);
+}
+)";
+
+static const GLenum SAVED_CAPABILITIES[] = {GL_BLEND, GL_CULL_FACE, GL_DEPTH_TEST, GL_SCISSOR_TEST, GL_STENCIL_TEST, GL_RASTERIZER_DISCARD};
+static const int SAVED_CAPABILITY_COUNT = sizeof(SAVED_CAPABILITIES) / sizeof(SAVED_CAPABILITIES[0]);
+
+struct GLState {
+    EGLSurface draw_surface;
+    EGLSurface read_surface;
+    GLint program;
+    GLint vertex_array;
+    GLint active_texture;
+    GLint texture;
+    GLint sampler;
+    GLint draw_framebuffer;
+    GLint read_framebuffer;
+    GLint viewport[4];
+    GLboolean color_mask[4];
+    GLboolean capabilities[SAVED_CAPABILITY_COUNT];
+
+    void save() {
+        draw_surface = eglGetCurrentSurface(EGL_DRAW);
+        read_surface = eglGetCurrentSurface(EGL_READ);
+        glGetIntegerv(GL_CURRENT_PROGRAM, &program);
+        glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &vertex_array);
+        glGetIntegerv(GL_ACTIVE_TEXTURE, &active_texture);
+        glActiveTexture(GL_TEXTURE0);
+        glGetIntegerv(GL_TEXTURE_BINDING_2D, &texture);
+        glGetIntegerv(GL_SAMPLER_BINDING, &sampler);
+        glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &draw_framebuffer);
+        glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &read_framebuffer);
+        glGetIntegerv(GL_VIEWPORT, viewport);
+        glGetBooleanv(GL_COLOR_WRITEMASK, color_mask);
+        for (int i = 0; i < SAVED_CAPABILITY_COUNT; i++) {
+            capabilities[i] = glIsEnabled(SAVED_CAPABILITIES[i]);
+        }
+    }
+
+    void restore() {
+        for (int i = 0; i < SAVED_CAPABILITY_COUNT; i++) {
+            if (capabilities[i]) {
+                glEnable(SAVED_CAPABILITIES[i]);
+            } else {
+                glDisable(SAVED_CAPABILITIES[i]);
+            }
+        }
+        glColorMask(color_mask[0], color_mask[1], color_mask[2], color_mask[3]);
+        glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, draw_framebuffer);
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, read_framebuffer);
+        glBindSampler(0, sampler);
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glActiveTexture(active_texture);
+        glBindVertexArray(vertex_array);
+        glUseProgram(program);
+    }
+};
+
+static GLuint compile_shader(GLenum type, const char* source) {
+    GLuint shader = glCreateShader(type);
+    glShaderSource(shader, 1, &source, nullptr);
+    glCompileShader(shader);
+    GLint compiled = GL_FALSE;
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &compiled);
+    if (!compiled) {
+        char log[512] = {};
+        glGetShaderInfoLog(shader, sizeof(log), nullptr, log);
+        UtilityFunctions::printerr("AynThorPlugin: shader compilation failed: ", log);
+        glDeleteShader(shader);
+        return 0;
+    }
+    return shader;
+}
+#endif
+
 void AynThorRenderer::_bind_methods() {
     ClassDB::bind_method(D_METHOD("is_window_available"), &AynThorRenderer::is_window_available);
     ClassDB::bind_method(D_METHOD("draw_viewport_texture", "texture_rid"), &AynThorRenderer::draw_viewport_texture);
@@ -23,7 +124,7 @@ void AynThorRenderer::_bind_methods() {
 
     ClassDB::bind_method(D_METHOD("set_target_fps", "fps"), &AynThorRenderer::set_target_fps);
     ClassDB::bind_method(D_METHOD("get_target_fps"), &AynThorRenderer::get_target_fps);
-    
+
     ClassDB::bind_method(D_METHOD("set_rotation_degrees", "degrees"), &AynThorRenderer::set_rotation_degrees);
     ClassDB::bind_method(D_METHOD("get_rotation_degrees"), &AynThorRenderer::get_rotation_degrees);
 
@@ -34,7 +135,7 @@ void AynThorRenderer::_bind_methods() {
 AynThorRenderer::AynThorRenderer() {}
 
 AynThorRenderer::~AynThorRenderer() {
-    _cleanup_vulkan();
+    _cleanup_gl();
 }
 
 void AynThorRenderer::set_target_fps(int p_fps) { target_fps = p_fps; }
@@ -58,173 +159,110 @@ Vector2i AynThorRenderer::get_second_screen_size() {
     return Vector2i(0, 0);
 }
 
-void AynThorRenderer::_init_vulkan() {
+bool AynThorRenderer::_create_program() {
+#ifdef __ANDROID__
+    GLuint vertex = compile_shader(GL_VERTEX_SHADER, VERTEX_SHADER);
+    GLuint fragment = compile_shader(GL_FRAGMENT_SHADER, FRAGMENT_SHADER);
+    if (!vertex || !fragment) {
+        glDeleteShader(vertex);
+        glDeleteShader(fragment);
+        return false;
+    }
+
+    program = glCreateProgram();
+    glAttachShader(program, vertex);
+    glAttachShader(program, fragment);
+    glLinkProgram(program);
+    glDeleteShader(vertex);
+    glDeleteShader(fragment);
+
+    GLint linked = GL_FALSE;
+    glGetProgramiv(program, GL_LINK_STATUS, &linked);
+    if (!linked) {
+        char log[512] = {};
+        glGetProgramInfoLog(program, sizeof(log), nullptr, log);
+        UtilityFunctions::printerr("AynThorPlugin: shader link failed: ", log);
+        glDeleteProgram(program);
+        program = 0;
+        return false;
+    }
+
+    rotation_location = glGetUniformLocation(program, "rotation");
+    GLint previous_program = 0;
+    glGetIntegerv(GL_CURRENT_PROGRAM, &previous_program);
+    glUseProgram(program);
+    glUniform1i(glGetUniformLocation(program, "source"), 0);
+    glUseProgram(previous_program);
+
+    glGenVertexArrays(1, &vertex_array);
+    glGenSamplers(1, &sampler);
+    glSamplerParameteri(sampler, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glSamplerParameteri(sampler, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glSamplerParameteri(sampler, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glSamplerParameteri(sampler, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    return true;
+#else
+    return false;
+#endif
+}
+
+void AynThorRenderer::_init_gl() {
 #ifdef __ANDROID__
     if (initialized) return;
+
+    egl_display = eglGetCurrentDisplay();
+    egl_context = eglGetCurrentContext();
+    if (egl_display == EGL_NO_DISPLAY || egl_context == EGL_NO_CONTEXT) {
+        UtilityFunctions::printerr("AynThorPlugin: no current EGL context. The plugin requires the GL Compatibility renderer.");
+        return;
+    }
 
     g_window_mutex.lock();
     if (!g_second_window) {
         g_window_mutex.unlock();
         return;
     }
-    last_window = g_second_window;
+    window = g_second_window;
+    ANativeWindow_acquire(window);
+    last_window = window;
     g_window_mutex.unlock();
 
-    RenderingServer* rs = RenderingServer::get_singleton();
-    if (!rs) return;
-    RenderingDevice* rd = rs->get_rendering_device();
-    if (!rd) return;
-
-    vk_instance = (VkInstance)rd->get_driver_resource(RenderingDevice::DRIVER_RESOURCE_VULKAN_INSTANCE, RID(), 0);
-    vk_device = (VkDevice)rd->get_driver_resource(RenderingDevice::DRIVER_RESOURCE_VULKAN_DEVICE, RID(), 0);
-    vk_physical_device = (VkPhysicalDevice)rd->get_driver_resource(RenderingDevice::DRIVER_RESOURCE_VULKAN_PHYSICAL_DEVICE, RID(), 0);
-    vk_queue = (VkQueue)rd->get_driver_resource(RenderingDevice::DRIVER_RESOURCE_VULKAN_QUEUE, RID(), 0);
-    vk_queue_family_index = (uint32_t)rd->get_driver_resource(RenderingDevice::DRIVER_RESOURCE_VULKAN_QUEUE_FAMILY_INDEX, RID(), 0);
-
-    if (!vk_device || !vk_instance) {
-        UtilityFunctions::printerr("AynThorPlugin: Vulkan device or instance is null. Is OpenGL Compatibility mode active? Plugin requires Vulkan.");
+    EGLint config_id = 0;
+    eglQueryContext(egl_display, egl_context, EGL_CONFIG_ID, &config_id);
+    const EGLint config_attributes[] = {EGL_CONFIG_ID, config_id, EGL_NONE};
+    EGLConfig config = nullptr;
+    EGLint config_count = 0;
+    if (!eglChooseConfig(egl_display, config_attributes, &config, 1, &config_count) || config_count == 0) {
+        UtilityFunctions::printerr("AynThorPlugin: could not find the EGL config of Godot's context.");
+        _cleanup_gl();
         return;
     }
 
-    VkAndroidSurfaceCreateInfoKHR createInfo = {};
-    createInfo.sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR;
-    createInfo.window = (ANativeWindow*)last_window;
+    EGLint format = 0;
+    if (eglGetConfigAttrib(egl_display, config, EGL_NATIVE_VISUAL_ID, &format) && format) {
+        ANativeWindow_setBuffersGeometry(window, 0, 0, format);
+    }
 
-    VkResult res = vkCreateAndroidSurfaceKHR(vk_instance, &createInfo, nullptr, &surface);
-    if (res != VK_SUCCESS) {
+    surface = eglCreateWindowSurface(egl_display, config, window, nullptr);
+    if (surface == EGL_NO_SURFACE) {
+        UtilityFunctions::printerr("AynThorPlugin: eglCreateWindowSurface failed: ", (int64_t)eglGetError());
+        _cleanup_gl();
         return;
     }
 
-    VkCommandPoolCreateInfo poolInfo = {};
-    poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-    poolInfo.queueFamilyIndex = vk_queue_family_index;
-    poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-
-    if (vkCreateCommandPool(vk_device, &poolInfo, nullptr, &command_pool) != VK_SUCCESS) {
+    if (!_create_program()) {
+        _cleanup_gl();
         return;
     }
 
-    VkCommandBufferAllocateInfo allocInfo = {};
-    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    allocInfo.commandPool = command_pool;
-    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocInfo.commandBufferCount = 1;
-
-    vkAllocateCommandBuffers(vk_device, &allocInfo, &command_buffer);
-
-    VkSemaphoreCreateInfo semaphoreInfo = {};
-    semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-    VkFenceCreateInfo fenceInfo = {};
-    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-    fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
-    vkCreateSemaphore(vk_device, &semaphoreInfo, nullptr, &image_available_semaphore);
-    vkCreateSemaphore(vk_device, &semaphoreInfo, nullptr, &render_finished_semaphore);
-    vkCreateFence(vk_device, &fenceInfo, nullptr, &in_flight_fence);
-
-    _create_swapchain();
+    EGLSurface draw_surface = eglGetCurrentSurface(EGL_DRAW);
+    EGLSurface read_surface = eglGetCurrentSurface(EGL_READ);
+    if (eglMakeCurrent(egl_display, surface, surface, egl_context)) {
+        eglSwapInterval(egl_display, 0);
+        eglMakeCurrent(egl_display, draw_surface, read_surface, egl_context);
+    }
 
     initialized = true;
-#endif
-}
-
-void AynThorRenderer::_create_swapchain() {
-#ifdef __ANDROID__
-    if (!surface) return;
-
-    int32_t window_w = ANativeWindow_getWidth((ANativeWindow*)last_window);
-    int32_t window_h = ANativeWindow_getHeight((ANativeWindow*)last_window);
-
-    VkSurfaceCapabilitiesKHR capabilities;
-    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(vk_physical_device, surface, &capabilities);
-
-    uint32_t formatCount;
-    vkGetPhysicalDeviceSurfaceFormatsKHR(vk_physical_device, surface, &formatCount, nullptr);
-    std::vector<VkSurfaceFormatKHR> formats(formatCount);
-    if (formatCount > 0) {
-        vkGetPhysicalDeviceSurfaceFormatsKHR(vk_physical_device, surface, &formatCount, formats.data());
-    }
-
-    swapchain_image_format = VK_FORMAT_R8G8B8A8_UNORM;
-    VkColorSpaceKHR target_color_space = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
-    bool format_found = false;
-    for (const auto& format : formats) {
-        if (format.format == VK_FORMAT_R8G8B8A8_UNORM && format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
-            format_found = true;
-            break;
-        }
-    }
-    if (!format_found && formatCount > 0) {
-        swapchain_image_format = formats[0].format;
-        target_color_space = formats[0].colorSpace;
-    }
-
-    uint32_t presentModeCount;
-    vkGetPhysicalDeviceSurfacePresentModesKHR(vk_physical_device, surface, &presentModeCount, nullptr);
-    std::vector<VkPresentModeKHR> presentModes(presentModeCount);
-    if (presentModeCount > 0) {
-        vkGetPhysicalDeviceSurfacePresentModesKHR(vk_physical_device, surface, &presentModeCount, presentModes.data());
-    }
-
-    VkPresentModeKHR target_present_mode = VK_PRESENT_MODE_FIFO_KHR;
-    for (const auto& mode : presentModes) {
-        if (mode == VK_PRESENT_MODE_MAILBOX_KHR) {
-            target_present_mode = mode;
-            break;
-        }
-    }
-
-    VkSurfaceTransformFlagBitsKHR target_transform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
-    if (rotation_degrees == 90) target_transform = VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR;
-    else if (rotation_degrees == 180) target_transform = VK_SURFACE_TRANSFORM_ROTATE_180_BIT_KHR;
-    else if (rotation_degrees == 270) target_transform = VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR;
-
-    bool transform_supported = (capabilities.supportedTransforms & target_transform);
-
-    VkSwapchainCreateInfoKHR createInfo = {};
-    createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-    createInfo.surface = surface;
-    createInfo.minImageCount = capabilities.minImageCount + 1;
-    if (capabilities.maxImageCount > 0 && createInfo.minImageCount > capabilities.maxImageCount) {
-        createInfo.minImageCount = capabilities.maxImageCount;
-    }
-    createInfo.imageFormat = swapchain_image_format;
-    createInfo.imageColorSpace = target_color_space;
-    createInfo.imageArrayLayers = 1;
-    createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-    createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-    createInfo.presentMode = target_present_mode;
-    createInfo.clipped = VK_TRUE;
-    createInfo.oldSwapchain = VK_NULL_HANDLE;
-
-    if (transform_supported) {
-        createInfo.preTransform = target_transform;
-        if (rotation_degrees == 90 || rotation_degrees == 270) {
-            width = window_h;
-            height = window_w;
-        } else {
-            width = window_w;
-            height = window_h;
-        }
-    } else {
-        createInfo.preTransform = capabilities.currentTransform;
-        width = window_w;
-        height = window_h;
-    }
-
-    createInfo.imageExtent = {(uint32_t)width, (uint32_t)height};
-
-    VkResult res = vkCreateSwapchainKHR(vk_device, &createInfo, nullptr, &swapchain);
-    if (res != VK_SUCCESS) {
-        return;
-    }
-
-    uint32_t imageCount;
-    vkGetSwapchainImagesKHR(vk_device, swapchain, &imageCount, nullptr);
-    swapchain_images.resize(imageCount);
-    vkGetSwapchainImagesKHR(vk_device, swapchain, &imageCount, swapchain_images.data());
 #endif
 }
 
@@ -243,188 +281,82 @@ void AynThorRenderer::draw_viewport_texture(RID texture_rid) {
     g_window_mutex.unlock();
 
     if (!current_window) {
-        if (initialized) _cleanup_vulkan();
+        if (initialized) _cleanup_gl();
         return;
     }
 
-    if (initialized && current_window != last_window) {
-        _cleanup_vulkan();
+    if (initialized && (current_window != last_window || eglGetCurrentContext() != egl_context)) {
+        _cleanup_gl();
     }
 
     if (!initialized) {
-        _init_vulkan();
+        _init_gl();
         if (!initialized) return;
     }
 
-    vkWaitForFences(vk_device, 1, &in_flight_fence, VK_TRUE, UINT64_MAX);
+    GLuint source_texture = (GLuint)RenderingServer::get_singleton()->texture_get_native_handle(texture_rid);
+    if (!source_texture) return;
 
-    RenderingServer* rs = RenderingServer::get_singleton();
-    RenderingDevice* rd = rs->get_rendering_device();
-    RID rd_texture_rid = rs->texture_get_rd_texture(texture_rid);
+    GLState state;
+    state.save();
 
-    if (!rd_texture_rid.is_valid()) return;
-
-    VkImage source_image = (VkImage)rd->get_driver_resource(RenderingDevice::DRIVER_RESOURCE_VULKAN_IMAGE, rd_texture_rid, 0);
-    if (!source_image) return;
-
-    uint32_t imageIndex;
-    VkResult res = vkAcquireNextImageKHR(vk_device, swapchain, UINT64_MAX, image_available_semaphore, VK_NULL_HANDLE, &imageIndex);
-
-    if (res == VK_ERROR_OUT_OF_DATE_KHR || res == VK_ERROR_SURFACE_LOST_KHR) {
-        _cleanup_vulkan();
-        return;
-    } else if (res != VK_SUCCESS && res != VK_SUBOPTIMAL_KHR) {
+    if (!eglMakeCurrent(egl_display, surface, surface, egl_context)) {
+        state.restore();
+        _cleanup_gl();
         return;
     }
 
-    vkResetFences(vk_device, 1, &in_flight_fence);
-    vkResetCommandBuffer(command_buffer, 0);
-    
-    VkCommandBufferBeginInfo beginInfo = {};
-    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    vkBeginCommandBuffer(command_buffer, &beginInfo);
+    EGLint width = 0;
+    EGLint height = 0;
+    eglQuerySurface(egl_display, surface, EGL_WIDTH, &width);
+    eglQuerySurface(egl_display, surface, EGL_HEIGHT, &height);
 
-    VkImageMemoryBarrier barrier_dst = {};
-    barrier_dst.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    barrier_dst.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    barrier_dst.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-    barrier_dst.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier_dst.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier_dst.image = swapchain_images[imageIndex];
-    barrier_dst.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    barrier_dst.subresourceRange.levelCount = 1;
-    barrier_dst.subresourceRange.layerCount = 1;
-    barrier_dst.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-
-    VkImageMemoryBarrier barrier_src = {};
-    barrier_src.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    barrier_src.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    barrier_src.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-    barrier_src.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier_src.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier_src.image = source_image;
-    barrier_src.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    barrier_src.subresourceRange.levelCount = 1;
-    barrier_src.subresourceRange.layerCount = 1;
-    barrier_src.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    barrier_src.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-
-    Ref<RDTextureFormat> texture_format = rd->texture_get_format(rd_texture_rid);
-    if (texture_format.is_null()) return;
-
-    int32_t src_w = (int32_t)texture_format->get_width();
-    int32_t src_h = (int32_t)texture_format->get_height();
-    if (src_w <= 0 || src_h <= 0) return;
-
-    vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier_dst);
-    vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier_src);
-
-    VkImageBlit blit = {};
-    blit.srcOffsets[0] = {src_w, src_h, 0};
-    blit.srcOffsets[1] = {0, 0, 1};
-    blit.dstOffsets[0] = {0, 0, 0};
-    blit.dstOffsets[1] = {(int32_t)width, (int32_t)height, 1};
-    blit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    blit.srcSubresource.layerCount = 1;
-    blit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    blit.dstSubresource.layerCount = 1;
-
-    vkCmdBlitImage(command_buffer, source_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, swapchain_images[imageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit, VK_FILTER_LINEAR);
-
-    VkImageMemoryBarrier barrier_present = {};
-    barrier_present.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    barrier_present.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-    barrier_present.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-    barrier_present.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier_present.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier_present.image = swapchain_images[imageIndex];
-    barrier_present.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    barrier_present.subresourceRange.levelCount = 1;
-    barrier_present.subresourceRange.layerCount = 1;
-    barrier_present.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-
-    VkImageMemoryBarrier barrier_restore = {};
-    barrier_restore.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    barrier_restore.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-    barrier_restore.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    barrier_restore.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier_restore.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier_restore.image = source_image;
-    barrier_restore.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    barrier_restore.subresourceRange.levelCount = 1;
-    barrier_restore.subresourceRange.layerCount = 1;
-    barrier_restore.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-    barrier_restore.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-
-    vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier_present);
-    vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier_restore);
-
-    vkEndCommandBuffer(command_buffer);
-
-    VkSemaphore waitSemaphores[] = {image_available_semaphore};
-    VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-    VkSemaphore signalSemaphores[] = {render_finished_semaphore};
-
-    VkSubmitInfo submitInfo = {};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfo.waitSemaphoreCount = 1;
-    submitInfo.pWaitSemaphores = waitSemaphores;
-    submitInfo.pWaitDstStageMask = waitStages;
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &command_buffer;
-    submitInfo.signalSemaphoreCount = 1;
-    submitInfo.pSignalSemaphores = signalSemaphores;
-
-    if (vkQueueSubmit(vk_queue, 1, &submitInfo, in_flight_fence) != VK_SUCCESS) {
-        return;
+    for (int i = 0; i < SAVED_CAPABILITY_COUNT; i++) {
+        glDisable(SAVED_CAPABILITIES[i]);
     }
+    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glViewport(0, 0, width, height);
+    glUseProgram(program);
+    glUniform1i(rotation_location, (((180 - rotation_degrees) / 90) % 4 + 4) % 4);
+    glBindVertexArray(vertex_array);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, source_texture);
+    glBindSampler(0, sampler);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-    VkPresentInfoKHR presentInfo = {};
-    presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-    presentInfo.waitSemaphoreCount = 1;
-    presentInfo.pWaitSemaphores = signalSemaphores;
-    presentInfo.swapchainCount = 1;
-    presentInfo.pSwapchains = &swapchain;
-    presentInfo.pImageIndices = &imageIndex;
+    bool lost = !eglSwapBuffers(egl_display, surface);
 
-    res = vkQueuePresentKHR(vk_queue, &presentInfo);
-    if (res == VK_ERROR_OUT_OF_DATE_KHR || res == VK_ERROR_SURFACE_LOST_KHR) {
-        _cleanup_vulkan();
+    eglMakeCurrent(egl_display, state.draw_surface, state.read_surface, egl_context);
+    state.restore();
+
+    if (lost) {
+        _cleanup_gl();
     }
 #endif
 }
 
-void AynThorRenderer::_cleanup_vulkan() {
+void AynThorRenderer::_cleanup_gl() {
 #ifdef __ANDROID__
-    if (initialized && vk_device) {
-        vkDeviceWaitIdle(vk_device);
-        if (image_available_semaphore) {
-            vkDestroySemaphore(vk_device, image_available_semaphore, nullptr);
-            image_available_semaphore = VK_NULL_HANDLE;
-        }
-        if (render_finished_semaphore) {
-            vkDestroySemaphore(vk_device, render_finished_semaphore, nullptr);
-            render_finished_semaphore = VK_NULL_HANDLE;
-        }
-        if (in_flight_fence) {
-            vkDestroyFence(vk_device, in_flight_fence, nullptr);
-            in_flight_fence = VK_NULL_HANDLE;
-        }
-        if (swapchain) {
-            vkDestroySwapchainKHR(vk_device, swapchain, nullptr);
-            swapchain = VK_NULL_HANDLE;
-        }
-        swapchain_images.clear();
-        if (surface) {
-            vkDestroySurfaceKHR(vk_instance, surface, nullptr);
-            surface = VK_NULL_HANDLE;
-        }
-        if (command_pool) {
-            vkDestroyCommandPool(vk_device, command_pool, nullptr);
-            command_pool = VK_NULL_HANDLE;
-        }
-        command_buffer = VK_NULL_HANDLE;
+    if (egl_context != EGL_NO_CONTEXT && eglGetCurrentContext() == egl_context) {
+        if (program) glDeleteProgram(program);
+        if (vertex_array) glDeleteVertexArrays(1, &vertex_array);
+        if (sampler) glDeleteSamplers(1, &sampler);
     }
+    program = 0;
+    vertex_array = 0;
+    sampler = 0;
+    rotation_location = -1;
+    if (surface != EGL_NO_SURFACE) {
+        eglDestroySurface(egl_display, surface);
+        surface = EGL_NO_SURFACE;
+    }
+    if (window) {
+        ANativeWindow_release(window);
+        window = nullptr;
+    }
+    egl_display = EGL_NO_DISPLAY;
+    egl_context = EGL_NO_CONTEXT;
     last_window = nullptr;
 #endif
     initialized = false;

@@ -133,20 +133,28 @@ mod platform {
     }
 
     #[cfg(target_os = "ios")]
+    const RESUME_STEP_MS: u64 = 5000;
+
+    #[cfg(target_os = "ios")]
     fn watch(player: Weak<Mutex<Player>>) {
         std::thread::spawn(move || {
             let now_playing = NowPlaying::new(player.clone());
             let mut shown = Media::default();
+            let mut saved = (String::new(), 0);
             while let Some(current) = player.upgrade() {
-                let media = {
+                let (media, id, position) = {
                     let mut player = current.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
                     player.tick();
-                    player.media()
+                    (player.media(), player.current_id(), player.position())
                 };
                 drop(current);
                 if media != shown {
                     shown = media.clone();
                     now_playing.update(media);
+                }
+                if !id.is_empty() && crate::ios::backgrounded() && (id != saved.0 || position.abs_diff(saved.1) >= RESUME_STEP_MS) {
+                    crate::ios::remember(&id, position);
+                    saved = (id, position);
                 }
                 std::thread::sleep(std::time::Duration::from_millis(250));
             }

@@ -67,7 +67,8 @@ signal context_requested
 	"Black:900"
 ) var font_weight: int = 400:
 	set(v):
-		font_weight = v
+		if v > 0:
+			font_weight = v
 		_update_label()
 @export var font_size: int = 26:
 	set(v):

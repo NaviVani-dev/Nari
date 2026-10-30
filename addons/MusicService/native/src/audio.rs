@@ -223,6 +223,7 @@ impl Engine {
                     cpal::SampleFormat::U16 => build_stream::<u16>(&device, config, shared.clone()),
                     _ => build_stream::<f32>(&device, config, shared.clone()),
                 }?;
+                #[cfg(not(target_os = "ios"))]
                 stream.play().ok()?;
                 Output::Device(stream)
             }
@@ -288,6 +289,10 @@ impl Engine {
 
     pub fn set_playing(&self, playing: bool) {
         self.shared.playing.store(playing, Ordering::Relaxed);
+        #[cfg(target_os = "ios")]
+        if let Output::Device(stream) = &self.output {
+            let _ = if playing { stream.play() } else { stream.pause() };
+        }
     }
 
     pub fn set_volume(&self, volume: f32) {

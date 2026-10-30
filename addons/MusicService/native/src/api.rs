@@ -59,6 +59,8 @@ impl IObject for MusicService {
         let music = PathBuf::new();
         crate::vault::init(root.clone());
         crate::history::init(root.clone());
+        #[cfg(target_os = "ios")]
+        crate::ios::track_resume(root.join("resume.json"));
         crate::analysis::init(root.clone());
         let library = Library::new(root.join("library"), music, bus.sender());
         let playlists = Arc::new(Playlists::new(&root));
@@ -1417,6 +1419,8 @@ impl INode for ServiceTicker {
     }
 
     fn process(&mut self, _delta: f64) {
+        #[cfg(target_os = "ios")]
+        crate::ios::frame();
         let mut service = MusicService::singleton();
         service.bind_mut().tick();
         service.bind_mut().pump();

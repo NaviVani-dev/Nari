@@ -15,7 +15,8 @@ class_name NariLabel extends Label
 		_restyle()
 @export_range(100,900,100,"prefer_slider") var weight:int = 500:
 	set(val):
-		weight = val
+		if val > 0:
+			weight = val
 		_restyle()
 @export var font_size: int = 18:
 	set(val):
