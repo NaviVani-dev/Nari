@@ -1,5 +1,7 @@
 class_name ThemeResource extends Resource
 
+@export var paints: Dictionary = {}
+
 @export var background: Color = Color("ffffff")
 @export var foreground: Color = Color("112853")
 @export var background_gradient:Color = Color("CECECE")

@@ -20,7 +20,7 @@ const AXIS_STRETCH: = {"stretch": StyleBoxTexture.AXIS_STRETCH_MODE_STRETCH, "ti
 const FILTERS: = {"nearest": CanvasItem.TEXTURE_FILTER_NEAREST, "linear": CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS}
 const ADAPT_MODES: = ["allow", "off", "force"]
 const GLYPH: = preload("res://assets/icons/theme.svg")
-const LOOK_KEYS: = ["styles", "shape", "font", "font_pixelated", "font_shadow", "mode", "adapt", "icons_colored", "filters", "icons", "glyphs", "shaders"]
+const LOOK_KEYS: = ["styles", "shape", "font", "font_pixelated", "font_shadow", "text", "mode", "adapt", "icons_colored", "filters", "icons", "glyphs", "shaders"]
 const IMAGE_EXTENSIONS: = ["png", "jpg", "jpeg", "webp"]
 const LAYER_TYPES: = ["color", "blobs", "tint", "triangles", "dots", "image", "cover", "shader"]
 const DEFAULT_LAYERS: = [{"type": "color"}, {"type": "blobs"}, {"type": "tint"}, {"type": "triangles"}, {"type": "dots"}]
@@ -43,6 +43,7 @@ var layers: Array[Dictionary] = []
 var overlays: Array[Dictionary] = []
 var glyphs: = {}
 var styles: = {}
+var _text_styles: = {}
 var _samplers: = {}
 var _shaders: = {}
 var _textures: = {}
@@ -57,6 +58,7 @@ var _players: = {}
 var _script: NariPlugin
 var _script_theme: = ""
 var _script_overrides: = {}
+var _script_extras: = {}
 var _script_settings: Array[Dictionary] = []
 var _script_starting: = false
 var _booted: = false
@@ -245,7 +247,8 @@ func _paint(animate: bool) -> void :
 	ThemeEngine.shape_radius = float(shape.get("radius", 1.0))
 	ThemeEngine.shape_blur = float(shape.get("gradient_blur", 1.0))
 	ThemeEngine.font_shadow = clampf(float(active.get("font_shadow", 0.0)), 0.0, 0.5)
-	ThemeEngine.set_fonts(_fonts())
+	_text_styles = {}
+	ThemeEngine.set_fonts(_fonts_of(active.get("font", {}), bool(active.get("font_pixelated", false))))
 	ThemeEngine.set_base(theme_of(active), animate)
 	var input_glyphs: Node = get_node_or_null("/root/InputGlyphs")
 	if input_glyphs:
@@ -401,7 +404,7 @@ func _resolve(manifest: Dictionary) -> Dictionary:
 		if on_page is Dictionary:
 			resolved = _merge(resolved, on_page)
 	if not id.is_empty() and id == _script_theme:
-		resolved = _merge(resolved, _script_overrides)
+		resolved = _merge(_merge(resolved, _script_overrides), _script_extras)
 	return resolved
 
 static func _merge(base: Dictionary, overrides: Dictionary) -> Dictionary:
@@ -527,15 +530,32 @@ func uniform_value(value: Variant) -> Variant:
 			return Color.html(text)
 	return value
 
+func paint_value(value: Variant, fallback: Color) -> Paint:
+	var field: Variant = ThemeEngine.COLOR_FIELDS.find_key(value) if value is String else null
+	return ThemeEngine.get_paint(field) if field != null else Paint.parse(uniform_value(value), fallback)
+
 static func theme_of(manifest: Dictionary) -> ThemeResource:
 	var source: String = BUILTIN.get(str(manifest.get("id", "")), {}).get("resource", ThemeEngine.DEFAULT_THEME)
 	var theme: ThemeResource = (load(source) as ThemeResource).duplicate()
 	var colors: = _dict(manifest, "colors")
-	for field: String in ThemeEngine.COLOR_FIELDS.values():
-		var value: = str(colors.get(field, ""))
-		if Color.html_is_valid(value):
-			theme.set(field, Color.html(value))
+	theme.paints = {}
+	for key: Variant in colors:
+		var field: = color_field(str(key))
+		var value: Variant = colors[key]
+		if not field in ThemeEngine.COLOR_FIELDS.values():
+			continue
+		if value is Array or value is Dictionary:
+			var paint: = Paint.parse(value, theme.get(field))
+			theme.set(field, paint.color)
+			if not paint.is_solid():
+				theme.paints[field] = paint
+		elif Color.html_is_valid(str(value)):
+			theme.set(field, Color.html(str(value)))
 	return theme
+
+static func color_field(name: String) -> String:
+	var fields: = ThemeEngine.COLOR_FIELDS.values()
+	return name + "_bg" if not fields.has(name) and fields.has(name + "_bg") else name
 
 static func _dict(source: Variant, key: String) -> Dictionary:
 	var value: Variant = source.get(key, {}) if source is Dictionary else {}
@@ -585,6 +605,7 @@ func _stop_script() -> void :
 	_script = null
 	_script_theme = ""
 	_script_overrides = {}
+	_script_extras = {}
 	_script_settings = []
 
 func _on_script_failed(entry: Dictionary) -> void :
@@ -594,6 +615,22 @@ func _on_script_failed(entry: Dictionary) -> void :
 
 func script_apply(overrides: Dictionary) -> void :
 	_script_overrides = overrides
+	if not _script_starting:
+		_repaint()
+
+func script_color(name: String, value: Variant) -> void :
+	_script_extra("colors", color_field(name), value)
+
+func script_text(scope: String, style: Variant) -> void :
+	_script_extra("text", scope if not scope.is_empty() else TextStyle.DEFAULT_SCOPE, style if style is Dictionary else null)
+
+func _script_extra(section: String, key: String, value: Variant) -> void :
+	var listed: Dictionary = _script_extras.get(section, {})
+	if value == null:
+		listed.erase(key)
+	else:
+		listed[key] = value
+	_script_extras[section] = listed
 	if not _script_starting:
 		_repaint()
 
@@ -729,8 +766,76 @@ static func _sides(value: Variant) -> PackedFloat32Array:
 		sides.fill(float(value))
 	return sides
 
-func _fonts() -> Dictionary:
-	var listed: Variant = active.get("font", {})
+func text_style(scope: String) -> Dictionary:
+	if _text_styles.has(scope):
+		return _text_styles[scope]
+	var listed: = _dict(active, "text")
+	var raw: = _dict(listed, TextStyle.DEFAULT_SCOPE)
+	if scope != TextStyle.DEFAULT_SCOPE:
+		raw = _merge(raw, _dict(listed, scope))
+	var style: = _text_of(raw)
+	_text_styles[scope] = style
+	return style
+
+func _text_of(raw: Dictionary) -> Dictionary:
+	var style: = {}
+	if raw.is_empty():
+		return style
+	for key in ["size", "embolden"]:
+		if raw.has(key):
+			style[key] = float(raw[key])
+	for key in ["weight", "line_spacing", "spacing", "space_spacing"]:
+		if raw.has(key):
+			style[key] = int(raw[key])
+	for key in ["bold", "uppercase"]:
+		if raw.has(key):
+			style[key] = bool(raw[key])
+	if raw.has("italic"):
+		style["italic"] = 0.2 if raw["italic"] is bool and raw["italic"] else float(raw["italic"])
+	if raw.has("color"):
+		style["color"] = Paint.parse(raw["color"])
+	var outline: Variant = raw.get("outline")
+	if outline is int or outline is float:
+		outline = {"size": outline}
+	if outline is Dictionary:
+		style["outline_size"] = int(outline.get("size", 2))
+		style["outline"] = Paint.parse(outline.get("color", "#000000"), Color.BLACK)
+	var shadow: Variant = raw.get("shadow")
+	if shadow is String or shadow is Array:
+		shadow = {"color": shadow}
+	if shadow is Dictionary:
+		style["shadow"] = Paint.parse(shadow.get("color", "#00000080"), Color(0.0, 0.0, 0.0, 0.5))
+		style["shadow_offset"] = Vector2(float(shadow.get("x", 2.0)), float(shadow.get("y", 2.0)))
+		style["shadow_blur"] = int(shadow.get("blur", 0))
+	var fonts: = _fonts_of(raw.get("font", {}), bool(raw.get("pixelated", false)))
+	if not fonts.is_empty():
+		style["fonts"] = fonts
+	style["variations"] = {}
+	return style
+
+func text_font(style: Dictionary, weight: int) -> Font:
+	var shared: FontVariation = ThemeEngine.font_weights.get(weight)
+	if not ["fonts", "spacing", "space_spacing", "italic", "embolden"].any(func(key: String): return style.has(key)):
+		return shared
+	var cache: Dictionary = style["variations"]
+	if cache.has(weight):
+		return cache[weight]
+	var variation: = FontVariation.new()
+	var fonts: Dictionary = style.get("fonts", {})
+	if fonts.is_empty():
+		variation.base_font = shared
+	else:
+		for font: Font in fonts.values():
+			font.fallbacks = [ThemeDB.fallback_font]
+		ThemeEngine.vary(variation, fonts, weight)
+	variation.spacing_glyph = int(style.get("spacing", 0))
+	variation.spacing_space = int(style.get("space_spacing", 0))
+	variation.variation_embolden += float(style.get("embolden", 0.0))
+	variation.variation_transform = Transform2D(Vector2(1.0, 0.0), Vector2(float(style.get("italic", 0.0)), 1.0), Vector2.ZERO)
+	cache[weight] = variation
+	return variation
+
+func _fonts_of(listed: Variant, pixelated: bool) -> Dictionary:
 	var files: Dictionary = {}
 	if listed is Dictionary:
 		files = listed
@@ -743,7 +848,7 @@ func _fonts() -> Dictionary:
 		if not str(weight).is_valid_int() or font.load_dynamic_font(str(active["path"]).path_join(file)) != OK:
 			_l.warn("The theme font '%s' could not be loaded" % file)
 			continue
-		if bool(active.get("font_pixelated", false)):
+		if pixelated:
 			font.antialiasing = TextServer.FONT_ANTIALIASING_NONE
 			font.hinting = TextServer.HINTING_NONE
 			font.subpixel_positioning = TextServer.SUBPIXEL_POSITIONING_DISABLED

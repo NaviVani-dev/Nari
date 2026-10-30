@@ -75,6 +75,34 @@ if plugin:is_theme() then
 		setting = function(key) return plugin:theme_setting(key) end,
 		page = function() return plugin:theme_page() end,
 	}
+	function nari.theme.color(name, value)
+		if type(name) == "table" then
+			for key, color in pairs(name) do
+				plugin:theme_color(key, color)
+			end
+			return
+		end
+		plugin:theme_color(name, value)
+	end
+	function nari.theme.text(scope, style)
+		if type(scope) == "table" then
+			scope, style = "default", scope
+		end
+		plugin:theme_text(scope or "default", style and Dictionary(style))
+	end
+	function nari.theme.gradient(colors, options)
+		local list = {}
+		for index, color in ipairs(colors) do
+			list[index] = color
+		end
+		if options then
+			list[#list + 1] = Dictionary(options)
+		end
+		return list
+	end
+	function nari.theme.rainbow(options)
+		return nari.theme.gradient({ "#ff3b3b", "#ff9f1a", "#ffe11a", "#3ddc5a", "#1ab8ff", "#7a5cff", "#ff3bd4", "#ff3b3b" }, options)
+	end
 end
 
 function nari.is_ready()

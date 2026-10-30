@@ -115,7 +115,7 @@ func _process(delta: float) -> void :
 	var progress: = clampf(_elapsed / _duration, 0.0, 1.0)
 	var eased: = smoothstep(0.0, 1.0, progress)
 	for key in _target:
-		_palette[key] = (_from[key] as Color).lerp(_target[key], eased)
+		_palette[key] = (_from[key] as Paint).lerp(_target[key], eased)
 	_emitted += delta
 	if progress >= 1.0 or _emitted >= 1.0 / TRANSITION_FPS:
 		_emitted = 0.0
@@ -170,18 +170,20 @@ func set_fonts(fonts: Dictionary) -> void :
 	var project: = ThemeDB.get_project_theme()
 	if project == null:
 		return
-	var wght: = TextServerManager.get_primary_interface().name_to_tag("wght")
 	for font: Font in fonts.values():
 		font.fallbacks = [ThemeDB.fallback_font]
 	project.default_font = fonts.get(_nearest_weight(fonts, 400))
 	for weight: int in font_weights:
-		var variation: FontVariation = font_weights[weight]
-		var own: = _nearest_weight(fonts, weight)
-		var base: Font = fonts.get(own)
-		var axis: = (base if base else ThemeDB.fallback_font).get_supported_variation_list().has(wght)
-		variation.base_font = base
-		variation.variation_opentype = {wght: weight} if axis else {}
-		variation.variation_embolden = 0.0 if axis else clampf((weight - own) / 500.0, -0.6, 1.0)
+		vary(font_weights[weight], fonts, weight)
+
+static func vary(variation: FontVariation, fonts: Dictionary, weight: int) -> void:
+	var wght: = TextServerManager.get_primary_interface().name_to_tag("wght")
+	var own: = _nearest_weight(fonts, weight)
+	var base: Font = fonts.get(own)
+	var axis: = (base if base else ThemeDB.fallback_font).get_supported_variation_list().has(wght)
+	variation.base_font = base
+	variation.variation_opentype = {wght: weight} if axis else {}
+	variation.variation_embolden = 0.0 if axis else clampf((weight - own) / 500.0, -0.6, 1.0)
 
 static func _nearest_weight(fonts: Dictionary, weight: int) -> int:
 	var best: = 400
@@ -284,16 +286,24 @@ func _paint_scrollbars() -> void :
 		(project.get_stylebox("grabber", kind) as StyleBoxFlat).bg_color = get_color(Colors.Foreground)
 
 func get_color(color: Colors) -> Color:
-	return _palette.get(color, Color("676767"))
+	return get_paint(color).color
+
+func get_paint(color: Colors) -> Paint:
+	var paint: Paint = _palette.get(color)
+	return paint if paint else Paint.solid(Color("676767"))
 
 func resolve(use_custom: bool, custom: Color, color: Colors) -> Color:
 	return custom if use_custom else get_color(color)
 
+func resolve_paint(use_custom: bool, custom: Color, color: Colors) -> Paint:
+	return Paint.solid(custom) if use_custom else get_paint(color)
+
 func _palette_of(theme: ThemeResource) -> Dictionary:
 	var palette: = {}
 	for color in COLOR_FIELDS:
-		palette[color] = theme.get(COLOR_FIELDS[color])
-	palette[Colors.Transparent] = Color(0.0, 0.0, 0.0, 0.0)
+		var field: String = COLOR_FIELDS[color]
+		palette[color] = Paint.parse(theme.paints[field], theme.get(field)) if theme.paints.has(field) else Paint.solid(theme.get(field))
+	palette[Colors.Transparent] = Paint.solid(Color(0.0, 0.0, 0.0, 0.0))
 	return palette
 
 func _refresh_song_theme() -> void :

@@ -174,10 +174,10 @@ func change_page(page: Pages, data: Dictionary = {}, keep_history: bool = true, 
 		_slide_out(leaving)
 	shortcuts = []
 	instance.remove_child(instance.top)
-	_mount(instance.top, _top_view)
+	_mount(instance.top, _top_view, page)
 	if instance.bottom and dual:
 		instance.remove_child(instance.bottom)
-		_mount(instance.bottom, _bottom_view)
+		_mount(instance.bottom, _bottom_view, page)
 	elif instance.bottom:
 		instance.bottom.free()
 		instance.bottom = null
@@ -572,10 +572,11 @@ func _viewport_of(view: Node) -> Viewport:
 func _view_height(view: Node) -> float:
 	return _viewport_of(view).get_visible_rect().size.y
 
-func _mount(control: Control, view: Node) -> void:
+func _mount(control: Control, view: Node, page: Pages) -> void:
 	control.owner = null
 	var holder := Control.new()
 	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	holder.set_meta(&"theme_page", str(PAGE_SCENES[page]).to_lower())
 	_containers[view].add_child(holder)
 	holder.add_child(control)
 	control.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)

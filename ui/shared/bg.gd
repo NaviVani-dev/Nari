@@ -189,6 +189,8 @@ func _layer_node(layer: Dictionary) -> Control:
 	match str(layer["type"]):
 		"color":
 			var rect := ColorRect.new()
+			if layer.has("color"):
+				rect.set_meta("paint", layer["color"])
 			_colors.append(rect)
 			return _filled(rect)
 		"tint":
@@ -522,12 +524,12 @@ func _update_appearance() -> void:
 	if not is_node_ready():
 		return
 	var background := ThemeEngine.get_color(ThemeEngine.Colors.Background)
-	var tint := ThemeEngine.get_color(ThemeEngine.Colors.BackgroundTint)
 	_palette = _theme_palette()
 	for rect in _colors:
-		rect.color = background
+		rect.color = Color.WHITE
+		Paint.tint(rect, Themes.paint_value(rect.get_meta("paint"), background) if rect.has_meta("paint") else ThemeEngine.get_paint(ThemeEngine.Colors.Background))
 	for rect in _tints:
-		rect.self_modulate = Color(tint, 1.0)
+		Paint.tint(rect, ThemeEngine.get_paint(ThemeEngine.Colors.BackgroundTint).mapped(func(color: Color): return Color(color, 1.0)))
 	for material in _blob_mats:
 		for index in 3:
 			material.set_shader_parameter("color_%d" % (index + 1), _palette[index])
@@ -535,7 +537,8 @@ func _update_appearance() -> void:
 		dots.set_shader_parameter("opacity", DARK_DOTS_OPACITY if ThemeEngine.dark_mode else float(DOT_DEFAULTS["opacity"]))
 	for entry in _media_layers:
 		var dim := clampf(float(entry["layer"].get("dim", 0.0)), 0.0, 1.0)
-		entry["dim"].color = Color(background, dim)
+		entry["dim"].color = Color.WHITE
+		Paint.tint(entry["dim"], ThemeEngine.get_paint(ThemeEngine.Colors.Background).mapped(func(color: Color): return Color(color, color.a * dim)))
 		entry["node"].modulate.a = clampf(float(entry["layer"].get("opacity", 1.0)), 0.0, 1.0)
 	for entry in _shader_layers:
 		for uniform: String in entry["uniforms"]:

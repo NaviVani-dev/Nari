@@ -76,7 +76,7 @@ func _apply_color() -> void:
 		Themes.shade(self, "icon")
 	if not themed or not use_custom_color and ThemeEngine.current_theme == null:
 		return
-	self_modulate = Color.WHITE if ThemeEngine.icons_colored else ThemeEngine.resolve(use_custom_color, custom_color, color)
+	Paint.tint(self, Paint.solid(Color.WHITE) if ThemeEngine.icons_colored else ThemeEngine.resolve_paint(use_custom_color, custom_color, color))
 
 func _sharpen(headroom: float = 1.0) -> void:
 	if Engine.is_editor_hint() or not is_inside_tree():

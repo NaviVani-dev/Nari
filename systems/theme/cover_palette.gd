@@ -17,6 +17,8 @@ static func build_theme(base: ThemeResource, pixels: PackedByteArray, dark: bool
 	if colors.is_empty():
 		return base
 	var theme: ThemeResource = base.duplicate()
+	theme.paints = base.paints.duplicate()
 	for field: String in colors:
 		theme.set(field, colors[field])
+		theme.paints.erase(field)
 	return theme

@@ -10,8 +10,6 @@ const CLEAR_ICON := preload("res://assets/icons/delete.svg")
 const RESET_ICON := preload("res://assets/icons/repeat.svg")
 const SOUNDBOARD_GRID := preload("res://ui/shared/SoundboardGrid.tscn")
 const FADE_TIME := 0.2
-const PRESET_WIDTH := 312.0
-const EFFECTS_GAP := 32.0
 const BACKDROP_ALPHA := 0.35
 const BACKDROP_SPREAD := 1.5
 const SCREEN_TITLES := {"queue": "Queue", "effects": "Effects", "soundboard": "Soundboard"}
@@ -69,7 +67,10 @@ const QUIET_ACTIONS: Array[StringName] = [&"play_pause", &"previous_track", &"ne
 @onready var queue_list: StairScroll = %Queue
 @onready var queue_empty: EmptyMessage = _build_queue_notice()
 @onready var lyrics_visualizer: LyricsVisualizer = %LyricsVisualizer
-@onready var effects_area: BoxContainer = %EffectsArea
+@onready var effects_area: HBoxContainer = %EffectsArea
+@onready var effects_pages: PagesContainer = %Pages
+@onready var effects_previous: NariButton = %LeftButton
+@onready var effects_next: NariButton = %RightButton
 @onready var effects_locked: NariLabel = %EffectsLocked
 @onready var effects_presets: EffectsPresets = %EffectsPresets
 @onready var plugin_effects: EffectsPresets = %PluginEffects
@@ -151,7 +152,7 @@ func _ready() -> void:
 	dock_slot.resized.connect(_place_dock)
 	if Plugins.effects.is_empty():
 		plugin_effects.free()
-	screens.resized.connect(_arrange_effects)
+	UI.pager_arrows(effects_pages, effects_previous, effects_next)
 	idle_timer.timeout.connect(func():
 		if SettingsManager.theme.now_playing_controls == "auto" and not _seeking:
 			_set_controls(false))
@@ -557,16 +558,3 @@ func _place_backdrop() -> void:
 	var glow := maxf(content.size.x, content.size.y) * BACKDROP_SPREAD
 	backdrop.position = content.get_center() - Vector2.ONE * glow * 0.5
 	backdrop.size = Vector2.ONE * glow
-
-func _arrange_effects() -> void:
-	var room := screens.size
-	var stacked := room.y >= room.x * 0.6
-	var grid := stacked and room.x >= PRESET_WIDTH * 2.0 + EFFECTS_GAP
-	effects_area.vertical = stacked
-	for presets: Variant in [effects_presets, plugin_effects]:
-		if not is_instance_valid(presets):
-			continue
-		for row: BoxContainer in (presets as EffectsPresets).get_children():
-			row.vertical = not grid
-			for button in row.get_children():
-				button.vertical = grid

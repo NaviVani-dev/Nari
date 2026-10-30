@@ -79,6 +79,12 @@ func is_theme() -> bool:
 func theme_apply(overrides: Dictionary) -> void :
 	Themes.script_apply(overrides)
 
+func theme_color(name: String, value: Variant) -> void :
+	Themes.script_color(name, value)
+
+func theme_text(scope: String, style: Variant) -> void :
+	Themes.script_text(scope, style)
+
 func theme_settings(listed: Array) -> void :
 	Themes.script_settings(listed)
 
