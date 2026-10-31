@@ -245,10 +245,23 @@ mod platform {
 #[cfg(target_os = "ios")]
 mod platform {
     use super::{Battery, Network, NO_BATTERY, OFFLINE};
+    use objc2::runtime::{AnyClass, AnyObject, Bool};
+    use objc2::{class, msg_send};
     use std::ffi::CStr;
 
     pub fn battery() -> Battery {
-        NO_BATTERY
+        let class: &AnyClass = class!(UIDevice);
+        let device: *mut AnyObject = unsafe { msg_send![class, currentDevice] };
+        let Some(device) = (unsafe { device.as_ref() }) else {
+            return NO_BATTERY;
+        };
+        let _: () = unsafe { msg_send![device, setBatteryMonitoringEnabled: Bool::YES] };
+        let level: f32 = unsafe { msg_send![device, batteryLevel] };
+        let state: isize = unsafe { msg_send![device, batteryState] };
+        if level < 0.0 {
+            return NO_BATTERY;
+        }
+        Battery { level: (level * 100.0).round() as i32, charging: matches!(state, 2 | 3) }
     }
 
     pub fn network() -> Network {
@@ -286,7 +299,10 @@ mod platform {
     }
 
     pub fn reduce_motion() -> bool {
-        false
+        unsafe extern "C" {
+            fn UIAccessibilityIsReduceMotionEnabled() -> Bool;
+        }
+        unsafe { UIAccessibilityIsReduceMotionEnabled() }.as_bool()
     }
 }
 

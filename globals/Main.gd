@@ -43,6 +43,7 @@ var setup_done := FileAccess.file_exists(SETUP_FILE)
 var loading_held := true
 var dual := true
 var insets := Vector4.ZERO
+var notch := 0.0
 var shortcuts: Array = []
 var header_shown := false
 var header_subtitle := ""
@@ -215,8 +216,9 @@ func reload_page() -> void:
 	_page = null
 	change_page(current_page, state, false, focus)
 
-func set_insets(value: Vector4) -> void:
+func set_insets(value: Vector4, notch_height: float = 0.0) -> void:
 	insets = value
+	notch = notch_height
 	_apply_margins()
 	insets_changed.emit(insets)
 

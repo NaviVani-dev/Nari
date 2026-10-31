@@ -70,6 +70,7 @@ var _battery_info: = BatteryInfo.new()
 var _network_info: = NetworkInfo.new()
 var _title_pressed := false
 var _base_margins: = Vector4()
+var _notch_pad: = 0.0
 var _glow: Tween
 var _pill: NowPlayingPill
 var _dim_fade: Tween
@@ -108,7 +109,8 @@ func _ready() -> void :
 			_place_window_controls.call_deferred())
 	row.minimum_size_changed.connect(_reserve)
 	top_column.minimum_size_changed.connect(_reserve)
-	top_bar.visibility_changed.connect(_reserve)
+	top_bar.minimum_size_changed.connect(_center_on_notch)
+	top_bar.visibility_changed.connect(_center_on_notch)
 	header.visibility_changed.connect(_reserve)
 	Main.header_changed.connect(_show_header)
 	visibility_changed.connect(_reserve)
@@ -206,11 +208,20 @@ func _dim(shown: bool) -> void :
 func _reserve() -> void :
 	var shown: = song_details.is_visible_in_tree() or device_chip.is_visible_in_tree() or _pill != null and _pill.is_visible_in_tree()
 	Main.set_hints_reserve(screen, row.get_combined_minimum_size().y + _base_margins.w if shown else 0.0)
-	Main.set_bar_reserve(screen, top_column.get_combined_minimum_size().y + _base_margins.y if top_bar.visible or header.visible else 0.0)
+	Main.set_bar_reserve(screen, top_column.get_combined_minimum_size().y + _base_margins.y + _notch_pad if top_bar.visible or header.visible else 0.0)
 
 func _apply_insets(insets: Vector4) -> void :
 	for side in 4:
 		margins.add_theme_constant_override(MARGINS[side], roundi(_base_margins[side] + insets[side]))
+	_center_on_notch()
+
+func _center_on_notch() -> void :
+	_notch_pad = 0.0
+	if screen == Placement.TOP:
+		var top: = _base_margins.y + Main.insets.y
+		if top_bar.visible and Main.notch > 0.0:
+			_notch_pad = maxf((Main.notch - top_bar.get_combined_minimum_size().y) * 0.5 - top, 0.0)
+		margins.add_theme_constant_override("margin_top", roundi(top + _notch_pad))
 	_fit()
 
 func _fit() -> void :

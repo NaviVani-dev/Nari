@@ -186,20 +186,24 @@ func _update_insets() -> void:
 	var canvas_scale := get_viewport().get_visible_rect().size.y / maxf(window.size.y, 1.0)
 	var insets := Vector4.ZERO
 	var sources: Array = []
+	var cutout: Variant
 	if screens.ayn_thor_plugin:
+		cutout = screens.ayn_thor_plugin.display_cutout_insets()
 		if SettingsManager.general.avoid_system_bars:
 			sources.append(screens.ayn_thor_plugin.system_bar_insets())
-		if SettingsManager.general.avoid_notch:
-			sources.append(screens.ayn_thor_plugin.display_cutout_insets())
-	elif SettingsManager.general.avoid_notch:
+	else:
 		var bounds := Rect2(window.position, window.size)
 		var safe := Rect2(DisplayServer.get_display_safe_area())
-		sources.append([maxf(safe.position.x - bounds.position.x, 0.0), maxf(safe.position.y - bounds.position.y, 0.0),
-			maxf(bounds.end.x - safe.end.x, 0.0), maxf(bounds.end.y - safe.end.y, 0.0)])
+		cutout = [maxf(safe.position.x - bounds.position.x, 0.0), maxf(safe.position.y - bounds.position.y, 0.0),
+			maxf(bounds.end.x - safe.end.x, 0.0), maxf(bounds.end.y - safe.end.y, 0.0)]
+	if SettingsManager.general.avoid_notch:
+		sources.append(cutout)
 	for source: Variant in sources:
 		for side in mini(source.size(), 4):
 			insets[side] = maxf(insets[side], float(source[side]))
-	Main.set_insets(insets * canvas_scale)
+	var portrait := window.size.y > window.size.x
+	var notch := float(cutout[1]) if portrait and cutout.size() > 1 and not SettingsManager.general.avoid_notch else 0.0
+	Main.set_insets(insets * canvas_scale, notch * canvas_scale)
 
 func _refresh_motion() -> void:
 	match SettingsManager.theme.reduce_motion:
