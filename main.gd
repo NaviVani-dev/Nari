@@ -276,6 +276,7 @@ func _swap_screens() -> void:
 
 func _input(event: InputEvent) -> void:
 	InputGlyphs.observe(event)
+	Sfx.steer(event)
 	_wake()
 	if event is InputEventMouse and OS.has_feature("pc") and _resize_window(event):
 		get_viewport().set_input_as_handled()

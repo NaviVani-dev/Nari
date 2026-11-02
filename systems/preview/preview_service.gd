@@ -631,6 +631,12 @@ func setSoundboardActive(_active: bool) -> void:
 func playSound(_slot: int) -> void:
 	pass
 
+func loadEffect(id: int, bytes: PackedByteArray, _name: String) -> void:
+	JavaScriptBridge.get_interface("nariSounds").load(id, Marshalls.raw_to_base64(bytes))
+
+func playEffect(id: int, volume: float) -> void:
+	JavaScriptBridge.get_interface("nariSounds").play(id, volume)
+
 func deleteSound(_slot: int) -> void:
 	pass
 

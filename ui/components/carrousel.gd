@@ -192,6 +192,7 @@ func _gui_input(event: InputEvent) -> void:
 		var target := clampi(selected + direction, 0, _count - 1)
 		if target != selected:
 			select(target)
+			Sfx.cursor()
 			picked.emit(target)
 		return
 	if event.is_action_pressed("ui_accept") and _count > 0:

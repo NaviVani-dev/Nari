@@ -865,6 +865,16 @@ impl MusicService {
         self.soundboard.play(slot);
     }
 
+    #[func(rename = loadEffect)]
+    fn load_effect(&mut self, id: i32, bytes: PackedByteArray, name: GString) {
+        self.soundboard.load_effect(id, bytes.to_vec(), &name.to_string());
+    }
+
+    #[func(rename = playEffect)]
+    fn play_effect(&mut self, id: i32, volume: f32) {
+        self.soundboard.play_effect(id, volume);
+    }
+
     #[func(rename = deleteSound)]
     fn delete_sound(&mut self, slot: i32) {
         self.soundboard.delete(slot);

@@ -28,6 +28,7 @@ func set_busy(busy: bool) -> void:
 		_status.hide()
 
 func show_error(message: String) -> void:
+	Sfx.play("error")
 	set_busy(false)
 	_status.text = message
 	_status.show()

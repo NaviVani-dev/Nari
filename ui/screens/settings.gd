@@ -179,6 +179,9 @@ func _entries_of(category: String) -> Array:
 				SettingItem.toggle("Normalize volume", "Plays every song at a similar loudness", preload("res://assets/icons/sound.svg"), "playback", "normalize_volume"),
 				SettingItem.toggle("Gapless playback", "Runs tracks without pauses", preload("res://assets/icons/gapless.svg"), "playback", "gapless"),
 				SettingItem.toggle("Keep screen on", "Keeps your device from going into sleep mode while Nari is focused and playing music", preload("res://assets/icons/charge.svg"), "playback", "keep_screen_on"),
+			]) + _section("Sound effects", [
+				_slider("Sound effects volume", "How loud Nari's sounds are", preload("res://assets/icons/sound.svg"), "playback", "sounds_volume", Vector3(0, 100, 5), func(amount: float): return "%d%%" % amount),
+				SettingItem.toggle("Play sounds while music is playing", "Nari's sounds keep playing over your music", preload("res://assets/icons/music_note.svg"), "playback", "sounds_while_playing"),
 			]) + _section("MIDI and modules", [
 				{
 					"title": "SoundFont",
@@ -600,6 +603,7 @@ func _on_scrobble_account_changed(_service: String, _error: String) -> void:
 	SettingItem.refresh_list(list)
 
 func _on_install_finished(error: String, kind: String) -> void:
+	Sfx.play("success" if error.is_empty() else "error")
 	var dialog := Dialog.menu("%s installed" % kind if error.is_empty() else "Couldn't install the %s" % kind.to_lower(), error)
 	dialog.add_button("OK", Callable(), Dialog.Style.PRIMARY)
 	dialog.popup()

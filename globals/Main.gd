@@ -274,6 +274,10 @@ func _on_node_added(node: Node) -> void:
 		node.gui_focus_changed.connect(_on_control_hovered)
 	if node.has_signal("selection_changed") and not node.selection_changed.is_connected(_on_selection_changed):
 		node.selection_changed.connect(_on_selection_changed)
+	if node is NariButton and not node.pressed.is_connected(Sfx.select):
+		node.pressed.connect(Sfx.select)
+	if node is Carrousel and not node.activated.is_connected(Sfx.select.unbind(1)):
+		node.activated.connect(Sfx.select.unbind(1))
 
 func _on_selection_changed(_index: int) -> void:
 	haptic()
@@ -281,6 +285,7 @@ func _on_selection_changed(_index: int) -> void:
 func _on_control_hovered(control: Control) -> void:
 	if control.focus_mode != Control.FOCUS_NONE:
 		haptic()
+		Sfx.moved()
 
 func haptic(strength: float = 1.0) -> void:
 	if not SettingsManager.general.haptics:
@@ -411,11 +416,13 @@ func go_back() -> bool:
 	var focused: Node = focus_owner()
 	while focused:
 		if focused.has_method("go_back") and focused.go_back():
+			Sfx.play("back")
 			return true
 		focused = focused.get_parent()
 	if _page and _page.get("locked"):
 		return true
 	if _page and _page.has_method("go_back") and _page.go_back():
+		Sfx.play("back")
 		return true
 	if _history.is_empty():
 		return false
@@ -423,6 +430,7 @@ func go_back() -> bool:
 	if _page and not _page.get("transient"):
 		_forward.push_back({"page": current_page, "data": _page_data(), "focus": _page_focus()})
 	change_page(entry["page"], entry["data"], false, entry["focus"])
+	Sfx.play("back")
 	return true
 
 func can_go_forward() -> bool:

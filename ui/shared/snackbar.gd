@@ -13,8 +13,8 @@ static var _waiting: Array[Dictionary] = []
 
 var _base_bottom := 0.0
 
-static func post(title: String, message := "", action := Callable()) -> void:
-	var entry := {"title": title, "message": message, "action": action}
+static func post(title: String, message := "", action := Callable(), level := "info") -> void:
+	var entry := {"title": title, "message": message, "action": action, "level": level}
 	if is_instance_valid(_instance):
 		_instance._show(entry)
 	else:
@@ -49,6 +49,7 @@ func _on_plugin_failed(entry: Dictionary) -> void:
 		"message": str(entry.get("message", "")),
 		"detail": "%s, line %d" % [file, int(entry.get("line", 0))] if not file.is_empty() else "",
 		"long": fatal,
+		"level": "error" if fatal else "warning",
 		"action": _open_console,
 	})
 
@@ -57,6 +58,7 @@ func _open_console() -> void:
 		DevTools.toggle_console()
 
 func _show(entry: Dictionary) -> void:
+	Sfx.play(str(entry.get("level", "")))
 	for item: SnackbarItem in stack.get_children():
 		if item.same(entry):
 			item.repeat()

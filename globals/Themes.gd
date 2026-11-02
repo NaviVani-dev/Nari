@@ -11,6 +11,7 @@ const MEDIA_WAIT_MSEC: = 1500
 const API: = 1
 const ASSETS_FOLDER: = "assets"
 const GLYPHS_FOLDER: = "glyphs"
+const SOUNDS_FOLDER: = "sounds"
 const ICONS_TARGET: = "res://assets/icons"
 const SCRIPT_FILE: = "main.lua"
 const SCRIPT_PREFIX: = "theme_"
@@ -20,7 +21,7 @@ const AXIS_STRETCH: = {"stretch": StyleBoxTexture.AXIS_STRETCH_MODE_STRETCH, "ti
 const FILTERS: = {"nearest": CanvasItem.TEXTURE_FILTER_NEAREST, "linear": CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS}
 const ADAPT_MODES: = ["allow", "off", "force"]
 const GLYPH: = preload("res://assets/icons/theme.svg")
-const LOOK_KEYS: = ["styles", "shape", "font", "font_pixelated", "font_shadow", "text", "mode", "adapt", "icons_colored", "filters", "icons", "glyphs", "shaders"]
+const LOOK_KEYS: = ["styles", "shape", "font", "font_pixelated", "font_shadow", "text", "mode", "adapt", "icons_colored", "filters", "icons", "glyphs", "sounds", "shaders"]
 const IMAGE_EXTENSIONS: = ["png", "jpg", "jpeg", "webp"]
 const LAYER_TYPES: = ["color", "blobs", "tint", "triangles", "dots", "image", "cover", "shader"]
 const DEFAULT_LAYERS: = [{"type": "color"}, {"type": "blobs"}, {"type": "tint"}, {"type": "triangles"}, {"type": "dots"}]
@@ -241,6 +242,7 @@ func _apply(animate: bool) -> void :
 func _paint(animate: bool) -> void :
 	_swap_assets()
 	_load_glyphs()
+	_load_sounds()
 	_load_styles()
 	var adapt: = str(active.get("adapt", "allow"))
 	ThemeEngine.adapt_mode = adapt if ADAPT_MODES.has(adapt) else "allow"
@@ -736,6 +738,17 @@ func _load_glyphs() -> void :
 		if texture:
 			glyphs[str(glyph)] = texture
 
+func _load_sounds() -> void :
+	var files: = {}
+	var root: = str(active.get("path", ""))
+	var folder: = root.path_join(ASSETS_FOLDER).path_join(SOUNDS_FOLDER)
+	for name in DirAccess.get_files_at(folder) if not root.is_empty() and DirAccess.dir_exists_absolute(folder) else PackedStringArray():
+		files[name.get_basename()] = folder.path_join(name)
+	var listed: = _dict(active, "sounds")
+	for name: Variant in listed:
+		files[str(name)] = root.path_join(str(listed[name]))
+	Sfx.load_all(files)
+
 func _load_styles() -> void :
 	styles = {}
 	var listed: = _dict(active, "styles")
@@ -950,6 +963,7 @@ func script_catch(part: String, on: bool) -> void:
 	if not control.has_meta(&"own_filter"):
 		control.set_meta(&"own_filter", control.mouse_filter)
 	control.mouse_filter = Control.MOUSE_FILTER_STOP if on else control.get_meta(&"own_filter")
+	(control.add_to_group if on else control.remove_from_group).call(SwipeDismiss.BLOCKERS)
 
 func script_uniform(part: String, uniform: String, value: Variant) -> void:
 	var listed: Dictionary = _script_uniforms.get(part, {})

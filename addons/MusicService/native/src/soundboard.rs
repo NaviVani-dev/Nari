@@ -2,7 +2,7 @@ use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{FromSample, SizedSample};
 use serde_json::Value;
 use signalsmith_stretch::Stretch;
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Sender;
@@ -22,6 +22,7 @@ pub const FRAME_BYTES: usize = LEVEL_OFFSET + SLOTS;
 const MAX_FRAMES: usize = RATE as usize * 10;
 const PENDING_SLOT: i32 = -1;
 const EDIT_SLOT: i32 = -2;
+const EFFECT_SLOT: i32 = -3;
 const BLOCK: f32 = 512.0;
 const CACHED_SOUNDS: usize = 48;
 const HEADER_BYTES: usize = 44;
@@ -145,6 +146,7 @@ pub struct Soundboard {
     cache: VecDeque<(i32, Arc<Vec<i16>>)>,
     capture: Option<Capture>,
     edit: Option<usize>,
+    effects: HashMap<i32, Vec<i16>>,
 }
 
 impl Soundboard {
@@ -160,6 +162,7 @@ impl Soundboard {
             cache: VecDeque::new(),
             capture: None,
             edit: None,
+            effects: HashMap::new(),
         }
     }
 
@@ -194,6 +197,19 @@ impl Soundboard {
             return;
         };
         self.add_voice(slot, samples, false, 0.0, true);
+    }
+
+    pub fn load_effect(&mut self, id: i32, bytes: Vec<u8>, name: &str) {
+        let samples = crate::audio::decode_bytes(bytes, name, RATE, MAX_FRAMES).map(|stereo| mono(&stereo));
+        self.effects.insert(id, samples.unwrap_or_default());
+    }
+
+    pub fn play_effect(&mut self, id: i32, volume: f32) {
+        let Some(samples) = self.effects.get(&id) else {
+            return;
+        };
+        let scaled = samples.iter().map(|sample| (f32::from(*sample) * volume.clamp(0.0, 1.0)) as i16).collect();
+        self.add_voice(EFFECT_SLOT - id, Arc::new(scaled), false, 0.0, true);
     }
 
     pub fn delete(&mut self, slot: i32) {

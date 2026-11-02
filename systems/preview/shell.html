@@ -301,6 +301,38 @@ body {
 		},
 	};
 }());
+
+(function () {
+	const audio = new AudioContext();
+	const sounds = new Map();
+	const playing = new Map();
+	let muted = true;
+
+	['pointerdown', 'keydown', 'touchstart'].forEach((type) => window.addEventListener(type, () => audio.resume(), true));
+	window.addEventListener('message', (event) => {
+		if (event.source === window.parent && event.origin === location.origin && event.data?.nari === 'mute') {
+			muted = event.data.value !== 'false';
+		}
+	});
+
+	window.nariSounds = {
+		load(id, base64) {
+			sounds.set(id, audio.decodeAudioData(Uint8Array.from(atob(base64), (character) => character.charCodeAt(0)).buffer).catch(() => null));
+		},
+		play(id, volume) {
+			sounds.get(id)?.then((buffer) => {
+				if (muted || !buffer) {
+					return;
+				}
+				const source = new AudioBufferSourceNode(audio, { buffer });
+				source.connect(new GainNode(audio, { gain: volume })).connect(audio.destination);
+				playing.get(id)?.stop();
+				playing.set(id, source);
+				source.start();
+			});
+		},
+	};
+}());
 		</script>
 		<script src="$GODOT_URL"></script>
 		<script>

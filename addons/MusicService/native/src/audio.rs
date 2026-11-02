@@ -983,9 +983,20 @@ fn remember(shared: &Shared, source: &Source) {
     }
 }
 
-pub fn decode_each(media: &Media, rate: u32, limit_frames: usize, mut sink: impl FnMut(&[f32])) -> Result<(), String> {
+pub fn decode_each(media: &Media, rate: u32, limit_frames: usize, sink: impl FnMut(&[f32])) -> Result<(), String> {
+    drain(Source::open(media, 0, rate)?, rate, limit_frames, sink)
+}
+
+pub fn decode_bytes(bytes: Vec<u8>, name: &str, rate: u32, limit_frames: usize) -> Result<Vec<f32>, String> {
+    let media = Media { uri: String::new(), name: name.to_owned() };
+    let mut output = Vec::new();
+    let source = Source::from_input(&media, Box::new(std::io::Cursor::new(bytes)), None, None, 0, rate)?;
+    drain(source, rate, limit_frames, |chunk| output.extend_from_slice(chunk))?;
+    Ok(output)
+}
+
+fn drain(mut source: Source, rate: u32, limit_frames: usize, mut sink: impl FnMut(&[f32])) -> Result<(), String> {
     let shared = Shared::new(rate, 0);
-    let mut source = Source::open(media, 0, rate)?;
     let mut left = limit_frames.saturating_mul(CHANNELS);
     while left > 0 {
         match source.next_chunk(&shared, 1.0, 1.0)? {

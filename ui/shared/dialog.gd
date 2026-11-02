@@ -82,6 +82,7 @@ func popup() -> void:
 	Main.open_dialog(self)
 	Themes.add_part("dialog", _center)
 	Themes.script_event("dialog", [true])
+	Sfx.play("window_open")
 	_fade(1.0)
 	focus.call_deferred()
 
@@ -91,6 +92,7 @@ func close() -> void:
 	_closing = true
 	closed.emit()
 	Themes.script_event("dialog", [false])
+	Sfx.play("window_close")
 	_fade(0.0).tween_callback(func():
 		finished.emit()
 		queue_free())

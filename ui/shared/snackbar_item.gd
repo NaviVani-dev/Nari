@@ -23,6 +23,11 @@ func _ready() -> void:
 func show_entry(value: Dictionary) -> void:
 	entry = value
 	_count = 1
+	var level := str(entry.get("level", "")).capitalize()
+	bg_color = ThemeEngine.Colors.get(level + "Bg", ThemeEngine.Colors.Background)
+	gradient_color = ThemeEngine.Colors.get(level + "Gradient", ThemeEngine.Colors.BackgroundGradient)
+	for node in [title, message, location, $Row/Glyph]:
+		node.color = ThemeEngine.Colors.get(level + "Fg", ThemeEngine.Colors.Foreground)
 	_fill()
 	life.start(LONG_TIME if entry.get("long", false) else SHOW_TIME)
 	if Main.reduce_motion:
