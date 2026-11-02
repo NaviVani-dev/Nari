@@ -74,7 +74,14 @@ if plugin:is_theme() then
 		settings = function(list) plugin:theme_settings(list or {}) end,
 		setting = function(key) return plugin:theme_setting(key) end,
 		page = function() return plugin:theme_page() end,
+		box = function(part) return plugin:theme_box(part) end,
+		catch = function(part, on) plugin:theme_catch(part, on ~= false) end,
+		uniform = function(part, name, value) plugin:theme_uniform(part, name, value) end,
+		reduce_motion = function() return plugin:theme_reduce_motion() end,
 	}
+	function nari.theme.pose(part, values)
+		plugin:theme_pose(part, values and Dictionary(values) or nil)
+	end
 	function nari.theme.color(name, value)
 		if type(name) == "table" then
 			for key, color in pairs(name) do

@@ -11,9 +11,9 @@ static func sample(image: Image) -> PackedByteArray:
 	return copy.get_data()
 
 static func build_theme(base: ThemeResource, pixels: PackedByteArray, dark: bool) -> ThemeResource:
-	if pixels.is_empty() or not ClassDB.class_exists("NariPalette"):
+	if pixels.is_empty() or not Native.has_class("NariPalette"):
 		return base
-	var colors: Dictionary = ClassDB.class_call_static("NariPalette", "from_pixels", pixels, dark)
+	var colors: Dictionary = Native.call_static("NariPalette", "from_pixels", [pixels, dark])
 	if colors.is_empty():
 		return base
 	var theme: ThemeResource = base.duplicate()

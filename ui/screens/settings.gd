@@ -18,6 +18,8 @@ const WINDOW_MODES := {"windowed": "Windowed", "fullscreen": "Fullscreen", "excl
 const RESOLUTIONS := ["1280x720", "1366x768", "1600x900", "1920x1080", "2560x1440", "3840x2160"]
 const SECTION := preload("res://ui/shared/SettingSection.tscn")
 const ADDON_PAGES := ["plugins", "themes"]
+const PREVIEW_HIDDEN := ["Library", "Playback", "Lyrics", "Integrations", "Plugins", "Themes", "Dual-screen integration", "Select main screen",
+	"Avoid the notch", "Avoid Android elements", "Show on startup", "Intro on boot", "Video decoding", "Developer mode"]
 
 @onready var list: StairScroll = %List
 @onready var showcase: Control = %Showcase
@@ -93,7 +95,7 @@ func _fit_showcase() -> void:
 	glyph.offset_bottom = _glyph_rest
 
 func _load() -> void:
-	var fresh := sectioned(_entries_of(_category) + (Plugins.settings_entries(_category) if not _category.is_empty() else []))
+	var fresh := sectioned(_shown(_entries_of(_category) + (Plugins.settings_entries(_category) if not _category.is_empty() else [])))
 	if _same_shape(fresh):
 		_update_in_place(fresh)
 		return
@@ -164,6 +166,11 @@ static func create_entry(entry: Dictionary, changed: Callable) -> Control:
 
 func _create_item(entry: Dictionary) -> Control:
 	return create_entry(entry, SettingItem.refresh_list.bind(list))
+
+static func _shown(entries: Array) -> Array:
+	if not OS.has_feature("preview"):
+		return entries
+	return entries.filter(func(entry: Dictionary): return not str(entry.get("title", "")) in PREVIEW_HIDDEN)
 
 func _entries_of(category: String) -> Array:
 	match category:

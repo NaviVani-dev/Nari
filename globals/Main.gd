@@ -101,6 +101,11 @@ func register_screens(top_view: Node, bottom_view: Node, top_container: MarginCo
 	_containers = {top_view: top_container}
 	if bottom_view:
 		_containers[bottom_view] = bottom_container
+	Themes.add_part("top", top_container)
+	Themes.add_part("top_hints", top_view.get_node(HINTS_NAME))
+	if bottom_view:
+		Themes.add_part("bottom", bottom_container)
+		Themes.add_part("bottom_hints", bottom_view.get_node(HINTS_NAME))
 	for container: MarginContainer in _containers.values():
 		var base := Vector4()
 		for side in 4:
@@ -517,38 +522,13 @@ func transition(key: String = "page_transition") -> Dictionary:
 	style["material"] = material if Themes.dress("transition", material, null) else null
 	return style
 
-func _process(_delta: float) -> void:
-	for view: Node in _containers:
-		if is_instance_valid(view):
-			Themes.sway(_containers[view], "sway")
-			if view.has_node(HINTS_NAME):
-				Themes.sway(view.get_node(HINTS_NAME), "sway")
-
-static func _physics_curve(config: Dictionary) -> PackedFloat32Array:
-	var step := 1.0 / 60.0
-	var keep := exp(-float(config.get("damping", 50.0)) * step)
-	var distance := float(config.get("distance", 10.0))
-	var limit := float(config.get("max_speed", 70.0)) * step
-	var offset := distance
-	var speed := 0.0
-	var curve := PackedFloat32Array([1.0])
-	while (absf(offset) > 0.001 or absf(speed) > 0.001) and curve.size() < 600:
-		speed = clampf(keep * speed - (1.0 - keep) * offset * float(config.get("pull", 35.0)) * step, -limit, limit)
-		offset += speed
-		curve.append(offset / distance)
-	return curve
-
 func animate(tween: Tween, control: Control, style: Dictionary, entering: bool, distance: float) -> void:
 	var time := float(style.get("duration" if entering else "exit", style.get("duration", TRANSITION_TIME)))
 	var origin := control.position
 	var shift := -distance * float(style.get("shift", TRANSITION_SHIFT))
 	if style["type"] == "slide" and entering:
 		control.position.y = origin.y + shift
-	if style["type"] == "slide" and entering and style.get("physics") is Dictionary:
-		var curve := _physics_curve(style["physics"])
-		time = curve.size() / 60.0
-		tween.tween_method(func(left: float): control.position.y = origin.y + shift * curve[mini(int(left * 60.0), curve.size() - 1)], 0.0, time, time)
-	elif style["type"] == "slide":
+	if style["type"] == "slide":
 		tween.tween_property(control, "position:y", origin.y if entering else origin.y + shift, time) \
 			.set_trans(ClassDB.class_get_integer_constant("Tween", "TRANS_" + str(style.get("trans", "cubic")).to_upper())) \
 			.set_ease(ClassDB.class_get_integer_constant("Tween", "EASE_" + str(style.get("ease", "out" if entering else "in")).to_upper()))
@@ -556,10 +536,6 @@ func animate(tween: Tween, control: Control, style: Dictionary, entering: bool, 
 		if entering:
 			control.modulate.a = 0.0
 		tween.tween_property(control, "modulate:a", 1.0 if entering else 0.0, time)
-	if entering and style.has("shake"):
-		var span := float(style.get("shake_time", 0.6))
-		tween.chain().tween_method(func(left: float):
-			control.position = origin + Vector2(sin(19.913 * left), sin(21.913 * left)) * float(style["shake"]) * pow(1.0 - left / span, 2.0), 0.0, span, span)
 	var material: ShaderMaterial = style["material"]
 	if material:
 		var overlay := ColorRect.new()

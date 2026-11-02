@@ -61,6 +61,9 @@ var _script_overrides: = {}
 var _script_extras: = {}
 var _script_settings: Array[Dictionary] = []
 var _script_starting: = false
+var _parts: = {}
+var _dressed: = {}
+var _script_uniforms: = {}
 var _booted: = false
 var _l: = Log.new("Themes", Color("c58af2"))
 
@@ -145,7 +148,7 @@ func _warn_unplayable(root: String) -> void :
 		if str(layer["type"]) != "image" or file.is_empty() or checked.has(file):
 			continue
 		checked.append(file)
-		var problem: String = ClassDB.class_call_static("NariMotion", "probe", ProjectSettings.globalize_path(root.path_join(file)))
+		var problem: String = Native.call_static("NariMotion", "probe", [ProjectSettings.globalize_path(root.path_join(file))])
 		if not problem.is_empty():
 			_l.warn("The theme background '%s' can't be played on this device: %s" % [file, problem])
 
@@ -607,6 +610,7 @@ func _stop_script() -> void :
 	_script_overrides = {}
 	_script_extras = {}
 	_script_settings = []
+	_release_parts()
 
 func _on_script_failed(entry: Dictionary) -> void :
 	if bool(entry.get("fatal", false)) and _script and str(entry.get("id", "")) == _script.id:
@@ -897,22 +901,84 @@ func draw_bar(item: CanvasItem, rect: Rect2, ratio: float, base: = Transform2D.I
 func enabled(section: String, kind: String) -> bool:
 	return _dict(active, section).get(kind, true) != false
 
-func motion_of(kind: String) -> Dictionary:
-	return _dict(_dict(active, "motion"), kind)
+func shader_part(kind: String) -> Dictionary:
+	return _dict(_dict(active, "shaders"), kind)
 
-func drift(kind: String) -> Vector3:
-	var motion: = motion_of(kind)
-	if motion.is_empty() or Main.reduce_motion:
-		return Vector3.ZERO
-	var time: = Time.get_ticks_msec() / 1000.0
-	return Vector3(
-		float(motion.get("x", 0.0)) * sin(float(motion.get("x_speed", 1.0)) * time),
-		float(motion.get("y", 0.0)) * sin(float(motion.get("y_speed", 1.0)) * time),
-		float(motion.get("rotation", 0.0)) * sin(float(motion.get("rotation_speed", 1.0)) * time))
+func add_part(part: String, control: Control) -> void:
+	_parts[part] = control
+	control.tree_exiting.connect(func():
+		if _parts.get(part) == control:
+			_parts.erase(part), CONNECT_ONE_SHOT)
 
-func sway(control: Control, kind: String) -> void:
-	var offset: = drift(kind)
-	pose(control, Vector2(offset.x, offset.y) * control.size, offset.z)
+func part_of(part: String) -> Control:
+	var control: Control = _parts.get(part)
+	return control if is_instance_valid(control) and control.is_inside_tree() else null
+
+func script_event(event: String, args: Array) -> void:
+	if _script:
+		_script.emit_event(event, args)
+
+func script_pose(part: String, values: Variant) -> void:
+	var control: = part_of(part)
+	if not control:
+		return
+	var listed: Dictionary = values if values is Dictionary else {}
+	pose(control, Vector2(float(listed.get("x", 0.0)), float(listed.get("y", 0.0))), float(listed.get("rotation", 0.0)), float(listed.get("scale", 1.0)))
+
+func script_box(part: String) -> Variant:
+	var control: = part_of(part)
+	if not control or not control.is_visible_in_tree():
+		return null
+	var parent: = control.get_parent() as CanvasItem
+	var mouse: = control.get_viewport().get_mouse_position()
+	if parent:
+		mouse = parent.get_global_transform_with_canvas().affine_inverse() * mouse
+	mouse -= control.position
+	return {
+		"width": control.size.x,
+		"height": control.size.y,
+		"mouse_x": mouse.x,
+		"mouse_y": mouse.y,
+		"hovered": Rect2(Vector2.ZERO, control.size).has_point(mouse),
+		"pressed": Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT),
+	}
+
+func script_catch(part: String, on: bool) -> void:
+	var control: = part_of(part)
+	if not control:
+		return
+	if not control.has_meta(&"own_filter"):
+		control.set_meta(&"own_filter", control.mouse_filter)
+	control.mouse_filter = Control.MOUSE_FILTER_STOP if on else control.get_meta(&"own_filter")
+
+func script_uniform(part: String, uniform: String, value: Variant) -> void:
+	var listed: Dictionary = _script_uniforms.get(part, {})
+	listed[uniform] = _vector(value)
+	_script_uniforms[part] = listed
+	var materials: Array = _dressed.get(part, []).filter(func(material: WeakRef): return material.get_ref() != null)
+	_dressed[part] = materials
+	for material: WeakRef in materials:
+		(material.get_ref() as ShaderMaterial).set_shader_parameter(uniform, listed[uniform])
+
+static func _vector(value: Variant) -> Variant:
+	if value is Array and value.size() >= 2 and value.size() <= 4 and value.all(func(part: Variant): return part is float or part is int):
+		match value.size():
+			2:
+				return Vector2(value[0], value[1])
+			3:
+				return Vector3(value[0], value[1], value[2])
+			4:
+				return Vector4(value[0], value[1], value[2], value[3])
+	return value
+
+func _release_parts() -> void:
+	for part: String in _parts:
+		var control: = part_of(part)
+		if control:
+			pose(control, Vector2.ZERO, 0.0)
+			if control.has_meta(&"own_filter"):
+				control.mouse_filter = control.get_meta(&"own_filter")
+	_script_uniforms = {}
 
 static func pose(control: Control, position: Vector2, rotation: float, scale: float = 1.0) -> void:
 	control.offset_transform_enabled = position != Vector2.ZERO or rotation != 0.0 or scale != 1.0
@@ -935,6 +1001,13 @@ func dress(kind: String, material: ShaderMaterial, fallback: Shader) -> bool:
 	var uniforms: = _dict(entry, "uniforms")
 	for uniform: Variant in uniforms:
 		material.set_shader_parameter(str(uniform), uniform_value(uniforms[uniform]))
+	if shader:
+		var materials: Array = _dressed.get(kind, []).filter(func(known: WeakRef): return known.get_ref() != null and known.get_ref() != material)
+		materials.append(weakref(material))
+		_dressed[kind] = materials
+		var own: Dictionary = _script_uniforms.get(kind, {})
+		for uniform: String in own:
+			material.set_shader_parameter(uniform, own[uniform])
 	return shader != null
 
 func texture_of(file: String) -> Texture2D:

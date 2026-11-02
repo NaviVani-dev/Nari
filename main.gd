@@ -482,7 +482,7 @@ func _mount_theme_overlays() -> void:
 		bottom_view.add_child(THEME_OVERLAYS.instantiate())
 
 func _single_screen() -> bool:
-	return OS.has_feature("pc") or not Main.has_second_screen()
+	return not OS.has_feature("preview") and (OS.has_feature("pc") or not Main.has_second_screen())
 
 func _flatten_screens() -> void:
 	$DSManager.main_screen = null

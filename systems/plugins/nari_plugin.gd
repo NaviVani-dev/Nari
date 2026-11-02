@@ -43,9 +43,11 @@ func start(main: String) -> String:
 	_runtime = ClassDB.instantiate("LuaRuntime")
 	return _runtime.start(self, id, str(manifest["path"]), main, Package.permissions(manifest))
 
-func _process(_delta: float) -> void :
+func _process(delta: float) -> void :
 	if _runtime:
 		_runtime.pump()
+	if _runtime and is_theme():
+		_runtime.emit("frame", [delta])
 
 func write_log(level: String, text: String) -> void :
 	if level == "warn":
@@ -93,6 +95,21 @@ func theme_setting(key: String) -> Variant:
 
 func theme_page() -> String:
 	return Themes.current_page()
+
+func theme_pose(part: String, values: Variant) -> void :
+	Themes.script_pose(part, values)
+
+func theme_box(part: String) -> Variant:
+	return Themes.script_box(part)
+
+func theme_catch(part: String, on: bool) -> void :
+	Themes.script_catch(part, on)
+
+func theme_uniform(part: String, uniform: String, value: Variant) -> void :
+	Themes.script_uniform(part, uniform, value)
+
+func theme_reduce_motion() -> bool:
+	return Main.reduce_motion
 
 func theme_info() -> Dictionary:
 	return {"id": str(manifest["theme"]), "path": str(manifest["path"]), "folder": ProjectSettings.globalize_path(str(manifest["path"]))}
