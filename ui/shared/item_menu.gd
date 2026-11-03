@@ -1,6 +1,6 @@
 class_name ItemMenu
 
-const PLAYLIST_EDITOR := preload("res://ui/shared/PlaylistEditor.tscn")
+const PLAYLIST_EDITOR := "res://ui/shared/PlaylistEditor.tscn"
 const SCROLL_LIST := preload("res://ui/shared/ScrollList.tscn")
 const PLAY_ICON := preload("res://assets/icons/play.svg")
 const ADD_ICON := preload("res://assets/icons/add.svg")
@@ -149,7 +149,7 @@ static func add_plugin_actions(dialog: Dialog, kind: String, data: Dictionary) -
 static func edit_playlist(data: Dictionary = {}, on_saved: Callable = Callable()) -> void:
 	var dialog := Dialog.new()
 	dialog.dismissable = true
-	var editor: PlaylistEditor = PLAYLIST_EDITOR.instantiate()
+	var editor: PlaylistEditor = load(PLAYLIST_EDITOR).instantiate()
 	editor.playlist = data
 	editor.saved.connect(func(playlist_id: String):
 		dialog.close()

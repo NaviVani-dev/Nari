@@ -156,7 +156,21 @@ script = ExtResource("4_label")
 weight = 700
 font_size = 56
 
-[node name="UrlEdit" type="LineEdit" parent="." unique_id=1412693277]
+[node name="UrlField" type="VBoxContainer" parent="." unique_id=1846203371]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="UrlLabel" type="Label" parent="UrlField" unique_id=1203984417]
+self_modulate = Color(0.06666667, 0.15686275, 0.3254902, 1)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_mayo7")
+theme_override_font_sizes/font_size = 32
+text = "Server address"
+script = ExtResource("4_label")
+font_size = 32
+
+[node name="UrlEdit" type="LineEdit" parent="UrlField" unique_id=1412693277]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 112)
 layout_mode = 2
@@ -173,7 +187,7 @@ theme_override_font_sizes/font_size = 40
 theme_override_styles/normal = SubResource("StyleBoxFlat_5j6sl")
 theme_override_styles/read_only = SubResource("StyleBoxFlat_5j6sl")
 theme_override_styles/focus = SubResource("StyleBoxFlat_06el2")
-placeholder_text = "Server address (https://music.example.com)"
+placeholder_text = "https://music.example.com"
 virtual_keyboard_type = 7
 script = ExtResource("3_line_edit")
 bg_color = 5
@@ -186,7 +200,21 @@ corner_bottom_right = 32
 corner_bottom_left = 32
 horizontal_padding = 36
 
-[node name="UserEdit" type="LineEdit" parent="." unique_id=1412122159]
+[node name="UserField" type="VBoxContainer" parent="." unique_id=1739561212]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="UserLabel" type="Label" parent="UserField" unique_id=1427765150]
+self_modulate = Color(0.06666667, 0.15686275, 0.3254902, 1)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_mayo7")
+theme_override_font_sizes/font_size = 32
+text = "Username"
+script = ExtResource("4_label")
+font_size = 32
+
+[node name="UserEdit" type="LineEdit" parent="UserField" unique_id=1412122159]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 112)
 layout_mode = 2
@@ -215,7 +243,21 @@ corner_bottom_right = 32
 corner_bottom_left = 32
 horizontal_padding = 36
 
-[node name="PasswordEdit" type="LineEdit" parent="." unique_id=85109991]
+[node name="PasswordField" type="VBoxContainer" parent="." unique_id=1660938241]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="PasswordLabel" type="Label" parent="PasswordField" unique_id=1985023327]
+self_modulate = Color(0.06666667, 0.15686275, 0.3254902, 1)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = SubResource("FontVariation_mayo7")
+theme_override_font_sizes/font_size = 32
+text = "Password"
+script = ExtResource("4_label")
+font_size = 32
+
+[node name="PasswordEdit" type="LineEdit" parent="PasswordField" unique_id=85109991]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 112)
 layout_mode = 2

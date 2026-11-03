@@ -38,6 +38,10 @@ const RESUME_LIMIT: = 500
 const RESUME_SAVE_MS: = 5000
 const LIKED_PLAYLIST: = "liked"
 const LIKE_KINDS: = ["track", "album", "artist"]
+const LIKES_SYNCED: = "_synced"
+const LOCAL_ONLY_LIKES: = ["plex"]
+const LIKES_SYNC_GAP_MS: = 60000
+const REPORT_INTERVAL: = 10.0
 const PAGE_KINDS: = ["tracks", "albums", "artists", "playlist"]
 const COLLECT_LIMIT: = 1000
 const MAX_CACHED_TEXTURES: = 12
@@ -99,6 +103,10 @@ var _cover_players: Dictionary = {}
 var _spectrum_warned: = false
 var library_loading: = false
 var _likes: = {}
+var _syncing_likes: = false
+var _likes_synced_at: = -LIKES_SYNC_GAP_MS
+var _reported: = {}
+var _report_timer: = Timer.new()
 var _watching_library: = false
 var resumed: = false
 var _resume: = {}
@@ -111,8 +119,13 @@ func _ready() -> void :
 	add_child(lyrics)
 	add_child(_tape)
 	add_child(artist_info)
+	_report_timer.wait_time = REPORT_INTERVAL
+	_report_timer.timeout.connect(_report_playback.bind(true))
+	add_child(_report_timer)
 	get_tree().root.files_dropped.connect(open_files)
 	_likes = JsonUtil.parse_dict(FileAccess.get_file_as_string(LIKES_PATH)) if FileAccess.file_exists(LIKES_PATH) else {}
+	if not _likes.has(LIKES_SYNCED):
+		_likes[LIKES_SYNCED] = _likes.keys().filter(func(provider_id: String) -> bool: return not provider_id in LOCAL_ONLY_LIKES)
 	playlists_changed.connect( func():
 		for key in _library_cache.keys():
 			if str(key).begins_with("playlist"):
@@ -241,6 +254,7 @@ func use_provider(provider_id: String) -> void :
 		return
 	var switching: = provider != null
 	if switching:
+		_stop_report()
 		provider.library_changed.disconnect(_on_library_changed)
 		provider.library_ready.disconnect(_on_library_ready)
 		provider.library_progress.disconnect(_watch_library)
@@ -262,6 +276,7 @@ func use_provider(provider_id: String) -> void :
 		_on_library_changed()
 		music_provider_changed.emit()
 		offline_changed.emit()
+	_refresh_likes.call_deferred(true)
 
 func has_notification_permission() -> bool:
 	return _native != null and _native.hasNotificationPermission()
@@ -936,12 +951,20 @@ func set_liked(kind: String, item: Dictionary, liked: bool) -> void :
 		await provider.set_liked(kind, id, liked)
 
 func sync_likes() -> void :
-	if provider == null or not provider.supports_likes or offline_mode():
+	if provider == null or not provider.supports_likes or offline_mode() or not provider.is_ready() or _syncing_likes:
 		return
+	_syncing_likes = true
+	_likes_synced_at = Time.get_ticks_msec()
+	var source: = provider
+	var synced: Array = _likes.get(LIKES_SYNCED, [])
+	var complete: = true
 	for kind: String in LIKE_KINDS:
-		var found: Variant = await provider.get_liked(kind)
+		var found: Variant = await source.get_liked(kind)
 		if not found is Array:
+			complete = false
 			continue
+		if source != provider:
+			break
 		var items: = _liked_items(kind)
 		var fresh: = {}
 		for entry: Variant in found:
@@ -950,10 +973,25 @@ func sync_likes() -> void :
 				var merged: Dictionary = entry.duplicate()
 				merged["liked_at"] = known.get("liked_at", entry.get("liked_at", Time.get_unix_time_from_system()))
 				fresh[str(entry["id"])] = merged
-		_likes[provider.id][kind] = fresh
+		if not synced.has(source.id):
+			for id: String in items:
+				if not fresh.has(id):
+					fresh[id] = items[id]
+					await source.set_liked(kind, id, true)
+		_likes[source.id][kind] = fresh
+	_syncing_likes = false
+	if source != provider:
+		return
+	if complete and not synced.has(source.id):
+		synced.append(source.id)
+		_likes[LIKES_SYNCED] = synced
 	_save_likes()
 	likes_changed.emit("", "", true)
 	playlists_changed.emit()
+
+func _refresh_likes(force: bool = false) -> void :
+	if (force or Time.get_ticks_msec() - _likes_synced_at >= LIKES_SYNC_GAP_MS) and not is_offline():
+		sync_likes()
 
 func _liked_items(kind: String) -> Dictionary:
 	var provider_id: = provider.id if provider else ""
@@ -1304,8 +1342,16 @@ func _request_cover(kind: String, id: String, thumb: bool = false) -> String:
 func _cached(key: String, loader: Callable, fallback: Variant) -> Variant:
 	if provider == null:
 		return fallback
+	if _library_cache.get(key) is MusicProvider.Request:
+		return await _library_cache[key].done
 	if not _library_cache.has(key):
-		_library_cache[key] = await loader.call()
+		var request: = MusicProvider.Request.new()
+		_library_cache[key] = request
+		var result: Variant = await loader.call()
+		if is_same(_library_cache.get(key), request):
+			_library_cache[key] = result
+		request.finish(result)
+		return result
 	return _library_cache[key]
 
 func _refresh_current_song() -> void :
@@ -1361,6 +1407,7 @@ func _on_playback_changed(state_json: String) -> void :
 		_apply_stream_title()
 	playback_changed.emit(_state)
 	_track_resume()
+	_report_playback()
 
 func _on_library_changed() -> void :
 	_library_cache.clear()
@@ -1379,6 +1426,7 @@ func _on_library_ready(success: bool, error: String) -> void :
 
 func _on_provider_settings_changed() -> void :
 	music_provider_changed.emit()
+	_refresh_likes(true)
 
 func _forget_discover(provider_id: String) -> void :
 	load("res://ui/screens/discover.gd").forget(provider_id)
@@ -1401,6 +1449,40 @@ func _with_effect_enum(state: Dictionary) -> Dictionary:
 func _notification(what: int) -> void :
 	if what in [NOTIFICATION_WM_CLOSE_REQUEST, NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_EXIT_TREE]:
 		write_resume()
+	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+		_stop_report()
+	elif what in [NOTIFICATION_APPLICATION_FOCUS_IN, NOTIFICATION_APPLICATION_RESUMED]:
+		_refresh_likes()
+
+func _report_playback(periodic: bool = false) -> void :
+	var song_id: = str(_state.get("current_id", ""))
+	var active: = not song_id.is_empty() and int(_state.get("state", 1)) == 3 and str(_current_base.get("id", "")) == song_id
+	var state: = ("playing" if is_playing() else "paused") if active else "stopped"
+	var same_song: = str(_reported.get("id", "")) == song_id
+	if active and same_song:
+		_reported["position"] = get_position()
+	if not periodic and same_song and str(_reported.get("state", "")) == state:
+		return
+	var previous: = _reported if not same_song or not active else {}
+	_reported = {"id": song_id, "state": state, "position": get_position(), "duration": get_duration()} if active else {}
+	if not previous.is_empty():
+		await _send_report(previous.merged({"state": "stopped"}, true))
+	if _reported.is_empty():
+		_report_timer.stop()
+		return
+	_send_report(_reported)
+	if _report_timer.is_stopped():
+		_report_timer.start()
+
+func _stop_report() -> void :
+	_report_timer.stop()
+	if not _reported.is_empty():
+		_send_report(_reported.merged({"state": "stopped"}, true))
+		_reported = {}
+
+func _send_report(report: Dictionary) -> void :
+	if provider and provider.streams and not offline_mode() and provider.is_configured():
+		await provider.report_playback(str(report["id"]), str(report["state"]), int(report["position"]), int(report["duration"]))
 
 func write_resume() -> void :
 	if _resume.is_empty():

@@ -342,12 +342,13 @@ func _address(server: String, user: String, token: String, salt: String, endpoin
 	return "%s/rest/%s?%s" % [server, endpoint, "&".join(query)]
 
 func _pages(endpoint: String, container: String, key: String, params: Callable) -> Array:
-	var found: Array = []
-	while true:
-		var page: Array = _field(await _api(endpoint, params.call(found.size())), container).get(key, [])
-		found.append_array(page)
-		if page.size() < PAGE_SIZE:
-			break
+	var found: Array = _field(await _api(endpoint, params.call(0)), container).get(key, [])
+	var full: = found.size() == PAGE_SIZE
+	while full:
+		for answer: Dictionary in await _api_all(endpoint, range(found.size(), found.size() + PAGE_SIZE * PARALLEL_REQUESTS, PAGE_SIZE).map(params)):
+			var page: Array = _field(answer, container).get(key, [])
+			found.append_array(page)
+			full = page.size() == PAGE_SIZE
 	return found
 
 func _song(entry: Dictionary) -> Dictionary:

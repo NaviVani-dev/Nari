@@ -10,6 +10,7 @@ const COVER_SIZE: = 720
 const THUMB_SIZE: = 300
 const TICKS_PER_MS: = 10000
 const UNREACHABLE: = "Could not reach the server"
+const QUICK_CONNECT_POLL: = 3.0
 const SONG_FIELDS: = "Path,Genres,MediaSources"
 const KINDS: = {"track": "Audio", "album": "MusicAlbum", "artist": "MusicArtist"}
 
@@ -62,19 +63,41 @@ func settings_entries() -> Array:
 	return entries
 
 func sign_in(server: String, user: String, password: String) -> String:
+	return _use_session(await _reach(server, "/Users/AuthenticateByName", JSON.stringify({"Username": user, "Pw": password})))
+
+func quick_connect(server: String, show_status: Callable) -> String:
+	if server.strip_edges().is_empty():
+		return "Enter your server address first"
+	var started: = await _reach(server, "/QuickConnect/Initiate", "")
+	if started.has("error"):
+		return UNREACHABLE if started["error"] == UNREACHABLE else "Quick Connect is turned off on this server"
+	show_status.call("Enter the code %s in Quick Connect from a Jellyfin app where you are signed in" % started.get("Code", ""))
+	while show_status.is_valid():
+		await http.get_tree().create_timer(QUICK_CONNECT_POLL).timeout
+		var state: = await _call(started["server"], "", "/QuickConnect/Connect", {"secret": started.get("Secret", "")})
+		if state.has("error"):
+			return "The Quick Connect code expired, try again"
+		if state.get("Authenticated", false) and show_status.is_valid():
+			return _use_session(await _reach(started["server"], "/Users/AuthenticateWithQuickConnect", JSON.stringify({"Secret": started["Secret"]})))
+	return ""
+
+func _reach(server: String, path: String, body: String) -> Dictionary:
 	server = server.strip_edges().trim_suffix("/")
-	var body: = JSON.stringify({"Username": user, "Pw": password})
 	var answer: Dictionary = {}
 	for address in [server] if server.contains("://") else ["https://" + server, "http://" + server]:
-		answer = await _call(address, "", "/Users/AuthenticateByName", {}, HTTPClient.METHOD_POST, body)
-		server = address
+		answer = await _call(address, "", path, {}, HTTPClient.METHOD_POST, body)
+		answer["server"] = address
 		if answer.get("error") != UNREACHABLE:
 			break
+	return answer
+
+func _use_session(answer: Dictionary) -> String:
 	if answer.has("error"):
 		return str(answer["error"])
-	_server = server
-	_user = user
-	_user_id = str(SubsonicMusicProvider._field(answer, "User").get("Id", ""))
+	var user: = SubsonicMusicProvider._field(answer, "User")
+	_server = str(answer["server"])
+	_user = str(user.get("Name", ""))
+	_user_id = str(user.get("Id", ""))
 	_token = str(answer.get("AccessToken", ""))
 	_save()
 	_l.log("Signed in to %s as %s" % [_server, _user])
@@ -93,7 +116,7 @@ func sign_out() -> void :
 	library_changed.emit()
 
 func get_tracks() -> Array:
-	return (await _pages({"IncludeItemTypes": "Audio", "SortBy": "SortName", "Fields": SONG_FIELDS})).map(_song)
+	return (await _pages({"IncludeItemTypes": "Audio", "SortBy": "SortName", "Fields": "Path,Genres"})).map(_song)
 
 func get_albums() -> Array:
 	return (await _pages({"IncludeItemTypes": "MusicAlbum", "SortBy": "SortName", "Fields": "ChildCount"})).map(_album)
@@ -245,6 +268,18 @@ func _open_login() -> void :
 		else:
 			login.show_error(error))
 	dialog.content.add_child(login)
+	var quick: = dialog.add_button("Quick Connect", Callable(), Dialog.Style.NORMAL, false)
+	quick.pressed.connect(func():
+		quick.disabled = true
+		login.set_busy(true)
+		var error: = await quick_connect(login.server_url(), login.show_status)
+		if not is_instance_valid(login):
+			return
+		if error.is_empty():
+			dialog.close()
+		else:
+			quick.disabled = false
+			login.show_error(error))
 	dialog.popup()
 
 func _save() -> void :
@@ -293,12 +328,13 @@ func _url(path: String, params: Dictionary) -> String:
 	return "%s%s?%s" % [_server, path, HTTPService.dictionary_to_query(params)]
 
 func _pages(params: Dictionary) -> Array:
-	var found: Array = []
-	while true:
-		var page: = _items(await _api("/Items", params.merged({"userId": _user_id, "Recursive": true, "StartIndex": found.size(), "Limit": PAGE_SIZE})))
-		found.append_array(page)
-		if page.size() < PAGE_SIZE:
-			break
+	var page: = func(start: int) -> Dictionary: return params.merged({"userId": _user_id, "Recursive": true, "EnableUserData": false, "EnableImages": false, "StartIndex": start, "Limit": PAGE_SIZE})
+	var first: = await _api("/Items", page.call(0))
+	var found: = _items(first)
+	var urls: = PackedStringArray(range(PAGE_SIZE, int(first.get("TotalRecordCount", 0)), PAGE_SIZE).map(func(start: int): return _url("/Items", page.call(start))))
+	for batch in range(0, urls.size(), SubsonicMusicProvider.PARALLEL_REQUESTS):
+		for response: HTTPService.HTTPResponse in await http.request_all(urls.slice(batch, batch + SubsonicMusicProvider.PARALLEL_REQUESTS), _headers(_token)):
+			found.append_array(_items(response.body_as_dict() if response else {}))
 	return found
 
 func _playlist_entries(playlist_id: String) -> Array:

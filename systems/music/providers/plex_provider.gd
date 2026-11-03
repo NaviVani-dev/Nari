@@ -12,6 +12,10 @@ const TRACK: = 10
 const ALBUM: = 9
 const ARTIST: = 8
 const LYRICS_STREAM: = 4
+const LOVED: = 10
+const UNRATED: = -1
+const LIBRARY_ID: = "com.plexapp.plugins.library"
+const LIKE_TYPES: = {"track": TRACK, "album": ALBUM, "artist": ARTIST}
 const UNREACHABLE: = "Could not reach the server"
 const TRANSCODE_PROFILE: = "add-transcode-target(type=musicProfile&context=streaming&protocol=http&container=mp3&audioCodec=mp3)"
 
@@ -29,6 +33,7 @@ func _init() -> void :
 	super ("plex", "Plex", "Streams the music from your Plex Media Server", preload("res://assets/icons/plex.svg"), Color("e5a00d"))
 	streams = true
 	supports_quality = true
+	supports_likes = true
 	var config: = Vault.load_config(CONFIG_PATH)
 	_server = str(config.get_value("server", "url", ""))
 	_token = str(config.get_value("server", "token", ""))
@@ -262,6 +267,30 @@ func remove_from_playlist(playlist_id: String, song_id: String) -> void :
 	for item_id: String in _playlist_items.get(playlist_id, {}).get(song_id, []):
 		await _api("/playlists/%s/items/%s" % [playlist_id, item_id], {}, HTTPClient.METHOD_DELETE)
 
+func get_liked(kind: String) -> Variant:
+	if not LIKE_TYPES.has(kind) or not is_configured():
+		return null
+	var found: = await _section_items(LIKE_TYPES[kind], {"userRating": LOVED})
+	if found.is_empty() and not reachable:
+		return null
+	match kind:
+		"track": return found.map(_song)
+		"album": return found.map(_album)
+	return found.map(_artist)
+
+func set_liked(_kind: String, id: String, liked: bool) -> void :
+	await _api("/:/rate", {"key": id, "identifier": LIBRARY_ID, "rating": LOVED if liked else UNRATED}, HTTPClient.METHOD_PUT)
+
+func report_playback(song_id: String, state: String, position_ms: int, duration_ms: int) -> void :
+	await _api("/:/timeline", {
+		"ratingKey": song_id,
+		"key": "/library/metadata/" + song_id,
+		"identifier": LIBRARY_ID,
+		"state": state,
+		"time": position_ms,
+		"duration": duration_ms,
+	})
+
 func _save() -> void :
 	var config: = ConfigFile.new()
 	config.set_value("client", "id", _client_id)
@@ -340,20 +369,21 @@ func _url(server: String, token: String, path: String, params: Dictionary) -> St
 	return server + path + joiner + query
 
 func _library_uri(path: String) -> String:
-	return "server://%s/com.plexapp.plugins.library%s" % [_machine_id, path]
+	return "server://%s/%s%s" % [_machine_id, LIBRARY_ID, path]
 
-func _section_items(kind: int) -> Array:
+func _section_items(kind: int, filters: Dictionary = {}) -> Array:
 	if _sections.is_empty():
 		_sections = _list(await _api("/library/sections"), "Directory").filter(func(section: Dictionary): return str(section.get("type", "")) == "artist")
 	var found: Array = []
+	var page: = func(start: int) -> Dictionary: return filters.merged({"type": kind, "X-Plex-Container-Start": start, "X-Plex-Container-Size": PAGE_SIZE})
 	for section: Dictionary in _sections:
-		var start: = 0
-		while true:
-			var page: = _list(await _api("/library/sections/%s/all" % section.get("key", ""), {"type": kind, "X-Plex-Container-Start": start, "X-Plex-Container-Size": PAGE_SIZE}), "Metadata")
-			found.append_array(page)
-			start += page.size()
-			if page.size() < PAGE_SIZE:
-				break
+		var path: = "/library/sections/%s/all" % section.get("key", "")
+		var first: = await _api(path, page.call(0))
+		found.append_array(_list(first, "Metadata"))
+		var urls: = PackedStringArray(range(PAGE_SIZE, int(first.get("totalSize", 0)), PAGE_SIZE).map(func(start: int): return _url(_server, "", path, page.call(start))))
+		for batch in range(0, urls.size(), SubsonicMusicProvider.PARALLEL_REQUESTS):
+			for response: HTTPService.HTTPResponse in await http.request_all(urls.slice(batch, batch + SubsonicMusicProvider.PARALLEL_REQUESTS), _headers(_token)):
+				found.append_array(_list(SubsonicMusicProvider._field(response.body_as_dict() if response else {}, "MediaContainer"), "Metadata"))
 	return found
 
 func _song(entry: Dictionary) -> Dictionary:
