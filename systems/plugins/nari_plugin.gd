@@ -212,7 +212,15 @@ func add_music_provider(spec: Dictionary) -> MusicProvider:
 	return provider
 
 func add_visualizer(spec: Dictionary) -> void :
-	var entry: = {"build": spec.get("build", Callable()), "update": spec.get("update", Callable()), "params": {}}
+	var entry: = {
+		"build": spec.get("build", Callable()),
+		"update": spec.get("update", Callable()),
+		"menu": spec.get("menu", Callable()),
+		"name": str(spec.get("name", manifest.get("name", id))),
+		"transparent": bool(spec.get("transparent", true)),
+		"shade": spec.get("shade", "dark"),
+		"params": {},
+	}
 	if spec.has("shader"):
 		entry["shader"] = load_relative(str(spec["shader"])) as Shader
 	var params: Dictionary = spec.get("params", {})

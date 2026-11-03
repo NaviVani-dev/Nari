@@ -13,7 +13,7 @@ use std::thread::JoinHandle;
 use std::time::{Duration, Instant};
 
 use crate::effects::{Chain, Effect, Equalizer, Rack, Stage};
-use crate::spectrum::{Spectrum, SNAPSHOT};
+use crate::spectrum::{Spectrum, SNAPSHOT, STEREO_SNAPSHOT};
 use symphonia::core::audio::GenericAudioBufferRef;
 use symphonia::core::codecs::audio::well_known::CODEC_ID_OPUS;
 use symphonia::core::codecs::audio::{AudioDecoder, AudioDecoderOptions};
@@ -330,6 +330,10 @@ impl Engine {
             .lock()
             .map(|spectrum| spectrum.read())
             .unwrap_or([0; SNAPSHOT])
+    }
+
+    pub fn spectrum_stereo(&self) -> Option<[u8; STEREO_SNAPSHOT]> {
+        self.shared.spectrum.lock().ok().map(|mut spectrum| spectrum.read_stereo())
     }
 
     pub fn set_spectrum_latency(&self, milliseconds: i32) {

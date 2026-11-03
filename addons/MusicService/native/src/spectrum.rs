@@ -5,6 +5,8 @@ use crate::audio::CHANNELS;
 pub const BANDS: usize = 32;
 pub const WAVE: usize = 128;
 pub const SNAPSHOT: usize = BANDS + WAVE + 1;
+pub const STEREO_BINS: usize = 1024;
+pub const STEREO_SNAPSHOT: usize = STEREO_BINS * 4;
 
 const WINDOW: usize = 1024;
 const HOP: usize = 512;
@@ -13,6 +15,10 @@ const LOWEST_HZ: f64 = 40.0;
 const HIGHEST_HZ: f64 = 16000.0;
 const FLOOR_DB: f32 = -66.0;
 const HIGH_LIFT_DB: f32 = 0.9;
+const STEREO_WINDOW: usize = STEREO_BINS * 2;
+const STEREO_HISTORY: usize = 32;
+const STEREO_IDLE_HOPS: u32 = 64;
+const STEREO_GAIN: f32 = 40.0;
 
 pub struct Spectrum {
     samples: [f32; WINDOW],
@@ -25,7 +31,99 @@ pub struct Spectrum {
     filled: usize,
     sample_rate: u32,
     written: u64,
+    stereo: Stereo,
     pub latency_ms: i32,
+}
+
+struct Stereo {
+    left: Vec<f32>,
+    right: Vec<f32>,
+    real: Vec<f32>,
+    imaginary: Vec<f32>,
+    window: Vec<f32>,
+    ring: Vec<[u8; STEREO_SNAPSHOT]>,
+    quiet: [u8; STEREO_SNAPSHOT],
+    filled: usize,
+    written: u64,
+    idle: u32,
+}
+
+impl Stereo {
+    fn new() -> Self {
+        let window = (0..STEREO_WINDOW)
+            .map(|index| 0.5 - 0.5 * (2.0 * PI * index as f32 / (STEREO_WINDOW - 1) as f32).cos())
+            .collect();
+        let mut quiet = [0u8; STEREO_SNAPSHOT];
+        quiet[STEREO_BINS * 2..].fill(128);
+        Self {
+            left: vec![0.0; STEREO_WINDOW],
+            right: vec![0.0; STEREO_WINDOW],
+            real: vec![0.0; STEREO_WINDOW],
+            imaginary: vec![0.0; STEREO_WINDOW],
+            window,
+            ring: vec![quiet; STEREO_HISTORY],
+            quiet,
+            filled: 0,
+            written: 0,
+            idle: STEREO_IDLE_HOPS,
+        }
+    }
+
+    fn reset(&mut self) {
+        self.filled = 0;
+        self.written = 0;
+    }
+
+    fn push(&mut self, left: f32, right: f32) {
+        self.left[self.filled] = left;
+        self.right[self.filled] = right;
+        self.filled += 1;
+        if self.filled == STEREO_WINDOW {
+            if self.idle < STEREO_IDLE_HOPS {
+                self.idle += 1;
+                self.analyse();
+            }
+            self.left.copy_within(STEREO_BINS.., 0);
+            self.right.copy_within(STEREO_BINS.., 0);
+            self.filled = STEREO_BINS;
+        }
+    }
+
+    fn analyse(&mut self) {
+        for index in 0..STEREO_WINDOW {
+            self.real[index] = self.left[index] * self.window[index];
+            self.imaginary[index] = self.right[index] * self.window[index];
+        }
+        fft(&mut self.real, &mut self.imaginary);
+
+        let frame = &mut self.ring[(self.written as usize) % STEREO_HISTORY];
+        let level = |x: f32, y: f32| ((x * x + y * y).sqrt().sqrt() * STEREO_GAIN).min(255.0) as u8;
+        for bin in 0..STEREO_BINS {
+            let mirror = (STEREO_WINDOW - bin) % STEREO_WINDOW;
+            let (real, imaginary) = (self.real[bin], self.imaginary[bin]);
+            let (mirror_real, mirror_imaginary) = (self.real[mirror], self.imaginary[mirror]);
+            frame[bin] = level((real + mirror_real) * 0.5, (imaginary - mirror_imaginary) * 0.5);
+            frame[STEREO_BINS + bin] = level((imaginary + mirror_imaginary) * 0.5, (mirror_real - real) * 0.5);
+            let at = STEREO_BINS + bin;
+            frame[STEREO_BINS * 2 + bin] = (self.left[at].clamp(-1.0, 1.0) * 127.0 + 128.0) as u8;
+            frame[STEREO_BINS * 3 + bin] = (self.right[at].clamp(-1.0, 1.0) * 127.0 + 128.0) as u8;
+        }
+        self.written += 1;
+    }
+
+    fn read(&mut self, latency_ms: i32, sample_rate: u32) -> [u8; STEREO_SNAPSHOT] {
+        self.idle = 0;
+        if self.written == 0 {
+            return self.quiet;
+        }
+        let delay = (i64::from(latency_ms) * i64::from(sample_rate) / 1000 / STEREO_BINS as i64)
+            .clamp(0, STEREO_HISTORY as i64 - 2);
+        let index = self.written as i64 - 1 - delay;
+        if index < 0 {
+            return self.quiet;
+        }
+        self.ring[(index as usize) % STEREO_HISTORY]
+    }
 }
 
 impl Spectrum {
@@ -47,6 +145,7 @@ impl Spectrum {
             filled: 0,
             sample_rate: 44100,
             written: 0,
+            stereo: Stereo::new(),
             latency_ms: 180,
         };
         spectrum.configure(44100);
@@ -71,10 +170,12 @@ impl Spectrum {
     pub fn reset(&mut self) {
         self.filled = 0;
         self.written = 0;
+        self.stereo.reset();
     }
 
     pub fn feed(&mut self, samples: &[f32]) {
         for frame in samples.chunks(CHANNELS) {
+            self.stereo.push(frame[0], frame[frame.len() - 1]);
             let sum: f32 = frame.iter().sum();
             self.samples[self.filled] = sum / CHANNELS as f32;
             self.filled += 1;
@@ -97,6 +198,10 @@ impl Spectrum {
             return self.quiet;
         }
         self.ring[(index as usize) % HISTORY]
+    }
+
+    pub fn read_stereo(&mut self) -> [u8; STEREO_SNAPSHOT] {
+        self.stereo.read(self.latency_ms, self.sample_rate)
     }
 
     fn analyse(&mut self) {
@@ -199,6 +304,44 @@ mod tests {
                 [sample, sample]
             })
             .collect()
+    }
+
+    fn left_only(frames: usize, rate: u32, hertz: f32) -> Vec<f32> {
+        (0..frames)
+            .flat_map(|index| [(2.0 * PI * hertz * index as f32 / rate as f32).sin() * 0.02, 0.0])
+            .collect()
+    }
+
+    #[test]
+    fn the_stereo_frame_keeps_the_channels_apart() {
+        let rate = 44100;
+        let mut spectrum = Spectrum::new();
+        spectrum.latency_ms = 0;
+        spectrum.configure(rate);
+        spectrum.read_stereo();
+        spectrum.feed(&left_only(STEREO_WINDOW * 4, rate, 1000.0));
+        let frame = spectrum.read_stereo();
+        let (left, right) = frame[..STEREO_BINS * 2].split_at(STEREO_BINS);
+        let peak = (0..STEREO_BINS).max_by_key(|bin| left[*bin]).unwrap();
+        let expected = (1000.0 * STEREO_WINDOW as f32 / rate as f32) as usize;
+        assert!(peak.abs_diff(expected) <= 1, "peak on bin {peak}, expected {expected}");
+        assert!(left[peak] > 100, "left peak was {}", left[peak]);
+        assert!(right.iter().all(|bin| *bin < 8), "right leaked {:?}", right.iter().max());
+        assert!(frame[STEREO_BINS * 2..STEREO_BINS * 3].iter().any(|wave| *wave != 128));
+        assert!(frame[STEREO_BINS * 3..].iter().all(|wave| *wave == 128));
+    }
+
+    #[test]
+    fn the_stereo_frame_only_runs_while_someone_reads_it() {
+        let rate = 44100;
+        let mut spectrum = Spectrum::new();
+        spectrum.latency_ms = 0;
+        spectrum.configure(rate);
+        spectrum.feed(&left_only(STEREO_WINDOW * 4, rate, 1000.0));
+        assert_eq!(spectrum.stereo.written, 0);
+        spectrum.read_stereo();
+        spectrum.feed(&left_only(STEREO_WINDOW * 4, rate, 1000.0));
+        assert!(spectrum.stereo.written > 0);
     }
 
     #[test]

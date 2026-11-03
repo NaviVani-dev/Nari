@@ -21,6 +21,8 @@ function __nari_log(level, text)
 	plugin:write_log(level, text)
 end
 
+nari.spectrum = __nari_spectrum
+
 function nari.log_color(color)
 	plugin:set_log_color(color)
 end

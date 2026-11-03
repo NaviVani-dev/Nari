@@ -698,6 +698,11 @@ impl MusicService {
         PackedByteArray::from(&self.player().spectrum()[..])
     }
 
+    #[func(rename = getAudioSpectrumStereo)]
+    fn get_audio_spectrum_stereo(&self) -> PackedByteArray {
+        self.player().spectrum_stereo().map_or_else(PackedByteArray::new, |frame| PackedByteArray::from(&frame[..]))
+    }
+
     #[func(rename = setAudioSpectrumLatency)]
     fn set_audio_spectrum_latency(&mut self, milliseconds: i32) {
         self.player().set_spectrum_latency(milliseconds);

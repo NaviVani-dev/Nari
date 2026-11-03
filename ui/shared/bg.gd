@@ -58,6 +58,8 @@ var _cover_key := ""
 var _animated := true
 var _mode := "full"
 var _stage_tween: Tween
+var _hosted: Array[Control] = []
+var _covers: Array[Object] = []
 
 func _ready() -> void:
 	var gradient := Gradient.new()
@@ -96,6 +98,8 @@ func _process(delta: float) -> void:
 	var host := get_viewport()
 	if host is SubViewport and host.render_target_update_mode == SubViewport.UPDATE_DISABLED or host is Window and not host.visible:
 		return
+	if not _covers.is_empty():
+		return
 	_time += delta
 	_tick_clocks(delta)
 	if _quality_fps > 0:
@@ -105,6 +109,29 @@ func _process(delta: float) -> void:
 		_quality_elapsed = fmod(_quality_elapsed, 1.0 / float(_quality_fps))
 	_redraw()
 
+func host(node: Control) -> void:
+	_hosted.append(node)
+	add_child(node)
+	node.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	node.tree_exited.connect(func(): _hosted.erase(node))
+
+func cover(owner: Object, covered: bool) -> void:
+	if covered == _covers.has(owner):
+		return
+	if covered:
+		_covers.append(owner)
+	else:
+		_covers.erase(owner)
+	_apply_cover()
+
+func _apply_cover() -> void:
+	var covered := not _covers.is_empty()
+	for child in get_children():
+		if not _hosted.has(child) and child is CanvasItem:
+			(child as CanvasItem).visible = not covered
+	if not covered:
+		_refresh_pages()
+
 func _apply_quality(quality: Variant) -> void:
 	_quality_fps = QUALITY_FPS.get(str(quality), 0)
 	_quality_elapsed = 0.0
@@ -113,7 +140,8 @@ func _build() -> void:
 	if _stage_tween:
 		_stage_tween.kill()
 	for child in get_children():
-		child.queue_free()
+		if not _hosted.has(child):
+			child.queue_free()
 	for list: Array in [_views, _colors, _tints, _blob_mats, _triangle_layers, _dot_mats, _shader_layers, _media_layers, _visible_by_page]:
 		list.clear()
 	_animated = _mode != "simple"
@@ -140,6 +168,9 @@ func _build() -> void:
 	_refresh_cover()
 	_resize()
 	_update_appearance()
+	for node in _hosted:
+		move_child(node, -1)
+	_apply_cover()
 	set_process(not _blob_mats.is_empty() or not _triangle_layers.is_empty() or _animated and not _shader_layers.is_empty())
 
 func _screen_layers() -> Array:
@@ -266,7 +297,7 @@ func _refresh_pages() -> void:
 			shown = shown and _cover != null
 		elif entry["layer"]["type"] == "image":
 			shown = shown and node.texture != null
-		node.visible = shown
+		node.visible = shown and (_covers.is_empty() or node.get_parent() != self)
 	_redraw()
 
 func _refresh_cover() -> void:

@@ -6,6 +6,9 @@ uniform vec4 bands[8];
 uniform vec4 color_1 : source_color = vec4(0.0, 1.0, 0.92, 1.0);
 uniform vec4 color_2 : source_color = vec4(1.0, 0.0, 0.92, 1.0);
 uniform vec4 color_3 : source_color = vec4(0.53, 0.82, 1.0, 1.0);
+uniform vec4 color_back : source_color = vec4(0.05, 0.05, 0.09, 1.0);
+uniform vec4 color_back_2 : source_color = vec4(0.1, 0.07, 0.16, 1.0);
+uniform bool backdrop = true;
 uniform vec2 rect_size = vec2(1920.0, 1080.0);
 uniform vec2 direction = vec2(-1.5, 1.0);
 uniform float travel = 0.0;
@@ -50,7 +53,9 @@ void fragment() {
 	float c = dot(point, EDGE_C) / cell_size;
 
 	vec2 cell = floor(vec2(a, b));
+	float upper = step(1.0, fract(a) + fract(b));
 	float pick = hash(cell);
+	float facet = hash(cell + vec2(upper * 17.0, upper * 31.0));
 	float energy = band_at(clamp(int(pick * 32.0), 0, 31));
 
 	float blur = fwidth(a) * 1.6 + 0.004;
@@ -70,6 +75,18 @@ void fragment() {
 	vec3 tint = mix(color_1.rgb, color_2.rgb, pick);
 	vec3 result = mix(tint, color_3.rgb, beat);
 
-	float alpha = mesh * (0.26 + energy * 0.74) + node * (0.55 + beat * 0.45) + beat * 0.22;
-	COLOR = vec4(result * incoming.rgb, clamp(alpha, 0.0, 1.0) * incoming.a);
+	float shortest = max(min(rect_size.x, rect_size.y), 1.0);
+	vec2 place = UV * rect_size / shortest;
+	float field = sin(place.x * 2.2 + TIME * 0.15 + travel * 0.05)
+		+ sin(place.y * 3.1 - TIME * 0.11)
+		+ sin((place.x + place.y) * 1.7 + travel * 0.08)
+		+ sin(length(place - vec2(0.9, 0.5)) * 4.0 - TIME * 0.2);
+	vec3 aurora = mix(color_1.rgb, color_2.rgb, 0.5 + 0.5 * sin(field * 1.3));
+	vec3 back = mix(color_back.rgb, color_back_2.rgb, UV.y);
+	back = mix(back, aurora, 0.12 + level * 0.12 + bass * 0.08);
+	back = mix(back, tint, (facet * 0.05 + energy * 0.16) * (0.4 + upper * 0.6));
+	back *= 1.0 - smoothstep(0.45, 1.05, length((UV - 0.5) * vec2(1.0, 1.25))) * 0.32;
+
+	float alpha = clamp(mesh * (0.26 + energy * 0.74) + node * (0.55 + beat * 0.45) + beat * 0.22, 0.0, 1.0);
+	COLOR = backdrop ? vec4(mix(back, result, alpha) * incoming.rgb, incoming.a) : vec4(result * incoming.rgb, alpha * incoming.a);
 }

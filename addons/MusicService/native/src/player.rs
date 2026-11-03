@@ -7,7 +7,7 @@ use std::time::Instant;
 
 use crate::audio::{Engine, EngineEvent, Media};
 use crate::effects::{Custom, Effect, Stage, MAX_STAGES};
-use crate::spectrum::SNAPSHOT;
+use crate::spectrum::{SNAPSHOT, STEREO_SNAPSHOT};
 use crate::events::Event;
 use crate::library::{Library, Song};
 use crate::playlists::Playlists;
@@ -726,6 +726,10 @@ impl Player {
                 quiet[32..160].fill(128);
                 quiet
             })
+    }
+
+    pub fn spectrum_stereo(&self) -> Option<[u8; STEREO_SNAPSHOT]> {
+        self.engine.as_ref().and_then(Engine::spectrum_stereo)
     }
 
     pub fn set_spectrum_latency(&mut self, milliseconds: i32) {

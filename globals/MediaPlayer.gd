@@ -1136,6 +1136,11 @@ func get_spectrum() -> PackedByteArray:
 		_l.warn("The native service returned %s instead of bytes, visualizers stay flat" % type_string(typeof(data)))
 	return PackedByteArray()
 
+func get_spectrum_stereo() -> PackedByteArray:
+	if not _native or not is_playing() or not _native.has_method("getAudioSpectrumStereo"):
+		return PackedByteArray()
+	return _native.getAudioSpectrumStereo()
+
 func set_spectrum_latency(milliseconds: int) -> void:
 	if _native:
 		_native.setAudioSpectrumLatency(milliseconds)

@@ -13,6 +13,7 @@ var _open: Control
 func _ready() -> void:
 	var visualizers: Visualizers = top.get_node("Visualizers")
 	visualizers.source = Soundboard.spectrum
+	visualizers.backdrop = false
 	visualizers.mode = Visualizers.SCOPE
 	_editor.closed.connect(func(): _show(_board))
 	_grid.selection_changed.connect(_refresh_header.unbind(1))

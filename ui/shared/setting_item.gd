@@ -85,7 +85,6 @@ func _build_slider() -> void:
 	body.add_child(row)
 	add_child(body)
 	_slider = ProgressSlider.new()
-	_slider.grabber_on_hover = true
 	_slider.focus_mode = Control.FOCUS_NONE
 	_slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	body.add_child(_slider)
