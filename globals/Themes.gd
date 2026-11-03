@@ -523,7 +523,7 @@ func uniform_value(value: Variant) -> Variant:
 	if value is String:
 		var text: String = value
 		if text.begins_with("$"):
-			return setting_value(active_id(), text.substr(1))
+			return uniform_value(setting_value(active_id(), text.substr(1)))
 		if IMAGE_EXTENSIONS.has(text.get_extension().to_lower()):
 			if not _samplers.has(text):
 				_samplers[text] = _sampler_of(text)

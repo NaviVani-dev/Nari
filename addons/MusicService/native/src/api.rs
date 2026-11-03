@@ -39,7 +39,6 @@ pub struct MusicService {
     media: Media,
     started: bool,
     now_playing: bool,
-    resume_after_recording: bool,
 }
 
 impl UserSingleton for MusicService {}
@@ -82,7 +81,6 @@ impl IObject for MusicService {
             media: Media::default(),
             started: false,
             now_playing: false,
-            resume_after_recording: false,
             root,
             library,
             playlists,
@@ -277,9 +275,6 @@ impl MusicService {
         };
         self.cast.reap();
         if let Some(captured) = self.soundboard.tick() {
-            if std::mem::take(&mut self.resume_after_recording) {
-                self.player().resume();
-            }
             self.signals().soundboard_captured().emit(captured);
         }
         if state != self.tray_state {
@@ -861,8 +856,18 @@ impl MusicService {
     }
 
     #[func(rename = playSound)]
-    fn play_sound(&mut self, slot: i32) {
-        self.soundboard.play(slot);
+    fn play_sound(&mut self, slot: i32, recipe: GString, looped: bool) {
+        self.soundboard.play(slot, &recipe.to_string(), looped);
+    }
+
+    #[func(rename = stopSound)]
+    fn stop_sound(&mut self, slot: i32) {
+        self.soundboard.stop_voices(slot);
+    }
+
+    #[func(rename = getSoundWave)]
+    fn get_sound_wave(&self, slot: i32, points: i32) -> PackedByteArray {
+        PackedByteArray::from(&self.soundboard.wave(slot, points.max(1) as usize)[..])
     }
 
     #[func(rename = loadEffect)]
@@ -891,13 +896,8 @@ impl MusicService {
     }
 
     #[func(rename = startSoundRecording)]
-    fn start_sound_recording(&mut self) -> bool {
-        let started = self.soundboard.start_recording();
-        if started && self.player().is_playing() {
-            self.resume_after_recording = true;
-            self.player().pause();
-        }
-        started
+    fn start_sound_recording(&mut self, song: bool) -> bool {
+        self.soundboard.start_recording(song)
     }
 
     #[func(rename = stopSoundRecording)]
@@ -948,9 +948,8 @@ impl MusicService {
     }
 
     #[func(rename = startSoundEdit)]
-    fn start_sound_edit(&mut self, slot: i32, effect_id: GString, speed: f32, pitch: f32) -> bool {
-        self.soundboard
-            .start_edit(slot, &effect_id.to_string(), speed, pitch)
+    fn start_sound_edit(&mut self, slot: i32, recipe: GString) -> bool {
+        self.soundboard.start_edit(slot, &recipe.to_string())
     }
 
     #[func(rename = setSoundEditPlaying)]
@@ -976,17 +975,6 @@ impl MusicService {
     #[func(rename = stopSoundEdit)]
     fn stop_sound_edit(&mut self) {
         self.soundboard.stop_edit();
-    }
-
-    #[func(rename = saveSoundEdit)]
-    fn save_sound_edit(&mut self, slot: i32, effect_id: GString, speed: f32, pitch: f32) -> bool {
-        let saved = self
-            .soundboard
-            .save_edit(slot, &effect_id.to_string(), speed, pitch);
-        if saved {
-            self.signals().soundboard_changed().emit();
-        }
-        saved
     }
 
     #[func(rename = romanizeLines)]

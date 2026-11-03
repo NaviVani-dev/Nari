@@ -277,7 +277,7 @@ end
 
 local user_settings
 local declared = {}
-local SETTING_TYPES = { toggle = true, text = true, number = true, choice = true }
+local SETTING_TYPES = { toggle = true, text = true, number = true, choice = true, color = true }
 
 local function setting_value(spec)
 	local value = nari.get(spec.key)
@@ -365,6 +365,13 @@ local function setting_entries()
 				options = options,
 				get = function() return setting_value(spec) end,
 				set = function(value) store_setting(spec, value) end,
+			}
+		elseif spec.type == "color" then
+			entry.color = {
+				get = function() return setting_value(spec) or "#ffffff" end,
+				set = function(value) store_setting(spec, value) end,
+				palette = spec.palette,
+				custom = spec.custom ~= false,
 			}
 		else
 			entry.action = function() edit_setting(spec) end

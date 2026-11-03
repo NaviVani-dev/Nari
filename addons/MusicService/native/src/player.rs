@@ -587,10 +587,6 @@ impl Player {
         }
     }
 
-    pub fn is_playing(&self) -> bool {
-        self.playing
-    }
-
     #[cfg_attr(not(target_os = "android"), allow(dead_code))]
     pub fn session_json(&self) -> String {
         let Some(song) = self.items.get(self.index) else {

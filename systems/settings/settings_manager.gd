@@ -291,6 +291,10 @@ class PlaybackSection extends Section:
 		set(value):
 			sounds_volume = value
 			_store("sounds_volume", value)
+	var soundboard_volume: = 100.0:
+		set(value):
+			soundboard_volume = value
+			_store("soundboard_volume", value)
 	var stream_quality: = "original":
 		set(value):
 			stream_quality = value
@@ -321,6 +325,7 @@ class PlaybackSection extends Section:
 		keep_screen_on = _fetch("keep_screen_on", keep_screen_on)
 		sounds_while_playing = _fetch("sounds_while_playing", sounds_while_playing)
 		sounds_volume = _fetch("sounds_volume", sounds_volume)
+		soundboard_volume = _fetch("soundboard_volume", soundboard_volume)
 		stream_quality = _fetch("stream_quality", stream_quality)
 		download_quality = _fetch("download_quality", download_quality)
 		soundfont = _fetch("soundfont", soundfont)

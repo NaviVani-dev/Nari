@@ -268,6 +268,7 @@ func _pick(index: int) -> void:
 	selected = index
 	selection_changed.emit(index)
 	picked.emit(index)
+	Sfx.cursor()
 
 func _item_at(point: Vector2) -> int:
 	var best := -1

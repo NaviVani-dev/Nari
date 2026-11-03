@@ -6,6 +6,7 @@ signal chose
 
 const SCENE := "res://ui/shared/SettingItem.tscn"
 const SLIDER_GAP := 20
+const SWATCH := 56.0
 
 @onready var glyph: Icon = %Glyph
 @onready var title: NariLabel = %Title
@@ -15,6 +16,7 @@ const SLIDER_GAP := 20
 var entry: Dictionary = {}
 var _switch: NariSwitch
 var _slider: ProgressSlider
+var _swatch: Control
 var _painted := false
 
 func setup(data: Dictionary) -> void:
@@ -31,6 +33,12 @@ func _ready() -> void:
 	marquee_on_focus([title, description])
 	_switch = NariSwitch.new()
 	value.add_sibling(_switch)
+	_swatch = Control.new()
+	_swatch.custom_minimum_size = Vector2.ONE * SWATCH
+	_swatch.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_swatch.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_swatch.draw.connect(_draw_swatch)
+	value.add_sibling(_swatch)
 	refresh()
 
 func refresh() -> void:
@@ -40,7 +48,10 @@ func refresh() -> void:
 	var current: Callable = entry.get("value", Callable())
 	value.text = str(current.call()) if current.is_valid() else ""
 	var checked: Variant = _checked()
-	value.visible = not value.text.is_empty() and checked == null
+	value.visible = not value.text.is_empty() and checked == null and not entry.has("color")
+	if _swatch:
+		_swatch.visible = entry.has("color")
+		_swatch.queue_redraw()
 	if _switch:
 		_switch.visible = checked != null
 		if checked != null:
@@ -91,6 +102,12 @@ func _show_slid(amount: float) -> void:
 	var format: Callable = entry.get("slider", {}).get("format", Callable())
 	value.text = format.call(amount) if format.is_valid() else str(amount)
 	value.visible = true
+
+func _draw_swatch() -> void:
+	if entry.has("color"):
+		var middle := _swatch.size * 0.5
+		_swatch.draw_circle(middle, middle.x, ColorChoice.color_of(entry["color"]["get"].call()), true, -1.0, true)
+		_swatch.draw_circle(middle, middle.x, Color(ThemeEngine.get_color(ThemeEngine.Colors.Foreground), 0.4), false, 3.0, true)
 
 func is_slider() -> bool:
 	return entry.has("slider")
@@ -175,6 +192,9 @@ static func create(data: Dictionary, changed: Callable) -> SettingItem:
 			return
 		if item.is_choice():
 			item.choose()
+			return
+		if item.entry.has("color"):
+			ColorChoice.open(str(item.entry.get("title", "")), item.entry["color"], item.chose.emit)
 			return
 		item.entry["action"].call()
 		changed.call())

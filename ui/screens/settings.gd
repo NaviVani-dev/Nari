@@ -181,6 +181,7 @@ func _entries_of(category: String) -> Array:
 				SettingItem.toggle("Keep screen on", "Keeps your device from going into sleep mode while Nari is focused and playing music", preload("res://assets/icons/charge.svg"), "playback", "keep_screen_on"),
 			]) + _section("Sound effects", [
 				_slider("Sound effects volume", "How loud Nari's sounds are", preload("res://assets/icons/sound.svg"), "playback", "sounds_volume", Vector3(0, 100, 5), func(amount: float): return "%d%%" % amount),
+				_slider("Soundboard volume", "How loud your soundboard pads are", preload("res://assets/icons/soundboard.svg"), "playback", "soundboard_volume", Vector3(0, 100, 5), func(amount: float): return "%d%%" % amount),
 				SettingItem.toggle("Play sounds while music is playing", "Nari's sounds keep playing over your music", preload("res://assets/icons/music_note.svg"), "playback", "sounds_while_playing"),
 			]) + _section("MIDI and modules", [
 				{
@@ -527,6 +528,15 @@ func _theme_setting_entry(setting: Dictionary, id: String) -> Dictionary:
 			"get": func(): return str(Themes.setting_value(id, key)),
 			"set": func(option: Variant): SettingsManager.set_value(section, key, option),
 		}
+	if str(setting.get("type", "")) == "color":
+		entry.erase("action")
+		entry["color"] = {
+			"get": func(): return Themes.setting_value(id, key),
+			"set": func(color: Variant): SettingsManager.set_value(section, key, color),
+			"custom": bool(setting.get("custom", true)),
+		}
+		if setting.get("palette") is Array:
+			entry["color"]["palette"] = setting["palette"]
 	if str(setting.get("type", "")) == "number":
 		var suffix := str(setting.get("suffix", ""))
 		entry["slider"] = {

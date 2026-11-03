@@ -80,11 +80,12 @@ impl Mix {
 
     fn render(&mut self, output: &mut [f32], step: f64) {
         let mut active = false;
+        let mut effects = vec![0.0f32; output.len()];
         for voice in self.voices.iter_mut().filter(|voice| voice.playing) {
             active = true;
             let length = voice.samples.len();
             let mut peak = 0.0f32;
-            for sample in output.iter_mut() {
+            for sample in if voice.slot <= EFFECT_SLOT { effects.iter_mut() } else { output.iter_mut() } {
                 if voice.position >= length as f64 {
                     if !voice.looped {
                         break;
@@ -111,6 +112,9 @@ impl Mix {
         if !self.capturing {
             self.publish_wave(output);
         }
+        for (sample, effect) in output.iter_mut().zip(&effects) {
+            *sample = (*sample + limit(*effect) * OUTPUT_SCALE).clamp(-1.0, 1.0);
+        }
         let decay = LEVEL_DECAY.powf(output.len() as f32 / (BLOCK / step as f32));
         for level in self.levels.iter_mut() {
             *level *= decay;
@@ -131,9 +135,59 @@ impl Mix {
 }
 
 struct Capture {
-    _stream: cpal::Stream,
+    _stream: Option<cpal::Stream>,
     samples: Arc<Mutex<Vec<i16>>>,
     stop: Arc<AtomicBool>,
+}
+
+pub static SONG: Mutex<Option<Tap>> = Mutex::new(None);
+
+pub struct Tap {
+    cursor: f64,
+    carry: Vec<f32>,
+    samples: Arc<Mutex<Vec<i16>>>,
+    stop: Arc<AtomicBool>,
+    mix: Arc<Mutex<Mix>>,
+}
+
+impl Tap {
+    pub fn feed(&mut self, rate: u32, frames: impl Iterator<Item = f32>) {
+        if self.stop.load(Ordering::Relaxed) {
+            return;
+        }
+        let step = f64::from(rate) / f64::from(RATE);
+        self.carry.extend(frames);
+        let mut converted = Vec::new();
+        while self.cursor + 1.0 < self.carry.len() as f64 {
+            let low = self.cursor as usize;
+            let blend = (self.cursor - low as f64) as f32;
+            converted.push(self.carry[low] + (self.carry[low + 1] - self.carry[low]) * blend);
+            self.cursor += step;
+        }
+        let used = (self.cursor as usize).min(self.carry.len());
+        self.carry.drain(..used);
+        self.cursor -= used as f64;
+        if let Ok(mut mix) = self.mix.try_lock() {
+            mix.publish_wave(&converted);
+        }
+        if let Ok(mut captured) = self.samples.lock() {
+            let room = MAX_FRAMES.saturating_sub(captured.len());
+            captured.extend(converted.iter().take(room).map(|value| (value * 32768.0).clamp(-32768.0, 32767.0) as i16));
+            if captured.len() >= MAX_FRAMES {
+                self.stop.store(true, Ordering::Relaxed);
+            }
+        }
+    }
+}
+
+#[derive(serde::Deserialize)]
+struct Recipe {
+    effect: String,
+    speed: f32,
+    pitch: f32,
+    start: f32,
+    end: f32,
+    gain: f32,
 }
 
 pub struct Soundboard {
@@ -143,7 +197,7 @@ pub struct Soundboard {
     output: Option<cpal::Stream>,
     lost: Arc<AtomicBool>,
     wanted: bool,
-    cache: VecDeque<(i32, Arc<Vec<i16>>)>,
+    cache: VecDeque<(String, Arc<Vec<i16>>)>,
     capture: Option<Capture>,
     edit: Option<usize>,
     effects: HashMap<i32, Vec<i16>>,
@@ -192,11 +246,16 @@ impl Soundboard {
         }
     }
 
-    pub fn play(&mut self, slot: i32) {
-        let Some(samples) = self.load(slot) else {
-            return;
-        };
-        self.add_voice(slot, samples, false, 0.0, true);
+    pub fn play(&mut self, slot: i32, recipe: &str, looped: bool) {
+        if let Some(samples) = self.load(slot, recipe) {
+            self.add_voice(slot, samples, looped, 0.0, true);
+        }
+    }
+
+    pub fn wave(&self, slot: i32, points: usize) -> Vec<u8> {
+        let samples = read_wav(&self.slot_file(slot)).unwrap_or_default();
+        let size = samples.len().div_ceil(points.max(1)).max(1);
+        samples.chunks(size).map(|chunk| (chunk.iter().map(|sample| i32::from(*sample).abs()).max().unwrap_or(0) * 255 / 32768) as u8).collect()
     }
 
     pub fn load_effect(&mut self, id: i32, bytes: Vec<u8>, name: &str) {
@@ -243,31 +302,22 @@ impl Soundboard {
         true
     }
 
-    pub fn start_recording(&mut self) -> bool {
-        if self.capture.is_some() || !crate::audio::available() {
+    pub fn start_recording(&mut self, song: bool) -> bool {
+        if self.capture.is_some() {
             return false;
         }
-        let Some(device) = cpal::default_host().default_input_device() else {
-            return false;
-        };
-        let Ok(supported) = device.default_input_config() else {
-            return false;
-        };
-        let format = supported.sample_format();
-        let config: cpal::StreamConfig = supported.into();
         let samples = Arc::new(Mutex::new(Vec::with_capacity(MAX_FRAMES)));
         let stop = Arc::new(AtomicBool::new(false));
-        let stream = match format {
-            cpal::SampleFormat::I16 => record::<i16>(&device, &config, &samples, &stop, &self.mix),
-            cpal::SampleFormat::U16 => record::<u16>(&device, &config, &samples, &stop, &self.mix),
-            _ => record::<f32>(&device, &config, &samples, &stop, &self.mix),
+        let tap = Tap { cursor: 0.0, carry: Vec::new(), samples: samples.clone(), stop: stop.clone(), mix: self.mix.clone() };
+        let stream = if song {
+            *SONG.lock().unwrap_or_else(|poisoned| poisoned.into_inner()) = Some(tap);
+            None
+        } else {
+            let Some(stream) = listen(tap).filter(|stream| stream.play().is_ok()) else {
+                return false;
+            };
+            Some(stream)
         };
-        let Some(stream) = stream else {
-            return false;
-        };
-        if stream.play().is_err() {
-            return false;
-        }
         if let Ok(mut mix) = self.mix.lock() {
             mix.capturing = true;
         }
@@ -325,11 +375,10 @@ impl Soundboard {
         self.add_voice(PENDING_SLOT, Arc::new(samples), false, 0.0, true);
     }
 
-    pub fn start_edit(&mut self, slot: i32, effect: &str, speed: f32, pitch: f32) -> bool {
-        let Some(source) = read_wav(&self.slot_file(slot)) else {
+    pub fn start_edit(&mut self, slot: i32, recipe: &str) -> bool {
+        let Some(rendered) = self.load(slot, recipe) else {
             return false;
         };
-        let rendered = render(&source, effect, speed, pitch);
         let (position, playing) = self
             .mix
             .lock()
@@ -347,7 +396,7 @@ impl Soundboard {
             })
             .unwrap_or((0.0, true));
         self.edit = Some(rendered.len());
-        self.add_voice(EDIT_SLOT, Arc::new(rendered), true, position, playing);
+        self.add_voice(EDIT_SLOT, rendered, true, position, playing);
         true
     }
 
@@ -386,16 +435,6 @@ impl Soundboard {
         self.stop_voices(EDIT_SLOT);
     }
 
-    pub fn save_edit(&mut self, slot: i32, effect: &str, speed: f32, pitch: f32) -> bool {
-        let Some(source) = read_wav(&self.slot_file(slot)) else {
-            return false;
-        };
-        let saved = write_wav(&self.slot_file(slot), &render(&source, effect, speed, pitch));
-        self.forget(slot);
-        self.stop_edit();
-        saved
-    }
-
     pub fn tick(&mut self) -> Option<bool> {
         if self.lost.swap(false, Ordering::Relaxed) {
             self.output = None;
@@ -414,6 +453,7 @@ impl Soundboard {
         }
         let capture = self.capture.take()?;
         drop(capture._stream);
+        *SONG.lock().unwrap_or_else(|poisoned| poisoned.into_inner()) = None;
         let mut samples = capture.samples.lock().map(|samples| samples.clone()).unwrap_or_default();
         samples.truncate(MAX_FRAMES);
         if let Ok(mut mix) = self.mix.lock() {
@@ -456,7 +496,7 @@ impl Soundboard {
         }
     }
 
-    fn stop_voices(&mut self, slot: i32) {
+    pub fn stop_voices(&mut self, slot: i32) {
         if let Ok(mut mix) = self.mix.lock() {
             mix.stop(slot);
         }
@@ -494,15 +534,17 @@ impl Soundboard {
         }
     }
 
-    fn load(&mut self, slot: i32) -> Option<Arc<Vec<i16>>> {
-        if let Some(index) = self.cache.iter().position(|(cached, _)| *cached == slot) {
+    fn load(&mut self, slot: i32, recipe: &str) -> Option<Arc<Vec<i16>>> {
+        let key = format!("{slot}:{recipe}");
+        if let Some(index) = self.cache.iter().position(|(cached, _)| *cached == key) {
             let entry = self.cache.remove(index)?;
             let samples = entry.1.clone();
             self.cache.push_back(entry);
             return Some(samples);
         }
-        let samples = Arc::new(read_wav(&self.slot_file(slot))?);
-        self.cache.push_back((slot, samples.clone()));
+        let recipe: Recipe = serde_json::from_str(recipe).ok()?;
+        let samples = Arc::new(prepare(&read_wav(&self.slot_file(slot))?, &recipe));
+        self.cache.push_back((key, samples.clone()));
         if self.cache.len() > CACHED_SOUNDS {
             self.cache.pop_front();
         }
@@ -510,7 +552,8 @@ impl Soundboard {
     }
 
     fn forget(&mut self, slot: i32) {
-        self.cache.retain(|(cached, _)| *cached != slot);
+        let prefix = format!("{slot}:");
+        self.cache.retain(|(cached, _)| !cached.starts_with(&prefix));
     }
 
     fn slot_file(&self, slot: i32) -> PathBuf {
@@ -576,57 +619,37 @@ where
         .ok()
 }
 
+fn listen(tap: Tap) -> Option<cpal::Stream> {
+    if !crate::audio::available() {
+        return None;
+    }
+    let device = cpal::default_host().default_input_device()?;
+    let supported = device.default_input_config().ok()?;
+    let format = supported.sample_format();
+    let config: cpal::StreamConfig = supported.into();
+    match format {
+        cpal::SampleFormat::I16 => record::<i16>(&device, &config, tap),
+        cpal::SampleFormat::U16 => record::<u16>(&device, &config, tap),
+        _ => record::<f32>(&device, &config, tap),
+    }
+}
+
 fn record<T>(
     device: &cpal::Device,
     config: &cpal::StreamConfig,
-    samples: &Arc<Mutex<Vec<i16>>>,
-    stop: &Arc<AtomicBool>,
-    mix: &Arc<Mutex<Mix>>,
+    mut tap: Tap,
 ) -> Option<cpal::Stream>
 where
     T: SizedSample,
     f32: FromSample<T>,
 {
     let channels = usize::from(config.channels).max(1);
-    let step = f64::from(config.sample_rate) / f64::from(RATE);
-    let (samples, stop, mix) = (samples.clone(), stop.clone(), mix.clone());
-    let mut cursor = 0.0f64;
-    let mut carry: Vec<f32> = Vec::new();
+    let rate = config.sample_rate;
     device
         .build_input_stream(
             config.clone(),
             move |input: &[T], _| {
-                if stop.load(Ordering::Relaxed) {
-                    return;
-                }
-                carry.extend(input.chunks(channels).map(|frame| {
-                    frame.iter().map(|sample| sample.to_sample::<f32>()).sum::<f32>() / channels as f32
-                }));
-                let mut converted = Vec::new();
-                while cursor + 1.0 < carry.len() as f64 {
-                    let low = cursor as usize;
-                    let blend = (cursor - low as f64) as f32;
-                    converted.push(carry[low] + (carry[low + 1] - carry[low]) * blend);
-                    cursor += step;
-                }
-                let used = (cursor as usize).min(carry.len());
-                carry.drain(..used);
-                cursor -= used as f64;
-                if let Ok(mut mix) = mix.try_lock() {
-                    mix.publish_wave(&converted);
-                }
-                if let Ok(mut captured) = samples.lock() {
-                    let room = MAX_FRAMES.saturating_sub(captured.len());
-                    captured.extend(
-                        converted
-                            .iter()
-                            .take(room)
-                            .map(|value| (value * 32768.0).clamp(-32768.0, 32767.0) as i16),
-                    );
-                    if captured.len() >= MAX_FRAMES {
-                        stop.store(true, Ordering::Relaxed);
-                    }
-                }
+                tap.feed(rate, input.chunks(channels).map(|frame| frame.iter().map(|sample| sample.to_sample::<f32>()).sum::<f32>() / channels as f32));
             },
             |_| {},
             None,
@@ -673,6 +696,13 @@ fn clamp_factor(factor: f32) -> f32 {
     } else {
         1.0
     }
+}
+
+fn prepare(source: &[i16], recipe: &Recipe) -> Vec<i16> {
+    let first = (source.len() as f32 * recipe.start.clamp(0.0, 1.0)) as usize;
+    let last = ((source.len() as f32 * recipe.end.clamp(0.0, 1.0)) as usize).max(first);
+    let rendered = render(&source[first..last], &recipe.effect, recipe.speed, recipe.pitch);
+    rendered.iter().map(|sample| (f32::from(*sample) * recipe.gain).clamp(-32768.0, 32767.0) as i16).collect()
 }
 
 fn render(source: &[i16], effect_id: &str, speed: f32, pitch: f32) -> Vec<i16> {

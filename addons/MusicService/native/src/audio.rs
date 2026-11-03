@@ -429,6 +429,8 @@ impl Mix {
         let mut done = 0;
         let mut flushes = 0;
         let mut track = None;
+        let mut song = self.master.then(|| crate::soundboard::SONG.try_lock().ok()).flatten().filter(|song| song.is_some());
+        let mut heard = Vec::new();
         if let Ok(mut ring) = shared.ring.lock() {
             flushes = ring.flushes;
             if playing {
@@ -437,6 +439,9 @@ impl Mix {
                     let right = ring.samples.pop_front().unwrap_or(0.0);
                     let (left, right) = self.equalizer.process(left, right);
                     let (left, right) = self.rack.process(left, right);
+                    if song.is_some() {
+                        heard.push((left + right) * 0.5);
+                    }
                     put(left * volume, right * volume);
                     ring.consumed += 1;
                     done += 1;
@@ -446,6 +451,9 @@ impl Mix {
                 }
             }
             track = ring.markers.front().map(|marker| marker.index);
+        }
+        if let Some(tap) = song.as_mut().and_then(|song| song.as_mut()) {
+            tap.feed(shared.rate, heard.into_iter());
         }
         for _ in done..frames {
             put(0.0, 0.0);

@@ -59,6 +59,8 @@ func _ready() -> void:
 		Engine.get_singleton("MusicService").connect("tray_command", _on_tray_command)
 	Engine.max_fps = SettingsManager.performance.max_fps
 	_mount_theme_overlays()
+	if OS.get_name() == "iOS":
+		add_child(EdgeSwipe.new())
 	InputGlyphs.swap_face = SettingsManager.general.swap_face_glyphs
 	InputGlyphs.swap_actions = SettingsManager.general.nintendo_layout
 	var idle_check := Timer.new()

@@ -26,7 +26,7 @@ var editing := false:
 		editing = value
 		var panel := get_node_or_null("Panel") as NariPanelContainer
 		if panel:
-			panel.gradient_color = ThemeEngine.Colors.AccentGradient if value else ThemeEngine.Colors.Background
+			panel.gradient_color = ThemeEngine.Colors.AccentGradient if value else ThemeEngine.Colors.PanelGradient
 
 func _ready() -> void:
 	%Pad.standalone = standalone

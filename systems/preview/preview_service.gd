@@ -628,8 +628,14 @@ func getSoundboardFrame() -> PackedByteArray:
 func setSoundboardActive(_active: bool) -> void:
 	pass
 
-func playSound(_slot: int) -> void:
+func playSound(_slot: int, _recipe: String, _looped: bool) -> void:
 	pass
+
+func stopSound(_slot: int) -> void:
+	pass
+
+func getSoundWave(_slot: int, _points: int) -> PackedByteArray:
+	return PackedByteArray()
 
 func loadEffect(id: int, bytes: PackedByteArray, _name: String) -> void:
 	JavaScriptBridge.get_interface("nariSounds").load(id, Marshalls.raw_to_base64(bytes))
@@ -643,7 +649,7 @@ func deleteSound(_slot: int) -> void:
 func moveSound(_from: int, _to: int) -> bool:
 	return false
 
-func startSoundRecording() -> bool:
+func startSoundRecording(_song: bool) -> bool:
 	return false
 
 func stopSoundRecording() -> void:
@@ -664,7 +670,7 @@ func commitPendingSound(_slot: int) -> bool:
 func discardPendingSound() -> void:
 	pass
 
-func startSoundEdit(_slot: int, _effect_id: String, _speed: float, _pitch: float) -> bool:
+func startSoundEdit(_slot: int, _recipe: String) -> bool:
 	return false
 
 func setSoundEditPlaying(_playing: bool) -> void:
@@ -681,9 +687,6 @@ func getSoundEditDurationMs() -> int:
 
 func stopSoundEdit() -> void:
 	pass
-
-func saveSoundEdit(_slot: int, _effect_id: String, _speed: float, _pitch: float) -> bool:
-	return false
 
 func romanizeLines(lines: PackedStringArray) -> PackedStringArray:
 	var empty := PackedStringArray()
