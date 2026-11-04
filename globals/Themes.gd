@@ -11,6 +11,7 @@ const MEDIA_WAIT_MSEC: = 1500
 const API: = 1
 const ASSETS_FOLDER: = "assets"
 const GLYPHS_FOLDER: = "glyphs"
+const SOUNDS_FOLDER: = "sounds"
 const ICONS_TARGET: = "res://assets/icons"
 const SCRIPT_FILE: = "main.lua"
 const SCRIPT_PREFIX: = "theme_"
@@ -20,7 +21,7 @@ const AXIS_STRETCH: = {"stretch": StyleBoxTexture.AXIS_STRETCH_MODE_STRETCH, "ti
 const FILTERS: = {"nearest": CanvasItem.TEXTURE_FILTER_NEAREST, "linear": CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS}
 const ADAPT_MODES: = ["allow", "off", "force"]
 const GLYPH: = preload("res://assets/icons/theme.svg")
-const LOOK_KEYS: = ["styles", "shape", "font", "font_pixelated", "font_shadow", "mode", "adapt", "icons_colored", "filters", "icons", "glyphs", "shaders"]
+const LOOK_KEYS: = ["styles", "shape", "font", "font_pixelated", "font_shadow", "text", "mode", "adapt", "icons_colored", "filters", "icons", "glyphs", "sounds", "shaders"]
 const IMAGE_EXTENSIONS: = ["png", "jpg", "jpeg", "webp"]
 const LAYER_TYPES: = ["color", "blobs", "tint", "triangles", "dots", "image", "cover", "shader"]
 const DEFAULT_LAYERS: = [{"type": "color"}, {"type": "blobs"}, {"type": "tint"}, {"type": "triangles"}, {"type": "dots"}]
@@ -43,6 +44,7 @@ var layers: Array[Dictionary] = []
 var overlays: Array[Dictionary] = []
 var glyphs: = {}
 var styles: = {}
+var _text_styles: = {}
 var _samplers: = {}
 var _shaders: = {}
 var _textures: = {}
@@ -57,8 +59,12 @@ var _players: = {}
 var _script: NariPlugin
 var _script_theme: = ""
 var _script_overrides: = {}
+var _script_extras: = {}
 var _script_settings: Array[Dictionary] = []
 var _script_starting: = false
+var _parts: = {}
+var _dressed: = {}
+var _script_uniforms: = {}
 var _booted: = false
 var _l: = Log.new("Themes", Color("c58af2"))
 
@@ -143,7 +149,7 @@ func _warn_unplayable(root: String) -> void :
 		if str(layer["type"]) != "image" or file.is_empty() or checked.has(file):
 			continue
 		checked.append(file)
-		var problem: String = ClassDB.class_call_static("NariMotion", "probe", ProjectSettings.globalize_path(root.path_join(file)))
+		var problem: String = Native.call_static("NariMotion", "probe", [ProjectSettings.globalize_path(root.path_join(file))])
 		if not problem.is_empty():
 			_l.warn("The theme background '%s' can't be played on this device: %s" % [file, problem])
 
@@ -236,6 +242,7 @@ func _apply(animate: bool) -> void :
 func _paint(animate: bool) -> void :
 	_swap_assets()
 	_load_glyphs()
+	_load_sounds()
 	_load_styles()
 	var adapt: = str(active.get("adapt", "allow"))
 	ThemeEngine.adapt_mode = adapt if ADAPT_MODES.has(adapt) else "allow"
@@ -245,7 +252,8 @@ func _paint(animate: bool) -> void :
 	ThemeEngine.shape_radius = float(shape.get("radius", 1.0))
 	ThemeEngine.shape_blur = float(shape.get("gradient_blur", 1.0))
 	ThemeEngine.font_shadow = clampf(float(active.get("font_shadow", 0.0)), 0.0, 0.5)
-	ThemeEngine.set_fonts(_fonts())
+	_text_styles = {}
+	ThemeEngine.set_fonts(_fonts_of(active.get("font", {}), bool(active.get("font_pixelated", false))))
 	ThemeEngine.set_base(theme_of(active), animate)
 	var input_glyphs: Node = get_node_or_null("/root/InputGlyphs")
 	if input_glyphs:
@@ -401,7 +409,7 @@ func _resolve(manifest: Dictionary) -> Dictionary:
 		if on_page is Dictionary:
 			resolved = _merge(resolved, on_page)
 	if not id.is_empty() and id == _script_theme:
-		resolved = _merge(resolved, _script_overrides)
+		resolved = _merge(_merge(resolved, _script_overrides), _script_extras)
 	return resolved
 
 static func _merge(base: Dictionary, overrides: Dictionary) -> Dictionary:
@@ -515,7 +523,7 @@ func uniform_value(value: Variant) -> Variant:
 	if value is String:
 		var text: String = value
 		if text.begins_with("$"):
-			return setting_value(active_id(), text.substr(1))
+			return uniform_value(setting_value(active_id(), text.substr(1)))
 		if IMAGE_EXTENSIONS.has(text.get_extension().to_lower()):
 			if not _samplers.has(text):
 				_samplers[text] = _sampler_of(text)
@@ -527,15 +535,32 @@ func uniform_value(value: Variant) -> Variant:
 			return Color.html(text)
 	return value
 
+func paint_value(value: Variant, fallback: Color) -> Paint:
+	var field: Variant = ThemeEngine.COLOR_FIELDS.find_key(value) if value is String else null
+	return ThemeEngine.get_paint(field) if field != null else Paint.parse(uniform_value(value), fallback)
+
 static func theme_of(manifest: Dictionary) -> ThemeResource:
 	var source: String = BUILTIN.get(str(manifest.get("id", "")), {}).get("resource", ThemeEngine.DEFAULT_THEME)
 	var theme: ThemeResource = (load(source) as ThemeResource).duplicate()
 	var colors: = _dict(manifest, "colors")
-	for field: String in ThemeEngine.COLOR_FIELDS.values():
-		var value: = str(colors.get(field, ""))
-		if Color.html_is_valid(value):
-			theme.set(field, Color.html(value))
+	theme.paints = {}
+	for key: Variant in colors:
+		var field: = color_field(str(key))
+		var value: Variant = colors[key]
+		if not field in ThemeEngine.COLOR_FIELDS.values():
+			continue
+		if value is Array or value is Dictionary:
+			var paint: = Paint.parse(value, theme.get(field))
+			theme.set(field, paint.color)
+			if not paint.is_solid():
+				theme.paints[field] = paint
+		elif Color.html_is_valid(str(value)):
+			theme.set(field, Color.html(str(value)))
 	return theme
+
+static func color_field(name: String) -> String:
+	var fields: = ThemeEngine.COLOR_FIELDS.values()
+	return name + "_bg" if not fields.has(name) and fields.has(name + "_bg") else name
 
 static func _dict(source: Variant, key: String) -> Dictionary:
 	var value: Variant = source.get(key, {}) if source is Dictionary else {}
@@ -585,7 +610,9 @@ func _stop_script() -> void :
 	_script = null
 	_script_theme = ""
 	_script_overrides = {}
+	_script_extras = {}
 	_script_settings = []
+	_release_parts()
 
 func _on_script_failed(entry: Dictionary) -> void :
 	if bool(entry.get("fatal", false)) and _script and str(entry.get("id", "")) == _script.id:
@@ -594,6 +621,22 @@ func _on_script_failed(entry: Dictionary) -> void :
 
 func script_apply(overrides: Dictionary) -> void :
 	_script_overrides = overrides
+	if not _script_starting:
+		_repaint()
+
+func script_color(name: String, value: Variant) -> void :
+	_script_extra("colors", color_field(name), value)
+
+func script_text(scope: String, style: Variant) -> void :
+	_script_extra("text", scope if not scope.is_empty() else TextStyle.DEFAULT_SCOPE, style if style is Dictionary else null)
+
+func _script_extra(section: String, key: String, value: Variant) -> void :
+	var listed: Dictionary = _script_extras.get(section, {})
+	if value == null:
+		listed.erase(key)
+	else:
+		listed[key] = value
+	_script_extras[section] = listed
 	if not _script_starting:
 		_repaint()
 
@@ -695,6 +738,17 @@ func _load_glyphs() -> void :
 		if texture:
 			glyphs[str(glyph)] = texture
 
+func _load_sounds() -> void :
+	var files: = {}
+	var root: = str(active.get("path", ""))
+	var folder: = root.path_join(ASSETS_FOLDER).path_join(SOUNDS_FOLDER)
+	for name in DirAccess.get_files_at(folder) if not root.is_empty() and DirAccess.dir_exists_absolute(folder) else PackedStringArray():
+		files[name.get_basename()] = folder.path_join(name)
+	var listed: = _dict(active, "sounds")
+	for name: Variant in listed:
+		files[str(name)] = root.path_join(str(listed[name]))
+	Sfx.load_all(files)
+
 func _load_styles() -> void :
 	styles = {}
 	var listed: = _dict(active, "styles")
@@ -729,8 +783,76 @@ static func _sides(value: Variant) -> PackedFloat32Array:
 		sides.fill(float(value))
 	return sides
 
-func _fonts() -> Dictionary:
-	var listed: Variant = active.get("font", {})
+func text_style(scope: String) -> Dictionary:
+	if _text_styles.has(scope):
+		return _text_styles[scope]
+	var listed: = _dict(active, "text")
+	var raw: = _dict(listed, TextStyle.DEFAULT_SCOPE)
+	if scope != TextStyle.DEFAULT_SCOPE:
+		raw = _merge(raw, _dict(listed, scope))
+	var style: = _text_of(raw)
+	_text_styles[scope] = style
+	return style
+
+func _text_of(raw: Dictionary) -> Dictionary:
+	var style: = {}
+	if raw.is_empty():
+		return style
+	for key in ["size", "embolden"]:
+		if raw.has(key):
+			style[key] = float(raw[key])
+	for key in ["weight", "line_spacing", "spacing", "space_spacing"]:
+		if raw.has(key):
+			style[key] = int(raw[key])
+	for key in ["bold", "uppercase"]:
+		if raw.has(key):
+			style[key] = bool(raw[key])
+	if raw.has("italic"):
+		style["italic"] = 0.2 if raw["italic"] is bool and raw["italic"] else float(raw["italic"])
+	if raw.has("color"):
+		style["color"] = Paint.parse(raw["color"])
+	var outline: Variant = raw.get("outline")
+	if outline is int or outline is float:
+		outline = {"size": outline}
+	if outline is Dictionary:
+		style["outline_size"] = int(outline.get("size", 2))
+		style["outline"] = Paint.parse(outline.get("color", "#000000"), Color.BLACK)
+	var shadow: Variant = raw.get("shadow")
+	if shadow is String or shadow is Array:
+		shadow = {"color": shadow}
+	if shadow is Dictionary:
+		style["shadow"] = Paint.parse(shadow.get("color", "#00000080"), Color(0.0, 0.0, 0.0, 0.5))
+		style["shadow_offset"] = Vector2(float(shadow.get("x", 2.0)), float(shadow.get("y", 2.0)))
+		style["shadow_blur"] = int(shadow.get("blur", 0))
+	var fonts: = _fonts_of(raw.get("font", {}), bool(raw.get("pixelated", false)))
+	if not fonts.is_empty():
+		style["fonts"] = fonts
+	style["variations"] = {}
+	return style
+
+func text_font(style: Dictionary, weight: int) -> Font:
+	var shared: FontVariation = ThemeEngine.font_weights.get(weight)
+	if not ["fonts", "spacing", "space_spacing", "italic", "embolden"].any(func(key: String): return style.has(key)):
+		return shared
+	var cache: Dictionary = style["variations"]
+	if cache.has(weight):
+		return cache[weight]
+	var variation: = FontVariation.new()
+	var fonts: Dictionary = style.get("fonts", {})
+	if fonts.is_empty():
+		variation.base_font = shared
+	else:
+		for font: Font in fonts.values():
+			font.fallbacks = [ThemeDB.fallback_font]
+		ThemeEngine.vary(variation, fonts, weight)
+	variation.spacing_glyph = int(style.get("spacing", 0))
+	variation.spacing_space = int(style.get("space_spacing", 0))
+	variation.variation_embolden += float(style.get("embolden", 0.0))
+	variation.variation_transform = Transform2D(Vector2(1.0, 0.0), Vector2(float(style.get("italic", 0.0)), 1.0), Vector2.ZERO)
+	cache[weight] = variation
+	return variation
+
+func _fonts_of(listed: Variant, pixelated: bool) -> Dictionary:
 	var files: Dictionary = {}
 	if listed is Dictionary:
 		files = listed
@@ -743,7 +865,7 @@ func _fonts() -> Dictionary:
 		if not str(weight).is_valid_int() or font.load_dynamic_font(str(active["path"]).path_join(file)) != OK:
 			_l.warn("The theme font '%s' could not be loaded" % file)
 			continue
-		if bool(active.get("font_pixelated", false)):
+		if pixelated:
 			font.antialiasing = TextServer.FONT_ANTIALIASING_NONE
 			font.hinting = TextServer.HINTING_NONE
 			font.subpixel_positioning = TextServer.SUBPIXEL_POSITIONING_DISABLED
@@ -792,22 +914,85 @@ func draw_bar(item: CanvasItem, rect: Rect2, ratio: float, base: = Transform2D.I
 func enabled(section: String, kind: String) -> bool:
 	return _dict(active, section).get(kind, true) != false
 
-func motion_of(kind: String) -> Dictionary:
-	return _dict(_dict(active, "motion"), kind)
+func shader_part(kind: String) -> Dictionary:
+	return _dict(_dict(active, "shaders"), kind)
 
-func drift(kind: String) -> Vector3:
-	var motion: = motion_of(kind)
-	if motion.is_empty() or Main.reduce_motion:
-		return Vector3.ZERO
-	var time: = Time.get_ticks_msec() / 1000.0
-	return Vector3(
-		float(motion.get("x", 0.0)) * sin(float(motion.get("x_speed", 1.0)) * time),
-		float(motion.get("y", 0.0)) * sin(float(motion.get("y_speed", 1.0)) * time),
-		float(motion.get("rotation", 0.0)) * sin(float(motion.get("rotation_speed", 1.0)) * time))
+func add_part(part: String, control: Control) -> void:
+	_parts[part] = control
+	control.tree_exiting.connect(func():
+		if _parts.get(part) == control:
+			_parts.erase(part), CONNECT_ONE_SHOT)
 
-func sway(control: Control, kind: String) -> void:
-	var offset: = drift(kind)
-	pose(control, Vector2(offset.x, offset.y) * control.size, offset.z)
+func part_of(part: String) -> Control:
+	var control: Control = _parts.get(part)
+	return control if is_instance_valid(control) and control.is_inside_tree() else null
+
+func script_event(event: String, args: Array) -> void:
+	if _script:
+		_script.emit_event(event, args)
+
+func script_pose(part: String, values: Variant) -> void:
+	var control: = part_of(part)
+	if not control:
+		return
+	var listed: Dictionary = values if values is Dictionary else {}
+	pose(control, Vector2(float(listed.get("x", 0.0)), float(listed.get("y", 0.0))), float(listed.get("rotation", 0.0)), float(listed.get("scale", 1.0)))
+
+func script_box(part: String) -> Variant:
+	var control: = part_of(part)
+	if not control or not control.is_visible_in_tree():
+		return null
+	var parent: = control.get_parent() as CanvasItem
+	var mouse: = control.get_viewport().get_mouse_position()
+	if parent:
+		mouse = parent.get_global_transform_with_canvas().affine_inverse() * mouse
+	mouse -= control.position
+	return {
+		"width": control.size.x,
+		"height": control.size.y,
+		"mouse_x": mouse.x,
+		"mouse_y": mouse.y,
+		"hovered": Rect2(Vector2.ZERO, control.size).has_point(mouse),
+		"pressed": Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT),
+	}
+
+func script_catch(part: String, on: bool) -> void:
+	var control: = part_of(part)
+	if not control:
+		return
+	if not control.has_meta(&"own_filter"):
+		control.set_meta(&"own_filter", control.mouse_filter)
+	control.mouse_filter = Control.MOUSE_FILTER_STOP if on else control.get_meta(&"own_filter")
+	(control.add_to_group if on else control.remove_from_group).call(SwipeDismiss.BLOCKERS)
+
+func script_uniform(part: String, uniform: String, value: Variant) -> void:
+	var listed: Dictionary = _script_uniforms.get(part, {})
+	listed[uniform] = _vector(value)
+	_script_uniforms[part] = listed
+	var materials: Array = _dressed.get(part, []).filter(func(material: WeakRef): return material.get_ref() != null)
+	_dressed[part] = materials
+	for material: WeakRef in materials:
+		(material.get_ref() as ShaderMaterial).set_shader_parameter(uniform, listed[uniform])
+
+static func _vector(value: Variant) -> Variant:
+	if value is Array and value.size() >= 2 and value.size() <= 4 and value.all(func(part: Variant): return part is float or part is int):
+		match value.size():
+			2:
+				return Vector2(value[0], value[1])
+			3:
+				return Vector3(value[0], value[1], value[2])
+			4:
+				return Vector4(value[0], value[1], value[2], value[3])
+	return value
+
+func _release_parts() -> void:
+	for part: String in _parts:
+		var control: = part_of(part)
+		if control:
+			pose(control, Vector2.ZERO, 0.0)
+			if control.has_meta(&"own_filter"):
+				control.mouse_filter = control.get_meta(&"own_filter")
+	_script_uniforms = {}
 
 static func pose(control: Control, position: Vector2, rotation: float, scale: float = 1.0) -> void:
 	control.offset_transform_enabled = position != Vector2.ZERO or rotation != 0.0 or scale != 1.0
@@ -830,6 +1015,13 @@ func dress(kind: String, material: ShaderMaterial, fallback: Shader) -> bool:
 	var uniforms: = _dict(entry, "uniforms")
 	for uniform: Variant in uniforms:
 		material.set_shader_parameter(str(uniform), uniform_value(uniforms[uniform]))
+	if shader:
+		var materials: Array = _dressed.get(kind, []).filter(func(known: WeakRef): return known.get_ref() != null and known.get_ref() != material)
+		materials.append(weakref(material))
+		_dressed[kind] = materials
+		var own: Dictionary = _script_uniforms.get(kind, {})
+		for uniform: String in own:
+			material.set_shader_parameter(uniform, own[uniform])
 	return shader != null
 
 func texture_of(file: String) -> Texture2D:

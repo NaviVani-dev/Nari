@@ -5,6 +5,7 @@ signal released
 
 const GRABBER_RATIO := 3.0
 const KEY_STEP := 0.05
+const FOCUS_SCALE := 1.35
 
 @export var thickness: float = 8.0:
 	set(v):
@@ -29,7 +30,6 @@ const KEY_STEP := 0.05
 @export var grabber: Texture2D
 
 var _dragging := false
-var _hovered := false
 var _box := StyleBoxFlat.new()
 var _grabber_raster: Texture2D
 
@@ -39,12 +39,8 @@ func _ready() -> void:
 	changed.connect(queue_redraw)
 	focus_entered.connect(queue_redraw)
 	focus_exited.connect(queue_redraw)
-	mouse_entered.connect(func():
-		_hovered = true
-		queue_redraw())
-	mouse_exited.connect(func():
-		_hovered = false
-		queue_redraw())
+	if not Engine.is_editor_hint():
+		InputGlyphs.mode_changed.connect(queue_redraw.unbind(1))
 	ThemeEngine.follow(self, queue_redraw)
 
 func _draw() -> void:
@@ -65,13 +61,14 @@ func _draw() -> void:
 		_bar(0.0, length, line, across, radius, track)
 		if fill > 0.0:
 			_bar(length - maxf(fill, line) if vertical else 0.0, maxf(fill, line), line, across, radius, tint)
-	if not editable or not (focus_mode == FOCUS_NONE or has_focus() and InputGlyphs.navigating() or _dragging or _hovered):
+	if not editable:
 		return
+	var grow := FOCUS_SCALE if has_focus() and not Engine.is_editor_hint() and InputGlyphs.navigating() else 1.0
 	var at := length - fill if vertical else fill
 	if not grabber:
-		draw_circle(Vector2(across * 0.5, at) if vertical else Vector2(at, across * 0.5), line * 1.4, tint, true, -1.0, true)
+		draw_circle(Vector2(across * 0.5, at) if vertical else Vector2(at, across * 0.5), line * 1.4 * grow, tint, true, -1.0, true)
 		return
-	var height := line * GRABBER_RATIO
+	var height := line * GRABBER_RATIO * grow
 	var width := height * grabber.get_width() / maxf(grabber.get_height(), 1.0)
 	var along := clampf(at, width * 0.5, length - width * 0.5)
 	_grabber_raster = Icon.rasterize(grabber, self, Vector2(width, height))

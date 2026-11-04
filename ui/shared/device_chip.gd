@@ -113,6 +113,7 @@ func _on_cast_state(state: Dictionary) -> void:
 	var error := str(state.get("error", ""))
 	if str(state.get("phase", "")) == "error" and not error.is_empty() and error != _shown_error:
 		_shown_error = error
+		Sfx.play("error")
 		Dialog.confirm(error, "OK", Callable())
 	elif error.is_empty():
 		_shown_error = ""

@@ -50,8 +50,8 @@ func _ready() -> void:
 	if standalone:
 		_refresh()
 		return
-	MediaPlayer.music_effect_changed.connect(_sync)
-	_sync(MediaPlayer.get_music_effect_state())
+	MediaPlayer.music_effect_changed.connect(sync)
+	sync(MediaPlayer.get_music_effect_state())
 
 func _press(index: int) -> void:
 	if _active == index:
@@ -84,7 +84,7 @@ static func _key(entry: Dictionary) -> String:
 func _current() -> Dictionary:
 	return _cycles[_active][_steps[_active]] if _active != -1 else {}
 
-func _sync(state: Dictionary) -> void:
+func sync(state: Dictionary) -> void:
 	var key := str(state.get("custom", ""))
 	if key.is_empty():
 		key = MediaPlayer.effect_id(state.get("effect", MediaPlayer.MusicEffect.NONE))

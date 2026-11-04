@@ -2,6 +2,8 @@ shader_type canvas_item;
 
 render_mode blend_mix;
 
+#include "res://assets/shaders/paint.gdshaderinc"
+
 uniform vec4 corner_radius = vec4(24.0);
 
 uniform vec2 panel_size = vec2(1.0);
@@ -9,6 +11,14 @@ uniform vec2 panel_size = vec2(1.0);
 uniform vec4 fill_color : source_color = vec4(1.0);
 
 uniform vec4 gradient_color : source_color = vec4(0.0, 0.0, 0.0, 0.25);
+
+uniform vec4 fill_style = vec4(0.0);
+
+uniform sampler2D fill_paint : source_color, filter_linear, repeat_disable;
+
+uniform vec4 gradient_style = vec4(0.0);
+
+uniform sampler2D gradient_paint : source_color, filter_linear, repeat_disable;
 
 uniform float gradient_blur :
 	hint_range(0.0, 400.0, 0.5) = 62.0;
@@ -52,6 +62,12 @@ void fragment() {
 	vec2 rect_size =
 		max(panel_size, vec2(1.0));
 
+	vec4 fill =
+		painted(fill_color, fill_paint, fill_style, UV, rect_size);
+
+	vec4 glow =
+		painted(gradient_color, gradient_paint, gradient_style, UV, rect_size);
+
 	vec2 half_size =
 		rect_size * 0.5;
 
@@ -83,18 +99,18 @@ void fragment() {
 			0.5 +
 			0.5 * erf(shape / (sigma * 1.4142135624))
 		)
-		* gradient_color.a;
+		* glow.a;
 
 	float out_alpha =
 		shade +
-		fill_color.a * (1.0 - shade);
+		fill.a * (1.0 - shade);
 
 	vec3 out_color =
 		out_alpha <= 0.0001
-			? fill_color.rgb
+			? fill.rgb
 			: (
-				gradient_color.rgb * shade +
-				fill_color.rgb * fill_color.a * (1.0 - shade)
+				glow.rgb * shade +
+				fill.rgb * fill.a * (1.0 - shade)
 			) / out_alpha;
 
 

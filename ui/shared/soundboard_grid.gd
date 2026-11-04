@@ -1,9 +1,10 @@
 class_name SoundboardGrid extends VBoxContainer
 
 signal empty_tapped(slot: int)
+signal edit_requested(slot: int)
 signal selection_changed(slot: int)
 
-const SEPARATION := 22.0
+const SEPARATION := 18.0
 const EDGE_MARGIN := 90.0
 const EDGE_DWELL := 0.45
 const DRAG_SCALE := 1.18
@@ -41,9 +42,12 @@ func _ready() -> void:
 		for cell in Soundboard.PAGE_SLOTS:
 			var slot := SoundSlot.new()
 			slot.slot = page_index * Soundboard.PAGE_SLOTS + cell
-			slot.draggable = interactive
+			slot.interactive = interactive
 			slot.tapped.connect(_on_tapped.bind(slot))
 			slot.drag_started.connect(_on_drag_started.bind(slot))
+			slot.held.connect(func():
+				if interactive:
+					edit_requested.emit(slot.slot))
 			slot.focus_entered.connect(func():
 				if interactive and InputGlyphs.navigating():
 					selected = slot.slot if slot.occupied else -1)
@@ -89,9 +93,9 @@ func _watch_visibility() -> void:
 	else:
 		Soundboard.release()
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	for slot in _page_slots(pages.active_page):
-		slot.set_level(Soundboard.level(slot.slot) if slot.occupied else 0.0)
+		slot.light(Soundboard.level(slot.slot), Soundboard.is_looping(slot.slot), delta)
 
 func _input(event: InputEvent) -> void:
 	if not _dragged:
@@ -108,6 +112,7 @@ func focus_content() -> void:
 func refresh() -> void:
 	for slot in _slots:
 		slot.occupied = Soundboard.is_occupied(slot.slot)
+		slot.settings = Soundboard.pad(slot.slot)
 	if selected >= 0 and not Soundboard.is_occupied(selected):
 		selected = -1
 
@@ -188,7 +193,7 @@ func _fit_grid() -> void:
 
 func _arrange(page: Control) -> void:
 	var cell := page.size / Vector2(_grid)
-	var diameter := maxf(minf(cell.x, cell.y) - SEPARATION, 1.0)
+	var side := maxf(minf(cell.x, cell.y) - SEPARATION, 1.0)
 	var count := page.get_child_count()
 	for index in count:
 		var slot := page.get_child(index) as SoundSlot
@@ -197,5 +202,5 @@ func _arrange(page: Control) -> void:
 		var row := floori(float(index) / _grid.x)
 		var in_row := mini(_grid.x, count - row * _grid.x)
 		var shift := (_grid.x - in_row) * cell.x * 0.5
-		slot.size = Vector2.ONE * diameter
+		slot.size = Vector2.ONE * side
 		slot.position = Vector2(index % _grid.x * cell.x + shift, row * cell.y) + (cell - slot.size) * 0.5

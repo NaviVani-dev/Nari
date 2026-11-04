@@ -18,6 +18,8 @@ const WINDOW_MODES := {"windowed": "Windowed", "fullscreen": "Fullscreen", "excl
 const RESOLUTIONS := ["1280x720", "1366x768", "1600x900", "1920x1080", "2560x1440", "3840x2160"]
 const SECTION := preload("res://ui/shared/SettingSection.tscn")
 const ADDON_PAGES := ["plugins", "themes"]
+const PREVIEW_HIDDEN := ["Library", "Playback", "Lyrics", "Integrations", "Plugins", "Themes", "Dual-screen integration", "Select main screen",
+	"Avoid the notch", "Avoid Android elements", "Show on startup", "Intro on boot", "Video decoding", "Developer mode"]
 
 @onready var list: StairScroll = %List
 @onready var showcase: Control = %Showcase
@@ -93,7 +95,7 @@ func _fit_showcase() -> void:
 	glyph.offset_bottom = _glyph_rest
 
 func _load() -> void:
-	var fresh := sectioned(_entries_of(_category) + (Plugins.settings_entries(_category) if not _category.is_empty() else []))
+	var fresh := sectioned(_shown(_entries_of(_category) + (Plugins.settings_entries(_category) if not _category.is_empty() else [])))
 	if _same_shape(fresh):
 		_update_in_place(fresh)
 		return
@@ -165,6 +167,11 @@ static func create_entry(entry: Dictionary, changed: Callable) -> Control:
 func _create_item(entry: Dictionary) -> Control:
 	return create_entry(entry, SettingItem.refresh_list.bind(list))
 
+static func _shown(entries: Array) -> Array:
+	if not OS.has_feature("preview"):
+		return entries
+	return entries.filter(func(entry: Dictionary): return not str(entry.get("title", "")) in PREVIEW_HIDDEN)
+
 func _entries_of(category: String) -> Array:
 	match category:
 		"playback":
@@ -172,6 +179,10 @@ func _entries_of(category: String) -> Array:
 				SettingItem.toggle("Normalize volume", "Plays every song at a similar loudness", preload("res://assets/icons/sound.svg"), "playback", "normalize_volume"),
 				SettingItem.toggle("Gapless playback", "Runs tracks without pauses", preload("res://assets/icons/gapless.svg"), "playback", "gapless"),
 				SettingItem.toggle("Keep screen on", "Keeps your device from going into sleep mode while Nari is focused and playing music", preload("res://assets/icons/charge.svg"), "playback", "keep_screen_on"),
+			]) + _section("Sound effects", [
+				_slider("Sound effects volume", "How loud Nari's sounds are", preload("res://assets/icons/sound.svg"), "playback", "sounds_volume", Vector3(0, 100, 5), func(amount: float): return "%d%%" % amount),
+				_slider("Soundboard volume", "How loud your soundboard pads are", preload("res://assets/icons/soundboard.svg"), "playback", "soundboard_volume", Vector3(0, 100, 5), func(amount: float): return "%d%%" % amount),
+				SettingItem.toggle("Play sounds while music is playing", "Nari's sounds keep playing over your music", preload("res://assets/icons/music_note.svg"), "playback", "sounds_while_playing"),
 			]) + _section("MIDI and modules", [
 				{
 					"title": "SoundFont",
@@ -517,6 +528,15 @@ func _theme_setting_entry(setting: Dictionary, id: String) -> Dictionary:
 			"get": func(): return str(Themes.setting_value(id, key)),
 			"set": func(option: Variant): SettingsManager.set_value(section, key, option),
 		}
+	if str(setting.get("type", "")) == "color":
+		entry.erase("action")
+		entry["color"] = {
+			"get": func(): return Themes.setting_value(id, key),
+			"set": func(color: Variant): SettingsManager.set_value(section, key, color),
+			"custom": bool(setting.get("custom", true)),
+		}
+		if setting.get("palette") is Array:
+			entry["color"]["palette"] = setting["palette"]
 	if str(setting.get("type", "")) == "number":
 		var suffix := str(setting.get("suffix", ""))
 		entry["slider"] = {
@@ -593,6 +613,7 @@ func _on_scrobble_account_changed(_service: String, _error: String) -> void:
 	SettingItem.refresh_list(list)
 
 func _on_install_finished(error: String, kind: String) -> void:
+	Sfx.play("success" if error.is_empty() else "error")
 	var dialog := Dialog.menu("%s installed" % kind if error.is_empty() else "Couldn't install the %s" % kind.to_lower(), error)
 	dialog.add_button("OK", Callable(), Dialog.Style.PRIMARY)
 	dialog.popup()

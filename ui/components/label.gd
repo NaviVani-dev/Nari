@@ -4,23 +4,24 @@ class_name NariLabel extends Label
 @export var use_custom_color: bool = false:
 	set(val):
 		use_custom_color = val
-		_change_color()
+		_restyle()
 @export var color: ThemeEngine.Colors = ThemeEngine.Colors.Foreground:
 	set(val):
 		color = val
-		_change_color()
+		_restyle()
 @export var custom_color: Color = Color.WHITE:
 	set(val):
 		custom_color = val
-		_change_color()
+		_restyle()
 @export_range(100,900,100,"prefer_slider") var weight:int = 500:
 	set(val):
-		weight = val
-		_change_weight()
+		if val > 0:
+			weight = val
+		_restyle()
 @export var font_size: int = 18:
 	set(val):
 		font_size = val
-		_change_size()
+		_restyle()
 @export var marquee: bool = false:
 	set(val):
 		marquee = val
@@ -57,7 +58,6 @@ var skeleton: = false:
 		queue_redraw()
 
 const MARQUEE_SPEED: = 110.0
-const SHADOW_SHADE: = Color(0.25, 0.25, 0.25)
 const SKELETON_PULSE: = 1.4
 const SKELETON_ALPHA: = Vector2(0.08, 0.2)
 const SKELETON_HEIGHT: = 0.62
@@ -110,15 +110,19 @@ func _draw() -> void:
 	var height: = get_theme_font_size("font_size")
 	var baseline: = (size.y - font.get_height(height)) * 0.5 + font.get_ascent(height)
 	if _scrolling:
-		var shadow: = get_theme_constant("shadow_offset_x")
-		if shadow > 0:
-			draw_string(font, Vector2(shadow - _scroll, baseline + shadow), text, HORIZONTAL_ALIGNMENT_LEFT, -1, height, SHADOW_SHADE)
-		draw_string(font, Vector2(-_scroll, baseline), text, HORIZONTAL_ALIGNMENT_LEFT, -1, height, get_theme_color("font_color"))
+		var shadow: = Vector2(get_theme_constant("shadow_offset_x"), get_theme_constant("shadow_offset_y"))
+		var outline: = get_theme_constant("outline_size")
+		var start: = Vector2(-_scroll, baseline)
+		if shadow != Vector2.ZERO:
+			draw_string(font, start + shadow, _shown_text(), HORIZONTAL_ALIGNMENT_LEFT, -1, height, get_theme_color("font_shadow_color"))
+		if outline > 0:
+			draw_string_outline(font, start, _shown_text(), HORIZONTAL_ALIGNMENT_LEFT, -1, height, outline, get_theme_color("font_outline_color"))
+		draw_string(font, start, _shown_text(), HORIZONTAL_ALIGNMENT_LEFT, -1, height, get_theme_color("font_color"))
 	if underline:
 		_draw_underline(font, height, baseline)
 
 func _draw_underline(font: Font, height: int, baseline: float) -> void:
-	var width: = font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, height).x
+	var width: = font.get_string_size(_shown_text(), HORIZONTAL_ALIGNMENT_LEFT, -1, height).x
 	var left: = -_scroll if _scrolling else 0.0
 	if not _scrolling:
 		width = minf(width, size.x)
@@ -148,7 +152,7 @@ func _restart_marquee() -> void:
 	var font: Font = get_theme_font("font")
 	if not font:
 		return
-	var overflow: = font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, get_theme_font_size("font_size")).x - size.x
+	var overflow: = font.get_string_size(_shown_text(), HORIZONTAL_ALIGNMENT_LEFT, -1, get_theme_font_size("font_size")).x - size.x
 	if overflow <= 1.0 or size.x <= 0.0:
 		return
 	_scrolling = true
@@ -187,11 +191,9 @@ func _setup_theme() -> void:
 		return
 	if not Engine.is_editor_hint():
 		Themes.shade(self, "label")
-		if material is ShaderMaterial:
-			material.set_shader_parameter("font_size", float(get_theme_font_size("font_size")))
-	_change_color()
-	_change_weight()
-	_change_size()
+	_restyle()
+	if not Engine.is_editor_hint() and material is ShaderMaterial:
+		material.set_shader_parameter("font_size", float(get_theme_font_size("font_size")))
 
 func _stop_reveal() -> void:
 	if _reveal_tween:
@@ -208,37 +210,13 @@ func _reveal() -> void:
 	_reveal_tween = create_tween()
 	_reveal_tween.tween_property(self, "self_modulate:a", _reveal_alpha, REVEAL_TIME)
 
-func _change_color() -> void:
-	if not use_custom_color and ThemeEngine.current_theme == null:
+func _restyle() -> void:
+	if not is_node_ready() or not use_custom_color and ThemeEngine.current_theme == null:
 		return
-	self_modulate = ThemeEngine.resolve(use_custom_color, custom_color, color)
-	if has_theme_color_override("font_color") and get_theme_color("font_color") == Color.WHITE:
-		return
-	add_theme_color_override("font_color", Color.WHITE)
+	var shape: = [get_theme_font("font"), get_theme_font_size("font_size"), uppercase]
+	TextStyle.apply(self, ThemeEngine.resolve_paint(use_custom_color, custom_color, color), weight, font_size)
+	if marquee and shape != [get_theme_font("font"), get_theme_font_size("font_size"), uppercase]:
+		_restart_marquee()
 
-func _change_weight() -> void:
-	if ThemeEngine.font_weights == null:
-		return
-	if not ThemeEngine.font_weights.has(weight):
-		return
-	var fvariation: FontVariation = ThemeEngine.font_weights[weight] as FontVariation
-	if has_theme_font_override("font") and get_theme_font("font") == fvariation:
-		return
-	add_theme_font_override("font", fvariation)
-
-func _change_size() -> void:
-	_change_shadow()
-	if has_theme_font_size_override("font_size") and get_theme_font_size("font_size") == font_size:
-		return
-	add_theme_font_size_override("font_size", font_size)
-
-func _change_shadow() -> void:
-	var offset: = roundi(font_size * ThemeEngine.font_shadow)
-	if get_theme_constant("shadow_offset_x") == offset and has_theme_color_override("font_shadow_color") == (offset > 0):
-		return
-	add_theme_constant_override("shadow_offset_x", offset)
-	add_theme_constant_override("shadow_offset_y", offset)
-	if offset > 0:
-		add_theme_color_override("font_shadow_color", SHADOW_SHADE)
-	else:
-		remove_theme_color_override("font_shadow_color")
+func _shown_text() -> String:
+	return text.to_upper() if uppercase else text

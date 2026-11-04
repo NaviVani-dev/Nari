@@ -67,7 +67,8 @@ signal context_requested
 	"Black:900"
 ) var font_weight: int = 400:
 	set(v):
-		font_weight = v
+		if v > 0:
+			font_weight = v
 		_update_label()
 @export var font_size: int = 26:
 	set(v):
@@ -164,6 +165,7 @@ signal context_requested
 		_update_state()
 @export var action_mode: BaseButton.ActionMode = BaseButton.ACTION_MODE_BUTTON_RELEASE
 
+var custom_fg_paint: Paint
 var _row: BoxContainer
 var _icon: Icon
 var _label: Label
@@ -312,16 +314,14 @@ func _setup_theme() -> void :
 	if _depth_effect > 0.0:
 		var haze: = ThemeEngine.get_color(ThemeEngine.Colors.Background)
 		var amount: = _depth_effect * DEPTH_HAZE_AMOUNT
-		var background: = ThemeEngine.resolve(use_custom_colors, custom_bg_color, bg_color)
-		var gradient: = ThemeEngine.resolve(use_custom_colors, custom_gradient_color, gradient_color)
-		_paint_fill(background.lerp(haze, amount))
-		_paint_gradient(gradient.lerp(haze, amount))
+		_paint_fill(_fill_paint().tinted(haze, amount))
+		_paint_gradient(_glow_paint().tinted(haze, amount))
 	if _accented():
-		_paint_fill(ThemeEngine.get_color(focus_bg_color))
-		_paint_gradient(ThemeEngine.get_color(focus_gradient_color))
+		_paint_fill(ThemeEngine.get_paint(focus_bg_color))
+		_paint_gradient(ThemeEngine.get_paint(focus_gradient_color))
 	elif flat:
-		_paint_fill(Color(1.0, 1.0, 1.0, 0.0))
-		_material.set_shader_parameter("gradient_color", Color(1.0, 1.0, 1.0, 0.0))
+		_paint_fill(Paint.solid(Color(1.0, 1.0, 1.0, 0.0)))
+		_paint_gradient(Paint.solid(Color(1.0, 1.0, 1.0, 0.0)))
 	_update_label()
 	_update_icon()
 
@@ -359,14 +359,8 @@ func _update_label() -> void :
 	_label.text_overrun_behavior = text_overrun_behavior
 	_label.ellipsis_char = ellipsis_char
 	_label.uppercase = uppercase
-	_label.self_modulate = _foreground_color()
-	if not _label.has_theme_color_override("font_color") or _label.get_theme_color("font_color") != Color.WHITE:
-		_label.add_theme_color_override("font_color", Color.WHITE)
-	if not _label.has_theme_font_size_override("font_size") or _label.get_theme_font_size("font_size") != font_size:
-		_label.add_theme_font_size_override("font_size", font_size)
-	var font: FontVariation = ThemeEngine.font_weights.get(font_weight)
-	if font and (not _label.has_theme_font_override("font") or _label.get_theme_font("font") != font):
-		_label.add_theme_font_override("font", font)
+	_label.set_meta(&"own_uppercase", uppercase)
+	TextStyle.apply(_label, _foreground_paint(), font_weight, font_size)
 
 func _update_icon() -> void :
 	if not _icon:
@@ -379,11 +373,11 @@ func _update_icon() -> void :
 	_icon.flip_h = flip_h
 	_icon.flip_v = flip_v
 	if ThemeEngine.icons_colored:
-		_icon.self_modulate = Color.WHITE
+		Paint.tint(_icon, Paint.solid(Color.WHITE))
 	elif use_icon_color:
-		_icon.self_modulate = ThemeEngine.get_color(icon_color)
+		Paint.tint(_icon, ThemeEngine.get_paint(icon_color))
 	else:
-		_icon.self_modulate = _foreground_color()
+		Paint.tint(_icon, _foreground_paint())
 	if _dot:
 		_dot.queue_redraw()
 
@@ -397,5 +391,12 @@ func _draw_dot() -> void :
 	_dot.draw_circle(Vector2(_dot.size.x * 0.5, icon_bottom + gap * 0.5), gap * INDICATOR_RATIO, _foreground_color(), true, -1.0, true)
 
 func _foreground_color() -> Color:
-	var color: = ThemeEngine.get_color(focus_fg_color) if _accented() else ThemeEngine.resolve(use_custom_colors, custom_fg_color, fg_color)
-	return color.lerp(ThemeEngine.get_color(ThemeEngine.Colors.Background), _depth_effect * DEPTH_HAZE_AMOUNT)
+	return _foreground_paint().color
+
+func _foreground_paint() -> Paint:
+	var paint: = ThemeEngine.resolve_paint(use_custom_colors, custom_fg_color, fg_color)
+	if _accented():
+		paint = ThemeEngine.get_paint(focus_fg_color)
+	elif use_custom_colors and custom_fg_paint:
+		paint = custom_fg_paint
+	return paint.tinted(ThemeEngine.get_color(ThemeEngine.Colors.Background), _depth_effect * DEPTH_HAZE_AMOUNT)

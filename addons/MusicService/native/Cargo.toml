@@ -63,6 +63,7 @@ ndk-context = "0.1.1"
 
 [target.'cfg(target_os = "ios")'.dependencies]
 block2 = "0.6"
+libc = "0.2"
 objc2 = "0.6"
 objc2-avf-audio = { version = "0.3", default-features = false, features = ["std", "AVAudioSession", "AVAudioSessionTypes"] }
 objc2-foundation = "0.3"
@@ -71,7 +72,9 @@ objc2-ui-kit = "0.3"
 
 [profile.release]
 opt-level = 3
-lto = "thin"
+lto = "fat"
+codegen-units = 1
+strip = true
 
 [target.'cfg(target_os = "linux")'.dependencies]
 ksni = { version = "0.3.6", default-features = false, features = ["async-io", "blocking"] }

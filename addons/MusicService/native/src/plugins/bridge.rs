@@ -58,7 +58,11 @@ pub fn install(lua: &Lua, id: &str, alive: Weak<()>, policy: Arc<Policy>) -> mlu
                 Some(Value::String(html)) => Color::from_html(html.to_str()?.as_ref())
                     .ok_or_else(|| mlua::Error::runtime("Color() needs a valid HTML color like \"#ff8800\""))?,
                 _ => {
-                    let part = |index: usize, fallback: f64| args.get(index).and_then(Value::as_f64).unwrap_or(fallback) as f32;
+                    let part = |index: usize, fallback: f64| match args.get(index) {
+                        Some(Value::Integer(value)) => *value as f32,
+                        Some(Value::Number(value)) => *value as f32,
+                        _ => fallback as f32,
+                    };
                     Color::from_rgba(part(0, 0.0), part(1, 0.0), part(2, 0.0), part(3, 1.0))
                 }
             };
@@ -84,6 +88,19 @@ pub fn install(lua: &Lua, id: &str, alive: Weak<()>, policy: Arc<Policy>) -> mlu
             };
             table.set_metatable(Some(lua.named_registry_value::<Table>("nari_Dictionary")?))?;
             Ok(table)
+        })?,
+    )?;
+    globals.set(
+        "__nari_spectrum",
+        lua.create_function(|lua, ()| {
+            let Some(mut media) = tree_root().and_then(|root| root.get_node_or_null("MediaPlayer")) else {
+                return Ok(Value::Nil);
+            };
+            let frame = media.call("get_spectrum_stereo", &[]).try_to::<PackedByteArray>().unwrap_or_default();
+            if frame.is_empty() {
+                return Ok(Value::Nil);
+            }
+            Ok(Value::String(lua.create_string(frame.as_slice())?))
         })?,
     )?;
     globals.set(

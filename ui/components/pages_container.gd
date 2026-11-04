@@ -53,7 +53,7 @@ func _ready() -> void:
 
 func _follow_focus(control: Control) -> void:
 	for i in get_child_count():
-		if i != active_page and get_child(i).is_ancestor_of(control):
+		if i != active_page and (get_child(i) == control or get_child(i).is_ancestor_of(control)):
 			go_to_page(i)
 			return
 

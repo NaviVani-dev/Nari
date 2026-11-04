@@ -43,9 +43,11 @@ func start(main: String) -> String:
 	_runtime = ClassDB.instantiate("LuaRuntime")
 	return _runtime.start(self, id, str(manifest["path"]), main, Package.permissions(manifest))
 
-func _process(_delta: float) -> void :
+func _process(delta: float) -> void :
 	if _runtime:
 		_runtime.pump()
+	if _runtime and is_theme():
+		_runtime.emit("frame", [delta])
 
 func write_log(level: String, text: String) -> void :
 	if level == "warn":
@@ -79,6 +81,12 @@ func is_theme() -> bool:
 func theme_apply(overrides: Dictionary) -> void :
 	Themes.script_apply(overrides)
 
+func theme_color(name: String, value: Variant) -> void :
+	Themes.script_color(name, value)
+
+func theme_text(scope: String, style: Variant) -> void :
+	Themes.script_text(scope, style)
+
 func theme_settings(listed: Array) -> void :
 	Themes.script_settings(listed)
 
@@ -87,6 +95,21 @@ func theme_setting(key: String) -> Variant:
 
 func theme_page() -> String:
 	return Themes.current_page()
+
+func theme_pose(part: String, values: Variant) -> void :
+	Themes.script_pose(part, values)
+
+func theme_box(part: String) -> Variant:
+	return Themes.script_box(part)
+
+func theme_catch(part: String, on: bool) -> void :
+	Themes.script_catch(part, on)
+
+func theme_uniform(part: String, uniform: String, value: Variant) -> void :
+	Themes.script_uniform(part, uniform, value)
+
+func theme_reduce_motion() -> bool:
+	return Main.reduce_motion
 
 func theme_info() -> Dictionary:
 	return {"id": str(manifest["theme"]), "path": str(manifest["path"]), "folder": ProjectSettings.globalize_path(str(manifest["path"]))}
@@ -189,7 +212,15 @@ func add_music_provider(spec: Dictionary) -> MusicProvider:
 	return provider
 
 func add_visualizer(spec: Dictionary) -> void :
-	var entry: = {"build": spec.get("build", Callable()), "update": spec.get("update", Callable()), "params": {}}
+	var entry: = {
+		"build": spec.get("build", Callable()),
+		"update": spec.get("update", Callable()),
+		"menu": spec.get("menu", Callable()),
+		"name": str(spec.get("name", manifest.get("name", id))),
+		"transparent": bool(spec.get("transparent", true)),
+		"shade": spec.get("shade", "dark"),
+		"params": {},
+	}
 	if spec.has("shader"):
 		entry["shader"] = load_relative(str(spec["shader"])) as Shader
 	var params: Dictionary = spec.get("params", {})

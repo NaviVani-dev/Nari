@@ -21,7 +21,7 @@ const GENERATED_KINDS := {"album": "album", "song": "song", "artist": "artist", 
 	set(value):
 		show_shadow = value
 		if is_node_ready() and _style:
-			_style.shadow_color = _shadow_color if show_shadow else Color.TRANSPARENT
+			_style.shadow_color = _shadow_color if show_shadow and _own_shadow else Color.TRANSPARENT
 
 @export var corner_radius: int = 16:
 	set(value):
@@ -54,19 +54,7 @@ var _shadow_color: Color
 var _wave_material: ShaderMaterial
 var _round_material := ShaderMaterial.new()
 var _music := false
-var _filter := MOUSE_FILTER_IGNORE
-var _grab: Variant = null
-var _pointer := Vector2.ZERO
-var _screen := Vector2.ZERO
-var _anchor := Vector2.ZERO
-var _hovered := false
-var _offset := Vector2.ZERO
-var _velocity := Vector2.ZERO
-var _rotation := 0.0
-var _spin := 0.0
-var _scale := 1.0
-var _growth := 0.0
-var _juiced := -1.0
+var _own_shadow := true
 var _wave: Tween
 var _pulse: Tween
 var _reveal: Tween
@@ -76,11 +64,8 @@ static var _blank: ImageTexture
 static var _icons := {}
 
 func _ready() -> void:
-	_filter = mouse_filter
-	set_process(wave_transitions and not Engine.is_editor_hint())
 	if wave_transitions and not Engine.is_editor_hint():
-		mouse_entered.connect(_hover.bind(true))
-		mouse_exited.connect(_hover.bind(false))
+		Themes.add_part("cover", self)
 	var source := get_theme_stylebox("panel")
 	if source is StyleBoxFlat:
 		_style = source.duplicate()
@@ -119,8 +104,12 @@ func _apply_radius() -> void:
 func _apply_colors() -> void:
 	if Engine.is_editor_hint():
 		return
-	if not (wave_transitions and Themes.dress("cover_playing", _round_material, ROUND_SHADER)):
-		Themes.dress("cover" if _music else "", _round_material, ROUND_SHADER)
+	var part := "cover_playing" if wave_transitions and Themes.dress("cover_playing", _round_material, ROUND_SHADER) else "cover" if _music else ""
+	if part != "cover_playing":
+		Themes.dress(part, _round_material, ROUND_SHADER)
+	_own_shadow = Themes.shader_part(part).get("shadow", true) != false
+	if _style:
+		_style.shadow_color = _shadow_color if show_shadow and _own_shadow else Color.TRANSPARENT
 	var backdrop := ThemeEngine.get_color(ThemeEngine.Colors.BackgroundTint)
 	var background := ThemeEngine.get_color(ThemeEngine.Colors.Background)
 	for shape in [_round_material, _wave_material]:
@@ -193,47 +182,6 @@ func _load(kind: String, id: String, request: String) -> void:
 	else:
 		texture = next
 	_shown = true
-
-func _process(delta: float) -> void:
-	var card := Themes.motion_of("card")
-	var drift := Themes.drift("float")
-	var step := minf(delta, 0.05)
-	var unit := size.y / float(card.get("units", 3.632))
-	mouse_filter = _filter if card.is_empty() else MOUSE_FILTER_STOP
-	var target: Vector2 = Vector2(drift.x, drift.y) * size + (_anchor + get_global_transform_with_canvas().affine_inverse().basis_xform(_screen - _grab) if _grab is Vector2 else Vector2.ZERO)
-	var keep := exp(-50.0 * step)
-	_velocity = (keep * _velocity + (1.0 - keep) * (target - _offset) / unit * 35.0 * step).limit_length(70.0 * step)
-	_offset += _velocity * unit
-	var since := Time.get_ticks_msec() / 1000.0 - _juiced
-	var juiced := maxf(0.0, (0.4 - since) / 0.4)
-	var turn := exp(-190.0 * step)
-	_spin = turn * _spin + (1.0 - turn) * (drift.z + float(card.get("tilt", 0.015)) * _velocity.x / step + 0.06 * sin(40.8 * since) * juiced * juiced - _rotation)
-	_rotation += _spin
-	var grow := exp(-60.0 * step)
-	var wanted: float = 1.0 + (0.0 if card.is_empty() else float(card.get("drag_scale", 0.1)) if _grab is Vector2 else float(card.get("hover_scale", 0.05)) if _hovered else 0.0) + 0.05 * sin(50.8 * since) * pow(juiced, 3.0)
-	_growth = grow * _growth + (1.0 - grow) * (wanted - _scale)
-	_scale += _growth
-	Themes.pose(self, _offset, _rotation, _scale)
-	var shadow := _shadow_color if show_shadow and card.is_empty() else Color.TRANSPARENT
-	if _style and _style.shadow_color != shadow:
-		_style.shadow_color = shadow
-	_round_material.set_shader_parameter("pointer", _pointer - _image.position)
-	_round_material.set_shader_parameter("hovering", 1.0 if _hovered or _grab is Vector2 else 0.0)
-	_round_material.set_shader_parameter("unit", unit)
-
-func _gui_input(event: InputEvent) -> void:
-	if event is InputEventMouse:
-		_pointer = event.position
-		_screen = event.global_position
-	if not Themes.motion_of("card").is_empty() and event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-		_grab = _screen if event.pressed else null
-		_anchor = _offset
-
-func _hover(hovered: bool) -> void:
-	_hovered = hovered and not Themes.motion_of("card").is_empty()
-	if _hovered and not Main.reduce_motion:
-		_juiced = Time.get_ticks_msec() / 1000.0
-		_scale = 0.97
 
 func _draw() -> void:
 	if not _style or _style.draw_center or _style.shadow_color.a <= 0.0 or _style.shadow_offset.y <= 0.0:

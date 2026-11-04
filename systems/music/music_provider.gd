@@ -147,3 +147,6 @@ func get_liked(_kind: String) -> Variant:
 
 func set_liked(_kind: String, _id: String, _liked: bool) -> void :
 	pass
+
+func report_playback(_song_id: String, _state: String, _position_ms: int, _duration_ms: int) -> void :
+	pass

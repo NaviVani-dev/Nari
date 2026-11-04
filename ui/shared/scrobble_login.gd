@@ -82,6 +82,7 @@ func _on_account_changed(from: String, error: String) -> void:
 	if from != service:
 		return
 	if error.is_empty():
+		Sfx.play("success")
 		connected.emit()
 		return
 	_url = ""

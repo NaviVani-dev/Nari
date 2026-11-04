@@ -7,7 +7,7 @@ env = SConscript(godot_cpp_path + "/SConstruct")
 env.Append(CPPPATH=["src"])
 
 if env["platform"] == "android":
-    env.Append(LIBS=["android", "vulkan", "log"])
+    env.Append(LIBS=["android", "EGL", "GLESv3", "log"])
 
 CacheDir("../.build/scons_cache")
 

@@ -21,6 +21,8 @@ function __nari_log(level, text)
 	plugin:write_log(level, text)
 end
 
+nari.spectrum = __nari_spectrum
+
 function nari.log_color(color)
 	plugin:set_log_color(color)
 end
@@ -74,7 +76,42 @@ if plugin:is_theme() then
 		settings = function(list) plugin:theme_settings(list or {}) end,
 		setting = function(key) return plugin:theme_setting(key) end,
 		page = function() return plugin:theme_page() end,
+		box = function(part) return plugin:theme_box(part) end,
+		catch = function(part, on) plugin:theme_catch(part, on ~= false) end,
+		uniform = function(part, name, value) plugin:theme_uniform(part, name, value) end,
+		reduce_motion = function() return plugin:theme_reduce_motion() end,
 	}
+	function nari.theme.pose(part, values)
+		plugin:theme_pose(part, values and Dictionary(values) or nil)
+	end
+	function nari.theme.color(name, value)
+		if type(name) == "table" then
+			for key, color in pairs(name) do
+				plugin:theme_color(key, color)
+			end
+			return
+		end
+		plugin:theme_color(name, value)
+	end
+	function nari.theme.text(scope, style)
+		if type(scope) == "table" then
+			scope, style = "default", scope
+		end
+		plugin:theme_text(scope or "default", style and Dictionary(style))
+	end
+	function nari.theme.gradient(colors, options)
+		local list = {}
+		for index, color in ipairs(colors) do
+			list[index] = color
+		end
+		if options then
+			list[#list + 1] = Dictionary(options)
+		end
+		return list
+	end
+	function nari.theme.rainbow(options)
+		return nari.theme.gradient({ "#ff3b3b", "#ff9f1a", "#ffe11a", "#3ddc5a", "#1ab8ff", "#7a5cff", "#ff3bd4", "#ff3b3b" }, options)
+	end
 end
 
 function nari.is_ready()
@@ -242,7 +279,7 @@ end
 
 local user_settings
 local declared = {}
-local SETTING_TYPES = { toggle = true, text = true, number = true, choice = true }
+local SETTING_TYPES = { toggle = true, text = true, number = true, choice = true, color = true }
 
 local function setting_value(spec)
 	local value = nari.get(spec.key)
@@ -330,6 +367,13 @@ local function setting_entries()
 				options = options,
 				get = function() return setting_value(spec) end,
 				set = function(value) store_setting(spec, value) end,
+			}
+		elseif spec.type == "color" then
+			entry.color = {
+				get = function() return setting_value(spec) or "#ffffff" end,
+				set = function(value) store_setting(spec, value) end,
+				palette = spec.palette,
+				custom = spec.custom ~= false,
 			}
 		else
 			entry.action = function() edit_setting(spec) end

@@ -2,8 +2,6 @@
 	"enabled_classes": [
 		"Node",
 		"RenderingServer",
-		"RenderingDevice",
-		"RDTextureFormat",
 		"Time",
 		"OS",
 		"Mutex"

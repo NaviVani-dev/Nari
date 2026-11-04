@@ -43,6 +43,7 @@ var setup_done := FileAccess.file_exists(SETUP_FILE)
 var loading_held := true
 var dual := true
 var insets := Vector4.ZERO
+var notch := 0.0
 var shortcuts: Array = []
 var header_shown := false
 var header_subtitle := ""
@@ -100,6 +101,11 @@ func register_screens(top_view: Node, bottom_view: Node, top_container: MarginCo
 	_containers = {top_view: top_container}
 	if bottom_view:
 		_containers[bottom_view] = bottom_container
+	Themes.add_part("top", top_container)
+	Themes.add_part("top_hints", top_view.get_node(HINTS_NAME))
+	if bottom_view:
+		Themes.add_part("bottom", bottom_container)
+		Themes.add_part("bottom_hints", bottom_view.get_node(HINTS_NAME))
 	for container: MarginContainer in _containers.values():
 		var base := Vector4()
 		for side in 4:
@@ -175,10 +181,10 @@ func change_page(page: Pages, data: Dictionary = {}, keep_history: bool = true, 
 		_slide_out(leaving)
 	shortcuts = []
 	instance.remove_child(instance.top)
-	_mount(instance.top, _top_view)
+	_mount(instance.top, _top_view, page)
 	if instance.bottom and dual:
 		instance.remove_child(instance.bottom)
-		_mount(instance.bottom, _bottom_view)
+		_mount(instance.bottom, _bottom_view, page)
 	elif instance.bottom:
 		instance.bottom.free()
 		instance.bottom = null
@@ -215,8 +221,9 @@ func reload_page() -> void:
 	_page = null
 	change_page(current_page, state, false, focus)
 
-func set_insets(value: Vector4) -> void:
+func set_insets(value: Vector4, notch_height: float = 0.0) -> void:
 	insets = value
+	notch = notch_height
 	_apply_margins()
 	insets_changed.emit(insets)
 
@@ -267,6 +274,10 @@ func _on_node_added(node: Node) -> void:
 		node.gui_focus_changed.connect(_on_control_hovered)
 	if node.has_signal("selection_changed") and not node.selection_changed.is_connected(_on_selection_changed):
 		node.selection_changed.connect(_on_selection_changed)
+	if node is NariButton and not node.pressed.is_connected(Sfx.select):
+		node.pressed.connect(Sfx.select)
+	if node is Carrousel and not node.activated.is_connected(Sfx.select.unbind(1)):
+		node.activated.connect(Sfx.select.unbind(1))
 
 func _on_selection_changed(_index: int) -> void:
 	haptic()
@@ -274,6 +285,7 @@ func _on_selection_changed(_index: int) -> void:
 func _on_control_hovered(control: Control) -> void:
 	if control.focus_mode != Control.FOCUS_NONE:
 		haptic()
+		Sfx.moved()
 
 func haptic(strength: float = 1.0) -> void:
 	if not SettingsManager.general.haptics:
@@ -404,11 +416,13 @@ func go_back() -> bool:
 	var focused: Node = focus_owner()
 	while focused:
 		if focused.has_method("go_back") and focused.go_back():
+			Sfx.play("back")
 			return true
 		focused = focused.get_parent()
 	if _page and _page.get("locked"):
 		return true
 	if _page and _page.has_method("go_back") and _page.go_back():
+		Sfx.play("back")
 		return true
 	if _history.is_empty():
 		return false
@@ -416,6 +430,7 @@ func go_back() -> bool:
 	if _page and not _page.get("transient"):
 		_forward.push_back({"page": current_page, "data": _page_data(), "focus": _page_focus()})
 	change_page(entry["page"], entry["data"], false, entry["focus"])
+	Sfx.play("back")
 	return true
 
 func can_go_forward() -> bool:
@@ -515,38 +530,13 @@ func transition(key: String = "page_transition") -> Dictionary:
 	style["material"] = material if Themes.dress("transition", material, null) else null
 	return style
 
-func _process(_delta: float) -> void:
-	for view: Node in _containers:
-		if is_instance_valid(view):
-			Themes.sway(_containers[view], "sway")
-			if view.has_node(HINTS_NAME):
-				Themes.sway(view.get_node(HINTS_NAME), "sway")
-
-static func _physics_curve(config: Dictionary) -> PackedFloat32Array:
-	var step := 1.0 / 60.0
-	var keep := exp(-float(config.get("damping", 50.0)) * step)
-	var distance := float(config.get("distance", 10.0))
-	var limit := float(config.get("max_speed", 70.0)) * step
-	var offset := distance
-	var speed := 0.0
-	var curve := PackedFloat32Array([1.0])
-	while (absf(offset) > 0.001 or absf(speed) > 0.001) and curve.size() < 600:
-		speed = clampf(keep * speed - (1.0 - keep) * offset * float(config.get("pull", 35.0)) * step, -limit, limit)
-		offset += speed
-		curve.append(offset / distance)
-	return curve
-
 func animate(tween: Tween, control: Control, style: Dictionary, entering: bool, distance: float) -> void:
 	var time := float(style.get("duration" if entering else "exit", style.get("duration", TRANSITION_TIME)))
 	var origin := control.position
 	var shift := -distance * float(style.get("shift", TRANSITION_SHIFT))
 	if style["type"] == "slide" and entering:
 		control.position.y = origin.y + shift
-	if style["type"] == "slide" and entering and style.get("physics") is Dictionary:
-		var curve := _physics_curve(style["physics"])
-		time = curve.size() / 60.0
-		tween.tween_method(func(left: float): control.position.y = origin.y + shift * curve[mini(int(left * 60.0), curve.size() - 1)], 0.0, time, time)
-	elif style["type"] == "slide":
+	if style["type"] == "slide":
 		tween.tween_property(control, "position:y", origin.y if entering else origin.y + shift, time) \
 			.set_trans(ClassDB.class_get_integer_constant("Tween", "TRANS_" + str(style.get("trans", "cubic")).to_upper())) \
 			.set_ease(ClassDB.class_get_integer_constant("Tween", "EASE_" + str(style.get("ease", "out" if entering else "in")).to_upper()))
@@ -554,10 +544,6 @@ func animate(tween: Tween, control: Control, style: Dictionary, entering: bool, 
 		if entering:
 			control.modulate.a = 0.0
 		tween.tween_property(control, "modulate:a", 1.0 if entering else 0.0, time)
-	if entering and style.has("shake"):
-		var span := float(style.get("shake_time", 0.6))
-		tween.chain().tween_method(func(left: float):
-			control.position = origin + Vector2(sin(19.913 * left), sin(21.913 * left)) * float(style["shake"]) * pow(1.0 - left / span, 2.0), 0.0, span, span)
 	var material: ShaderMaterial = style["material"]
 	if material:
 		var overlay := ColorRect.new()
@@ -596,10 +582,11 @@ func _viewport_of(view: Node) -> Viewport:
 func _view_height(view: Node) -> float:
 	return _viewport_of(view).get_visible_rect().size.y
 
-func _mount(control: Control, view: Node) -> void:
+func _mount(control: Control, view: Node, page: Pages) -> void:
 	control.owner = null
 	var holder := Control.new()
 	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	holder.set_meta(&"theme_page", str(PAGE_SCENES[page]).to_lower())
 	_containers[view].add_child(holder)
 	holder.add_child(control)
 	control.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)

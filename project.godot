@@ -51,6 +51,7 @@ window/size/viewport_height=1080
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 window/handheld/orientation=6
+window/per_pixel_transparency/allowed.preview=true
 
 [editor]
 
@@ -163,7 +164,6 @@ buffering/agile_event_flushing=true
 
 [rendering]
 
-rendering_device/pipeline_cache/save_chunk_size_mb=0.001
 renderer/rendering_method="gl_compatibility"
+viewport/transparent_background.preview=true
 textures/vram_compression/import_etc2_astc=true
-renderer/rendering_method.android="mobile"

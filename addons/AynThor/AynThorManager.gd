@@ -126,7 +126,7 @@ func _draw_second_screen():
 
 	var texture_to_draw = _main_viewport if is_swapped else _second_viewport
 	if texture_to_draw:
-		renderer.draw_viewport_texture(texture_to_draw.get_texture().get_rid())
+		renderer.draw_viewport_texture(RenderingServer.viewport_get_texture(texture_to_draw.get_viewport_rid()))
 
 func _publish_screen(viewport: SubViewport) -> void:
 	var screens: Array = []

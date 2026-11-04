@@ -51,6 +51,9 @@ func _refresh() -> void:
 		return
 	var haze := ThemeEngine.get_color(ThemeEngine.Colors.Background)
 	var amount := _depth * HAZE_AMOUNT
-	custom_bg_color = ThemeEngine.get_color(color).lerp(haze, amount)
-	custom_gradient_color = ThemeEngine.get_color(gradient).lerp(haze, amount)
-	custom_fg_color = ThemeEngine.get_color(foreground).lerp(haze, amount)
+	custom_bg_paint = ThemeEngine.get_paint(color).tinted(haze, amount)
+	custom_gradient_paint = ThemeEngine.get_paint(gradient).tinted(haze, amount)
+	custom_fg_paint = ThemeEngine.get_paint(foreground).tinted(haze, amount)
+	custom_bg_color = custom_bg_paint.color
+	custom_gradient_color = custom_gradient_paint.color
+	custom_fg_color = custom_fg_paint.color

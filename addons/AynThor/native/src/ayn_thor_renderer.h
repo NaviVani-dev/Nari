@@ -3,12 +3,10 @@
 
 #include <godot_cpp/classes/node.hpp>
 #include <godot_cpp/classes/rendering_server.hpp>
-#include <godot_cpp/classes/rendering_device.hpp>
-#include <vector>
 
 #ifdef __ANDROID__
-#define VK_USE_PLATFORM_ANDROID_KHR
-#include <vulkan/vulkan.h>
+#include <EGL/egl.h>
+#include <GLES3/gl3.h>
 #include <android/native_window.h>
 #endif
 
@@ -19,38 +17,27 @@ class AynThorRenderer : public Node {
 
 private:
 #ifdef __ANDROID__
-    VkInstance vk_instance = VK_NULL_HANDLE;
-    VkPhysicalDevice vk_physical_device = VK_NULL_HANDLE;
-    VkDevice vk_device = VK_NULL_HANDLE;
-    VkQueue vk_queue = VK_NULL_HANDLE;
-    uint32_t vk_queue_family_index = 0;
+    EGLDisplay egl_display = EGL_NO_DISPLAY;
+    EGLContext egl_context = EGL_NO_CONTEXT;
+    EGLSurface surface = EGL_NO_SURFACE;
+    ANativeWindow* window = nullptr;
 
-    VkSurfaceKHR surface = VK_NULL_HANDLE;
-    VkSwapchainKHR swapchain = VK_NULL_HANDLE;
-    std::vector<VkImage> swapchain_images;
-    VkCommandPool command_pool = VK_NULL_HANDLE;
-    VkCommandBuffer command_buffer = VK_NULL_HANDLE;
-
-    VkSemaphore image_available_semaphore = VK_NULL_HANDLE;
-    VkSemaphore render_finished_semaphore = VK_NULL_HANDLE;
-    VkFence in_flight_fence = VK_NULL_HANDLE;
-
-    VkFormat swapchain_image_format = VK_FORMAT_R8G8B8A8_UNORM;
+    GLuint program = 0;
+    GLuint vertex_array = 0;
+    GLuint sampler = 0;
+    GLint rotation_location = -1;
 #endif
-
-    uint32_t width = 0;
-    uint32_t height = 0;
 
     bool initialized = false;
     void* last_window = nullptr;
-    
+
     int target_fps = 0;
     uint64_t last_frame_time_usec = 0;
     int rotation_degrees = 180;
 
-    void _init_vulkan();
-    void _cleanup_vulkan();
-    void _create_swapchain();
+    void _init_gl();
+    void _cleanup_gl();
+    bool _create_program();
 
 protected:
     static void _bind_methods();

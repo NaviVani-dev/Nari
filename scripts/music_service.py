@@ -515,6 +515,7 @@ def build_ios():
     cargo_build("--target", IOS_TARGET, env={
         "SDKROOT": sdk,
         "IPHONEOS_DEPLOYMENT_TARGET": IOS_MINIMUM,
+        "CARGO_PROFILE_RELEASE_OPT_LEVEL": "s",
         "FFMPEG_DIR": ffmpeg_prefix("ios-arm64"),
         "CC_aarch64_apple_ios": "clang",
         "CXX_aarch64_apple_ios": "clang++",
@@ -531,6 +532,7 @@ def build_ios():
     framework.mkdir(parents=True)
     shutil.copy(cargo_target_dir() / IOS_TARGET / "release" / "libnari.dylib", framework / "libnari")
     run("llvm-install-name-tool", "-id", "@rpath/libnari.framework/libnari", framework / "libnari")
+    run("llvm-strip", "-x", framework / "libnari")
     (framework / "Info.plist").write_text(
         '<?xml version="1.0" encoding="UTF-8"?>\n'
         '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n'

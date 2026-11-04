@@ -87,11 +87,13 @@ func _pick_server(token: String) -> void:
 func _connect(server: Dictionary) -> void:
 	var error: String = await provider.use_server(server)
 	if error.is_empty():
+		Sfx.play("success")
 		connected.emit()
 	else:
 		_show_error(error)
 
 func _show_error(message: String) -> void:
+	Sfx.play("error")
 	_status.text = message
 	_status.show()
 	_accept.disabled = false

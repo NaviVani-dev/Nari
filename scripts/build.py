@@ -10,12 +10,13 @@ import shutil
 import subprocess
 import sys
 import venv
+from pathlib import Path
 
 import aynthor
 import ios
 import metadata
 import music_service
-from common import BUILD, ROOT, TOOLS, download, extract_zip, fail, godot, info, preset_overrides, run, warn, work_dir
+from common import BUILD, ROOT, TEMPLATES, TOOLS, download, extract_zip, fail, godot, info, preset_overrides, run, warn, work_dir
 
 CARGO_GENERATOR = ("https://raw.githubusercontent.com/flatpak/flatpak-builder-tools/"
                    "74697c75b630d7330e77250fc13cb5ea688d9479/cargo/flatpak-cargo-generator.py")
@@ -31,6 +32,7 @@ LINUX_ARCHITECTURES = {"linux": ("amd64", "x86_64"), "linux-arm64": ("arm64", "a
 APPIMAGETOOL = "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-{}.AppImage"
 # ARM64 Windows uses a separate MSVC environment; keep it opt-in.
 ALL = ["metadata", "plugins", *[target for target in DESKTOP if target != "windows-arm64"], "android", "aab", "ios", "pck"]
+WEBPAGE_PREVIEW = Path(os.environ.get("NARI_WEBPAGE", ROOT.parent / "Nari-Webpage")) / "public" / "preview"
 FLATPAK_URL = "https://cdn.narimusic.com/flatpak/repo/"
 FLATHUB_REPO = "https://flathub.org/repo/flathub.flatpakrepo"
 FLATPAK_SKIP = [
@@ -184,6 +186,21 @@ def export_pck():
     flatpak_cargo_sources()
 
 
+def export_preview():
+    info("Writing the preview's cover palettes")
+    run(godot(), "--headless", "--path", ROOT, "--import")
+    run(godot(), "--headless", "--path", ROOT, "--script", TEMPLATES / "preview" / "palettes.gd")
+    staging = BUILD / "preview"
+    shutil.rmtree(staging, ignore_errors=True)
+    godot_export("Nari Preview", staging / "index.html", options={"custom_features": '"preview"'})
+    if not WEBPAGE_PREVIEW.parent.is_dir():
+        fail(f"{WEBPAGE_PREVIEW.parent} not found, set NARI_WEBPAGE to the Nari-Webpage folder")
+    shutil.rmtree(WEBPAGE_PREVIEW, ignore_errors=True)
+    shutil.copytree(staging, WEBPAGE_PREVIEW)
+    shutil.rmtree(staging)
+    info(f"Copied the preview to {WEBPAGE_PREVIEW}")
+
+
 def flatpak_cargo_sources():
     environment = TOOLS / "venv"
     python = environment / ("Scripts/python.exe" if sys.platform == "win32" else "bin/python")
@@ -279,8 +296,8 @@ def build_flatpak():
 
 def main():
     parser = argparse.ArgumentParser(usage="build.py [target ...] [--debug]")
-    parser.add_argument("targets", nargs="*", choices=[*ALL, "windows-arm64", "plugins-windows-arm64", "test", "flatpak", "all"], metavar="target",
-                        help=f"{', '.join(ALL)}, windows-arm64, plugins-windows-arm64, test, flatpak or all (default)")
+    parser.add_argument("targets", nargs="*", choices=[*ALL, "windows-arm64", "plugins-windows-arm64", "test", "flatpak", "preview", "all"], metavar="target",
+                        help=f"{', '.join(ALL)}, windows-arm64, plugins-windows-arm64, test, flatpak, preview or all (default)")
     parser.add_argument("--debug", action="store_true", help="export debug builds instead of release")
     args = parser.parse_args()
 
@@ -299,13 +316,16 @@ def main():
         elif target in DESKTOP:
             export_desktop(target, args.debug)
         elif target == "android":
-            godot_export("Android", BUILD / "Nari.apk", args.debug, options={"permissions/custom_permissions": SIDELOAD_PERMISSIONS})
+            godot_export("Android", BUILD / "Nari.apk", args.debug, options={
+                "permissions/custom_permissions": SIDELOAD_PERMISSIONS, "architectures/x86_64": "false"})
         elif target == "aab":
             export_aab()
         elif target == "ios":
             export_ios(args.debug)
         elif target == "pck":
             export_pck()
+        elif target == "preview":
+            export_preview()
         elif target == "flatpak":
             build_flatpak()
     info("Done")

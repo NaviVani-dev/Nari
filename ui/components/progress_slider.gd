@@ -9,6 +9,7 @@ const MIN_BUFFERED := 0.005
 const UNBUFFERED_ALPHA := 0.5
 const SEEK_STEP := 5000.0
 const STICK_SETTLE := 0.75
+const FOCUS_SCALE := 1.35
 
 var _track := ColorRect.new()
 var _grabber := Icon.new()
@@ -25,10 +26,6 @@ var _settle := 0.0
 	set(value):
 		show_grabber = value
 		_refresh_grabber()
-@export var grabber_on_hover: bool = false:
-	set(value):
-		grabber_on_hover = value
-		_refresh_grabber()
 
 @export var show_buffered: bool = false
 @export var nudge: float = SEEK_STEP
@@ -38,7 +35,6 @@ var _settle := 0.0
 		_fit_height()
 
 var playing: bool = false
-var _hovered := false
 
 func _init() -> void:
 	step = 1.0
@@ -74,6 +70,7 @@ func _fit_height() -> void:
 	_track.offset_top = -_track_height() * 0.5
 	_track.offset_bottom = _track_height() * 0.5
 	_grabber.size = _grabber_size()
+	_grabber.pivot_offset = _grabber_size() * 0.5
 	_last_ratio = -1.0
 	queue_redraw()
 
@@ -84,21 +81,12 @@ func _grabber_size() -> Vector2:
 	return GRABBER_SIZE * scale_height
 
 func _ready() -> void:
-	drag_started.connect(func():
-		_held = true
-		_refresh_grabber())
-	drag_ended.connect(func(_changed: bool):
-		_held = false
-		_refresh_grabber())
-	if grabber_on_hover:
-		mouse_entered.connect(func():
-			_hovered = true
-			_refresh_grabber())
-		mouse_exited.connect(func():
-			_hovered = false
-			_refresh_grabber())
-		focus_entered.connect(_refresh_grabber)
-		focus_exited.connect(_refresh_grabber)
+	drag_started.connect(func(): _held = true)
+	drag_ended.connect(func(_changed: bool): _held = false)
+	focus_entered.connect(_refresh_grabber)
+	focus_exited.connect(_refresh_grabber)
+	if not Engine.is_editor_hint():
+		InputGlyphs.mode_changed.connect(_refresh_grabber.unbind(1))
 	ThemeEngine.follow(self, _setup_theme)
 	_setup_theme()
 	set_process(true)
@@ -184,4 +172,6 @@ func _draw() -> void:
 		Themes.draw_bar(self, _track.get_rect(), maxf(_last_ratio, 0.0))
 
 func _refresh_grabber() -> void:
-	_grabber.visible = show_grabber and (not grabber_on_hover or _held or _hovered or has_focus() and not Engine.is_editor_hint() and InputGlyphs.navigating())
+	_grabber.visible = show_grabber
+	var selected := is_inside_tree() and has_focus() and not Engine.is_editor_hint() and InputGlyphs.navigating()
+	_grabber.scale = Vector2.ONE * (FOCUS_SCALE if selected else 1.0)

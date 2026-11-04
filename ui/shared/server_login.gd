@@ -27,10 +27,17 @@ func set_busy(busy: bool) -> void:
 	if busy:
 		_status.hide()
 
-func show_error(message: String) -> void:
-	set_busy(false)
+func server_url() -> String:
+	return _url_edit.text.strip_edges()
+
+func show_status(message: String) -> void:
 	_status.text = message
 	_status.show()
+
+func show_error(message: String) -> void:
+	Sfx.play("error")
+	set_busy(false)
+	show_status(message)
 
 func _validate() -> void:
 	_accept.disabled = _url_edit.text.strip_edges().is_empty() or _user_edit.text.strip_edges().is_empty() or _password_edit.text.is_empty()

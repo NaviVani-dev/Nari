@@ -9,11 +9,6 @@ const REPEAT_ONE_ICON := preload("res://assets/icons/repeat_one.svg")
 const CLEAR_ICON := preload("res://assets/icons/delete.svg")
 const RESET_ICON := preload("res://assets/icons/repeat.svg")
 const SOUNDBOARD_GRID := preload("res://ui/shared/SoundboardGrid.tscn")
-const FADE_TIME := 0.2
-const PRESET_WIDTH := 312.0
-const EFFECTS_GAP := 32.0
-const BACKDROP_ALPHA := 0.35
-const BACKDROP_SPREAD := 1.5
 const SCREEN_TITLES := {"queue": "Queue", "effects": "Effects", "soundboard": "Soundboard"}
 const COVER_WIDE := 0.34
 const COVER_TALL := 0.46
@@ -31,7 +26,6 @@ const DOCK_HEIGHT_SHARE := 0.5
 
 const QUIET_ACTIONS: Array[StringName] = [&"play_pause", &"previous_track", &"next_track", &"scroll_up", &"scroll_down", &"scroll_left", &"scroll_right"]
 @onready var visualizers: Visualizers = %Visualizers
-@onready var backdrop: TextureRect = %Backdrop
 @onready var layout: MarginContainer = %Layout
 @onready var column: VBoxContainer = %Column
 @onready var main: Control = %Main
@@ -69,7 +63,10 @@ const QUIET_ACTIONS: Array[StringName] = [&"play_pause", &"previous_track", &"ne
 @onready var queue_list: StairScroll = %Queue
 @onready var queue_empty: EmptyMessage = _build_queue_notice()
 @onready var lyrics_visualizer: LyricsVisualizer = %LyricsVisualizer
-@onready var effects_area: BoxContainer = %EffectsArea
+@onready var effects_area: HBoxContainer = %EffectsArea
+@onready var effects_pages: PagesContainer = %Pages
+@onready var effects_previous: NariButton = %LeftButton
+@onready var effects_next: NariButton = %RightButton
 @onready var effects_locked: NariLabel = %EffectsLocked
 @onready var effects_presets: EffectsPresets = %EffectsPresets
 @onready var plugin_effects: EffectsPresets = %PluginEffects
@@ -93,7 +90,6 @@ var _elapsed := 0.0
 var _lyrics_song_id := ""
 var _screen := ""
 var _visualizer := -1
-var _fade: Tween
 var _slide: Tween
 var _controls: Tween
 var _controls_shown := true
@@ -107,7 +103,10 @@ func _ready() -> void:
 		_screens[key] = _plugin_tabs[key]["area"]
 	Plugins.output_changed.connect(_swap_effects)
 	_swap_effects()
-	ThemeEngine.follow(backdrop, func(): backdrop.self_modulate = ThemeEngine.get_color(ThemeEngine.Colors.BackgroundGradient))
+	visualizers.shade_changed.connect(_apply_contrast.unbind(1))
+	ThemeEngine.follow(layout, _apply_contrast)
+	Main.header_changed.connect(_apply_contrast, CONNECT_DEFERRED)
+	top.visibility_changed.connect(_apply_contrast)
 	song_title.marquee = true
 	song_artist.marquee = true
 
@@ -122,7 +121,7 @@ func _ready() -> void:
 			ItemMenu.now_playing(current))
 	for screen in ["queue", "lyrics", "effects", "soundboard"]:
 		(tabs.get_node("%" + screen.capitalize() + "Button") as NariButton).pressed.connect(_press_tab.bind(screen))
-	visualizers_button.pressed.connect(func(): _show_visualizer(_visualizer + 1 if _visualizer + 1 < Visualizers.count() else -1))
+	visualizers_button.pressed.connect(func(): Visualizers.press(_visualizer, _show_visualizer))
 	stage_action.pressed.connect(func():
 		if _screen == "queue":
 			Dialog.confirm("Clear the upcoming songs?", "Clear", MediaPlayer.clear_upcoming, true)
@@ -147,11 +146,10 @@ func _ready() -> void:
 		if song_id == _lyrics_song_id:
 			lyrics_visualizer.finish_loading(lyrics))
 	top.resized.connect(_arrange)
-	dock.item_rect_changed.connect(_place_backdrop)
 	dock_slot.resized.connect(_place_dock)
 	if Plugins.effects.is_empty():
 		plugin_effects.free()
-	screens.resized.connect(_arrange_effects)
+	UI.pager_arrows(effects_pages, effects_previous, effects_next)
 	idle_timer.timeout.connect(func():
 		if SettingsManager.theme.now_playing_controls == "auto" and not _seeking:
 			_set_controls(false))
@@ -374,7 +372,6 @@ func _toggle_screen(screen: String) -> void:
 	if entering:
 		_visualizer = -1
 		visualizers.mode = -1
-		_fade_backdrop()
 		stage_title.text = SCREEN_TITLES.get(_screen, _plugin_tabs.get(_screen, {}).get("title", ""))
 		stage_header.visible = _screen != "lyrics"
 		stage_action.visible = _screen == "queue" or (_screen == "effects" and _screens["effects"] == effects_area)
@@ -415,13 +412,6 @@ func _set_visualizer(index: int) -> void:
 	_paint_actions()
 	if was_visual != (index >= 0):
 		_transition()
-	_fade_backdrop()
-
-func _fade_backdrop() -> void:
-	if _fade:
-		_fade.kill()
-	_fade = create_tween()
-	_fade.tween_property(backdrop, "modulate:a", BACKDROP_ALPHA if _visualizer >= 0 else 0.0, FADE_TIME)
 
 func _transition() -> void:
 	if _slide:
@@ -552,21 +542,8 @@ func _place_dock() -> void:
 	dock.position = Vector2.ZERO
 	dock.size = dock_slot.size / dock_scale
 
-func _place_backdrop() -> void:
-	var content := Rect2(dock.global_position - top.global_position, dock.size * dock.scale)
-	var glow := maxf(content.size.x, content.size.y) * BACKDROP_SPREAD
-	backdrop.position = content.get_center() - Vector2.ONE * glow * 0.5
-	backdrop.size = Vector2.ONE * glow
-
-func _arrange_effects() -> void:
-	var room := screens.size
-	var stacked := room.y >= room.x * 0.6
-	var grid := stacked and room.x >= PRESET_WIDTH * 2.0 + EFFECTS_GAP
-	effects_area.vertical = stacked
-	for presets: Variant in [effects_presets, plugin_effects]:
-		if not is_instance_valid(presets):
-			continue
-		for row: BoxContainer in (presets as EffectsPresets).get_children():
-			row.vertical = not grid
-			for button in row.get_children():
-				button.vertical = grid
+func _apply_contrast() -> void:
+	var tone := visualizers.tone if top.is_visible_in_tree() else ""
+	Visualizers.lift_contrast(layout, tone)
+	for header in visualizers.headers():
+		Visualizers.lift_contrast(header, tone)

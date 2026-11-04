@@ -29,17 +29,9 @@
 [ext_resource type="Script" uid="uid://02b3f6ptg8q3" path="res://ui/components/title_row.gd" id="title_row"]
 [ext_resource type="PackedScene" uid="uid://dwcrk36gqargh" path="res://ui/shared/VolumeButton.tscn" id="volume_button"]
 
-[sub_resource type="Gradient" id="Gradient_backdrop"]
-offsets = PackedFloat32Array(0, 0.55, 1)
-colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 0.55, 1, 1, 1, 0)
-
-[sub_resource type="GradientTexture2D" id="GradientTexture2D_backdrop"]
-gradient = SubResource("Gradient_backdrop")
-width = 256
-height = 256
-fill = 1
-fill_from = Vector2(0.5, 0.5)
-fill_to = Vector2(0.5, 1)
+[ext_resource type="Texture2D" uid="uid://dtqyusu0ovbrg" path="res://assets/icons/chevron_left.svg" id="chevron_left"]
+[ext_resource type="Texture2D" uid="uid://cjxmnwp0o6mcs" path="res://assets/icons/chevron_right.svg" id="chevron_right"]
+[ext_resource type="Script" uid="uid://bjyckmo8wyc0q" path="res://ui/components/pages_container.gd" id="pages_container"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_qcdyi"]
 resource_local_to_scene = true
@@ -405,6 +397,38 @@ content_margin_bottom = 9.0
 bg_color = Color(1, 1, 1, 1)
 anti_aliasing = false
 
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_pager_left"]
+shader = ExtResource("5_qcdyi")
+shader_parameter/corner_radius = Vector4(28, 28, 12, 12)
+shader_parameter/panel_size = Vector2(116, 116)
+shader_parameter/fill_color = Color(1, 1, 1, 0)
+shader_parameter/gradient_color = Color(1, 1, 1, 0)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_pager_left"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_pager_right"]
+shader = ExtResource("5_qcdyi")
+shader_parameter/corner_radius = Vector4(28, 28, 12, 12)
+shader_parameter/panel_size = Vector2(116, 116)
+shader_parameter/fill_color = Color(1, 1, 1, 0)
+shader_parameter/gradient_color = Color(1, 1, 1, 0)
+shader_parameter/gradient_blur = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_pager_right"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(1, 1, 1, 1)
+anti_aliasing = false
+
 [node name="NowPlaying" type="Node" unique_id=1524287162 node_paths=PackedStringArray("top")]
 script = ExtResource("1_script")
 top = NodePath("Top")
@@ -421,14 +445,6 @@ mouse_filter = 2
 [node name="Visualizers" parent="Top" unique_id=1164494025 groups=["full_bleed"] instance=ExtResource("7_viz")]
 unique_name_in_owner = true
 layout_mode = 1
-
-[node name="Backdrop" type="TextureRect" parent="Top" unique_id=293004707]
-unique_name_in_owner = true
-modulate = Color(1, 1, 1, 0)
-layout_mode = 1
-mouse_filter = 2
-texture = SubResource("GradientTexture2D_backdrop")
-expand_mode = 1
 
 [node name="Layout" type="MarginContainer" parent="Top" unique_id=804684586]
 unique_name_in_owner = true
@@ -657,7 +673,7 @@ weight = 700
 font_size = 64
 metadata/_custom_type_script = "uid://emohg8k7r26n"
 
-[node name="EffectsArea" type="BoxContainer" parent="Top/Layout/Column/Main/Side/Stage/Screens" unique_id=1900824779]
+[node name="EffectsArea" type="HBoxContainer" parent="Top/Layout/Column/Main/Side/Stage/Screens" unique_id=1900824779]
 unique_name_in_owner = true
 visible = false
 layout_mode = 1
@@ -666,10 +682,41 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 32
-vertical = true
 
-[node name="EffectsPresets" type="VBoxContainer" parent="Top/Layout/Column/Main/Side/Stage/Screens/EffectsArea" unique_id=1484096146]
+[node name="LeftButton" type="PanelContainer" parent="Top/Layout/Column/Main/Side/Stage/Screens/EffectsArea" unique_id=1900824780]
+unique_name_in_owner = true
+material = SubResource("ShaderMaterial_pager_left")
+layout_mode = 2
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_pager_left")
+script = ExtResource("4_button")
+icon = ExtResource("chevron_left")
+flat = true
+icon_size = Vector2(92, 92)
+fg_color = 5
+accent_on_focus = true
+corner_radius = 28.0
+corner_top_left = 28.0
+corner_top_right = 28.0
+corner_bottom_right = 12.0
+corner_bottom_left = 12.0
+padding = 12
+padding_left = 12
+padding_top = 12
+padding_right = 12
+padding_bottom = 12
+metadata/_custom_type_script = "uid://djk4e68d3it8a"
+
+[node name="Pages" type="Container" parent="Top/Layout/Column/Main/Side/Stage/Screens/EffectsArea" unique_id=1900824781]
+unique_name_in_owner = true
+clip_contents = true
+layout_mode = 2
+size_flags_horizontal = 3
+script = ExtResource("pages_container")
+metadata/_custom_type_script = "uid://bjyckmo8wyc0q"
+
+[node name="EffectsPresets" type="VBoxContainer" parent="Top/Layout/Column/Main/Side/Stage/Screens/EffectsArea/Pages" unique_id=1484096146]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
@@ -677,14 +724,13 @@ size_flags_vertical = 3
 theme_override_constants/separation = 32
 script = ExtResource("11_effects")
 
-[node name="Presets1" type="BoxContainer" parent="Top/Layout/Column/Main/Side/Stage/Screens/EffectsArea/EffectsPresets" unique_id=310247433]
+[node name="Presets1" type="HBoxContainer" parent="Top/Layout/Column/Main/Side/Stage/Screens/EffectsArea/Pages/EffectsPresets" unique_id=310247433]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 32
 
-[node name="Effect1" type="PanelContainer" parent="Top/Layout/Column/Main/Side/Stage/Screens/EffectsArea/EffectsPresets/Presets1" unique_id=1645269481]
+[node name="Effect1" type="PanelContainer" parent="Top/Layout/Column/Main/Side/Stage/Screens/EffectsArea/Pages/EffectsPresets/Presets1" unique_id=1645269481]
 material = SubResource("ShaderMaterial_6bgbi")
-custom_minimum_size = Vector2(312, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
@@ -710,9 +756,8 @@ padding_top = 12
 padding_right = 12
 padding_bottom = 12
 
-[node name="Effect2" type="PanelContainer" parent="Top/Layout/Column/Main/Side/Stage/Screens/EffectsArea/EffectsPresets/Presets1" unique_id=1880860833]
+[node name="Effect2" type="PanelContainer" parent="Top/Layout/Column/Main/Side/Stage/Screens/EffectsArea/Pages/EffectsPresets/Presets1" unique_id=1880860833]
 material = SubResource("ShaderMaterial_wi0j0")
-custom_minimum_size = Vector2(312, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
@@ -738,14 +783,13 @@ padding_top = 12
 padding_right = 12
 padding_bottom = 12
 
-[node name="Presets2" type="BoxContainer" parent="Top/Layout/Column/Main/Side/Stage/Screens/EffectsArea/EffectsPresets" unique_id=1022028046]
+[node name="Presets2" type="HBoxContainer" parent="Top/Layout/Column/Main/Side/Stage/Screens/EffectsArea/Pages/EffectsPresets" unique_id=1022028046]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 32
 
-[node name="Effect3" type="PanelContainer" parent="Top/Layout/Column/Main/Side/Stage/Screens/EffectsArea/EffectsPresets/Presets2" unique_id=1438952248]
+[node name="Effect3" type="PanelContainer" parent="Top/Layout/Column/Main/Side/Stage/Screens/EffectsArea/Pages/EffectsPresets/Presets2" unique_id=1438952248]
 material = SubResource("ShaderMaterial_nwkya")
-custom_minimum_size = Vector2(312, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
@@ -771,9 +815,8 @@ padding_top = 12
 padding_right = 12
 padding_bottom = 12
 
-[node name="Effect4" type="PanelContainer" parent="Top/Layout/Column/Main/Side/Stage/Screens/EffectsArea/EffectsPresets/Presets2" unique_id=1201253901]
+[node name="Effect4" type="PanelContainer" parent="Top/Layout/Column/Main/Side/Stage/Screens/EffectsArea/Pages/EffectsPresets/Presets2" unique_id=1201253901]
 material = SubResource("ShaderMaterial_y6ka4")
-custom_minimum_size = Vector2(312, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
@@ -799,7 +842,7 @@ padding_top = 12
 padding_right = 12
 padding_bottom = 12
 
-[node name="PluginEffects" type="VBoxContainer" parent="Top/Layout/Column/Main/Side/Stage/Screens/EffectsArea" unique_id=1457265102]
+[node name="PluginEffects" type="VBoxContainer" parent="Top/Layout/Column/Main/Side/Stage/Screens/EffectsArea/Pages" unique_id=1457265102]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
@@ -808,14 +851,13 @@ theme_override_constants/separation = 32
 script = ExtResource("11_effects")
 plugin_page = true
 
-[node name="Presets1" type="BoxContainer" parent="Top/Layout/Column/Main/Side/Stage/Screens/EffectsArea/PluginEffects" unique_id=941650159]
+[node name="Presets1" type="HBoxContainer" parent="Top/Layout/Column/Main/Side/Stage/Screens/EffectsArea/Pages/PluginEffects" unique_id=941650159]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 32
 
-[node name="Effect1" type="PanelContainer" parent="Top/Layout/Column/Main/Side/Stage/Screens/EffectsArea/PluginEffects/Presets1" unique_id=1811065751]
+[node name="Effect1" type="PanelContainer" parent="Top/Layout/Column/Main/Side/Stage/Screens/EffectsArea/Pages/PluginEffects/Presets1" unique_id=1811065751]
 material = SubResource("ShaderMaterial_f43vu")
-custom_minimum_size = Vector2(312, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
@@ -841,9 +883,8 @@ padding_top = 12
 padding_right = 12
 padding_bottom = 12
 
-[node name="Effect2" type="PanelContainer" parent="Top/Layout/Column/Main/Side/Stage/Screens/EffectsArea/PluginEffects/Presets1" unique_id=1869400332]
+[node name="Effect2" type="PanelContainer" parent="Top/Layout/Column/Main/Side/Stage/Screens/EffectsArea/Pages/PluginEffects/Presets1" unique_id=1869400332]
 material = SubResource("ShaderMaterial_yh551")
-custom_minimum_size = Vector2(312, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
@@ -869,14 +910,13 @@ padding_top = 12
 padding_right = 12
 padding_bottom = 12
 
-[node name="Presets2" type="BoxContainer" parent="Top/Layout/Column/Main/Side/Stage/Screens/EffectsArea/PluginEffects" unique_id=366493728]
+[node name="Presets2" type="HBoxContainer" parent="Top/Layout/Column/Main/Side/Stage/Screens/EffectsArea/Pages/PluginEffects" unique_id=366493728]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 32
 
-[node name="Effect3" type="PanelContainer" parent="Top/Layout/Column/Main/Side/Stage/Screens/EffectsArea/PluginEffects/Presets2" unique_id=1386713247]
+[node name="Effect3" type="PanelContainer" parent="Top/Layout/Column/Main/Side/Stage/Screens/EffectsArea/Pages/PluginEffects/Presets2" unique_id=1386713247]
 material = SubResource("ShaderMaterial_8u60q")
-custom_minimum_size = Vector2(312, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
@@ -902,9 +942,8 @@ padding_top = 12
 padding_right = 12
 padding_bottom = 12
 
-[node name="Effect4" type="PanelContainer" parent="Top/Layout/Column/Main/Side/Stage/Screens/EffectsArea/PluginEffects/Presets2" unique_id=421974015]
+[node name="Effect4" type="PanelContainer" parent="Top/Layout/Column/Main/Side/Stage/Screens/EffectsArea/Pages/PluginEffects/Presets2" unique_id=421974015]
 material = SubResource("ShaderMaterial_grvbs")
-custom_minimum_size = Vector2(312, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
@@ -930,11 +969,36 @@ padding_top = 12
 padding_right = 12
 padding_bottom = 12
 
-[node name="Distorter" parent="Top/Layout/Column/Main/Side/Stage/Screens/EffectsArea" unique_id=1223226923 instance=ExtResource("12_speed")]
+[node name="Distorter" parent="Top/Layout/Column/Main/Side/Stage/Screens/EffectsArea/Pages" unique_id=1223226923 instance=ExtResource("12_speed")]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
+
+[node name="RightButton" type="PanelContainer" parent="Top/Layout/Column/Main/Side/Stage/Screens/EffectsArea" unique_id=1900824782]
+unique_name_in_owner = true
+material = SubResource("ShaderMaterial_pager_right")
+layout_mode = 2
+focus_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_pager_right")
+script = ExtResource("4_button")
+icon = ExtResource("chevron_right")
+flat = true
+icon_size = Vector2(92, 92)
+fg_color = 5
+accent_on_focus = true
+corner_radius = 28.0
+corner_top_left = 28.0
+corner_top_right = 28.0
+corner_bottom_right = 12.0
+corner_bottom_left = 12.0
+padding = 12
+padding_left = 12
+padding_top = 12
+padding_right = 12
+padding_bottom = 12
+metadata/_custom_type_script = "uid://djk4e68d3it8a"
 
 [node name="Strip" type="HBoxContainer" parent="Top/Layout/Column" unique_id=2014648532]
 unique_name_in_owner = true
@@ -1006,7 +1070,6 @@ theme_override_styles/slider = SubResource("StyleBoxEmpty_44qtu")
 theme_override_styles/grabber_area = SubResource("StyleBoxEmpty_44qtu")
 theme_override_styles/grabber_area_highlight = SubResource("StyleBoxEmpty_44qtu")
 script = ExtResource("6_slider")
-grabber_on_hover = true
 show_buffered = true
 scale_height = 1.15
 

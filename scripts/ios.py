@@ -7,7 +7,7 @@ import zipfile
 from pathlib import Path
 
 import music_service
-from common import GODOT_VERSION, TOOLS, container_engine, download_zip_member, info, run, run_in_container
+from common import GODOT_VERSION, TOOLS, container_engine, download_zip_member, godot_data_dir, info, run, run_in_container
 
 TEMPLATES_URL = f"https://github.com/godotengine/godot/releases/download/{GODOT_VERSION}-stable/Godot_v{GODOT_VERSION}-stable_export_templates.tpz"
 NAME = "Nari"
@@ -32,6 +32,9 @@ int32_t __isPlatformVersionAtLeast(uint32_t platform, uint32_t major, uint32_t m
 
 
 def template():
+    installed = godot_data_dir() / "export_templates" / f"{GODOT_VERSION}.stable" / "ios.zip"
+    if installed.exists():
+        return installed
     path = TOOLS / f"godot-ios-{GODOT_VERSION}.zip"
     if not path.exists():
         download_zip_member(TEMPLATES_URL, "templates/ios.zip", path)
@@ -50,7 +53,7 @@ def link():
     run("clang++", *flags, "-O2", "-std=c++17", "-c", project / NAME / "dummy.cpp", "-o", objects / "dummy.o")
     info("Linking the iOS executable")
     run("clang++", *flags, "-fuse-ld=lld", f"-L{sdk}/usr/lib/swift", "-Wl,-rpath,/usr/lib/swift",
-        "-Wl,-rpath,@executable_path/Frameworks", "-Wl,-dead_strip",
+        "-Wl,-rpath,@executable_path/Frameworks", "-Wl,-dead_strip", "-Wl,--icf=all",
         objects / "dummy.o", objects / "stubs.o", project / f"{NAME}.xcframework/ios-arm64/libgodot.a",
         project / "MoltenVK.xcframework/ios-arm64/libMoltenVK.a", "-o", objects / NAME)
     run("llvm-strip", "-x", objects / NAME)

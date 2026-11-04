@@ -1,0 +1,172 @@
+{
+	"albums": [
+		{
+			"id": "after-hours",
+			"title": "After Hours",
+			"artist": "The Weeknd",
+			"year": 2020,
+			"genres": ["R&B", "Synth-pop"],
+			"tracks": [
+				["Alone Again", 250],
+				["Too Late", 239],
+				["Hardest to Love", 211],
+				["Scared to Live", 191],
+				["Snowchild", 247],
+				["Escape from LA", 355],
+				["Heartless", 198],
+				["Faith", 283],
+				["Blinding Lights", 200],
+				["In Your Eyes", 237],
+				["Save Your Tears", 215],
+				["Repeat After Me (Interlude)", 195],
+				["After Hours", 361],
+				["Until I Bleed Out", 190]
+			]
+		},
+		{
+			"id": "thriller",
+			"title": "Thriller",
+			"artist": "Michael Jackson",
+			"year": 1982,
+			"genres": ["Pop"],
+			"tracks": [
+				["Wanna Be Startin’ Somethin’", 363],
+				["Baby Be Mine", 260],
+				["The Girl Is Mine", 222, ["Michael Jackson", "Paul McCartney"]],
+				["Thriller", 357],
+				["Beat It", 258],
+				["Billie Jean", 294],
+				["Human Nature", 246],
+				["P.Y.T. (Pretty Young Thing)", 238],
+				["The Lady in My Life", 300]
+			]
+		},
+		{
+			"id": "bad",
+			"title": "Bad",
+			"artist": "Michael Jackson",
+			"year": 1987,
+			"genres": ["Pop"],
+			"tracks": [
+				["Bad", 247],
+				["The Way You Make Me Feel", 298],
+				["Speed Demon", 241],
+				["Liberian Girl", 233],
+				["Just Good Friends", 246],
+				["Another Part of Me", 233],
+				["Man in the Mirror", 319],
+				["I Just Can’t Stop Loving You", 252],
+				["Dirty Diana", 281],
+				["Smooth Criminal", 257]
+			]
+		},
+		{
+			"id": "abracadabra",
+			"title": "Abracadabra",
+			"artist": "Lady Gaga",
+			"year": 2025,
+			"genres": ["Dance", "Pop"],
+			"release_type": "single",
+			"tracks": [
+				["Abracadabra", 223]
+			]
+		},
+		{
+			"id": "arrival",
+			"title": "Arrival",
+			"artist": "ABBA",
+			"year": 1976,
+			"genres": ["Pop", "Disco"],
+			"tracks": [
+				["When I Kissed the Teacher", 180],
+				["Dancing Queen", 231],
+				["My Love, My Life", 232],
+				["Dum Dum Diddle", 173],
+				["Knowing Me, Knowing You", 241],
+				["Money, Money, Money", 185],
+				["That’s Me", 196],
+				["Why Did It Have to Be Me", 200],
+				["Tiger", 175],
+				["Arrival", 180]
+			]
+		},
+		{
+			"id": "the-album",
+			"title": "The Album",
+			"artist": "ABBA",
+			"year": 1977,
+			"genres": ["Pop"],
+			"tracks": [
+				["Eagle", 353],
+				["Take a Chance on Me", 243],
+				["One Man, One Woman", 263],
+				["The Name of the Game", 291],
+				["Move On", 282],
+				["Hole in Your Soul", 222],
+				["Thank You for the Music", 229],
+				["I Wonder (Departure)", 273],
+				["I’m a Marionette", 235]
+			]
+		},
+		{
+			"id": "abba-gold",
+			"title": "ABBA Gold: Greatest Hits",
+			"artist": "ABBA",
+			"year": 1992,
+			"genres": ["Pop", "Disco"],
+			"release_type": "compilation",
+			"tracks": [
+				["Dancing Queen", 231],
+				["Knowing Me, Knowing You", 241],
+				["Take a Chance on Me", 243],
+				["Mamma Mia", 213],
+				["Lay All Your Love on Me", 275],
+				["Super Trouper", 253],
+				["I Have a Dream", 282],
+				["The Winner Takes It All", 294],
+				["Money, Money, Money", 185],
+				["SOS", 203],
+				["Chiquitita", 326],
+				["Fernando", 254],
+				["Voulez-Vous", 309],
+				["Gimme! Gimme! Gimme! (A Man After Midnight)", 292],
+				["Does Your Mother Know", 195],
+				["One of Us", 236],
+				["The Name of the Game", 291],
+				["Thank You for the Music", 229],
+				["Waterloo", 162]
+			]
+		},
+		{
+			"id": "abba-collection",
+			"title": "The ABBA Collection",
+			"artist": "ABBA",
+			"year": 2006,
+			"genres": ["Pop"],
+			"release_type": "compilation",
+			"tracks": [
+				["Ring Ring", 184],
+				["Waterloo", 162],
+				["Honey, Honey", 175],
+				["Mamma Mia", 213],
+				["SOS", 203],
+				["I Do, I Do, I Do, I Do, I Do", 197],
+				["Fernando", 254],
+				["Summer Night City", 215],
+				["Chiquitita", 326],
+				["Super Trouper", 253]
+			]
+		}
+	],
+	"playlists": [
+		{"id": "night-drive", "name": "Night drive", "tracks": ["after-hours-9", "after-hours-11", "after-hours-7", "bad-10", "thriller-6", "after-hours-10"]},
+		{"id": "disco", "name": "Disco night", "tracks": ["arrival-2", "abba-gold-13", "abba-gold-14", "abracadabra-1", "the-album-2", "abba-gold-4"]}
+	],
+	"history": ["after-hours-9", "abracadabra-1", "thriller-6", "arrival-2", "bad-10", "after-hours-11"],
+	"queue": "after-hours",
+	"playing": "after-hours-9",
+	"position": 52000,
+	"lyrics": {
+		"after-hours-9": "[00:00.00]♪\n[00:56.00]I can’t see clearly when you’re gone\n[01:00.00]I said, “Ooh, I’m blinded by the lights\n[01:05.00]No, I can’t sleep until I feel your touch”\n[01:10.00]I said, “Ooh, I’m drowning in the night\n[01:15.00]♪"
+	}
+}

@@ -79,11 +79,12 @@ func get_folder(folder_id: String) -> Dictionary:
 	var here: Array = []
 	for track: Dictionary in tracks:
 		var dir: = _dir_of(track)
+		var prefix: = base + "/" if not base.is_empty() or dir.begins_with("/") else ""
 		if dir == base:
 			here.append(track)
-		elif dir.begins_with(base + "/"):
-			var name: = dir.substr(base.length() + 1).get_slice("/", 0)
-			folders[base + "/" + name] = name
+		elif dir.begins_with(prefix):
+			var name: = dir.substr(prefix.length()).get_slice("/", 0)
+			folders[prefix + name] = name
 	var ids: = folders.keys()
 	ids.sort_custom(func(a: String, b: String): return folders[a].naturalnocasecmp_to(folders[b]) < 0)
 	return {"folders": ids.map(func(id: String): return {"id": id, "name": folders[id]}), "tracks": here}

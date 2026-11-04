@@ -58,6 +58,8 @@ var _cover_key := ""
 var _animated := true
 var _mode := "full"
 var _stage_tween: Tween
+var _hosted: Array[Control] = []
+var _covers: Array[Object] = []
 
 func _ready() -> void:
 	var gradient := Gradient.new()
@@ -96,6 +98,8 @@ func _process(delta: float) -> void:
 	var host := get_viewport()
 	if host is SubViewport and host.render_target_update_mode == SubViewport.UPDATE_DISABLED or host is Window and not host.visible:
 		return
+	if not _covers.is_empty():
+		return
 	_time += delta
 	_tick_clocks(delta)
 	if _quality_fps > 0:
@@ -105,6 +109,29 @@ func _process(delta: float) -> void:
 		_quality_elapsed = fmod(_quality_elapsed, 1.0 / float(_quality_fps))
 	_redraw()
 
+func host(node: Control) -> void:
+	_hosted.append(node)
+	add_child(node)
+	node.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	node.tree_exited.connect(func(): _hosted.erase(node))
+
+func cover(owner: Object, covered: bool) -> void:
+	if covered == _covers.has(owner):
+		return
+	if covered:
+		_covers.append(owner)
+	else:
+		_covers.erase(owner)
+	_apply_cover()
+
+func _apply_cover() -> void:
+	var covered := not _covers.is_empty()
+	for child in get_children():
+		if not _hosted.has(child) and child is CanvasItem:
+			(child as CanvasItem).visible = not covered
+	if not covered:
+		_refresh_pages()
+
 func _apply_quality(quality: Variant) -> void:
 	_quality_fps = QUALITY_FPS.get(str(quality), 0)
 	_quality_elapsed = 0.0
@@ -113,7 +140,8 @@ func _build() -> void:
 	if _stage_tween:
 		_stage_tween.kill()
 	for child in get_children():
-		child.queue_free()
+		if not _hosted.has(child):
+			child.queue_free()
 	for list: Array in [_views, _colors, _tints, _blob_mats, _triangle_layers, _dot_mats, _shader_layers, _media_layers, _visible_by_page]:
 		list.clear()
 	_animated = _mode != "simple"
@@ -140,6 +168,9 @@ func _build() -> void:
 	_refresh_cover()
 	_resize()
 	_update_appearance()
+	for node in _hosted:
+		move_child(node, -1)
+	_apply_cover()
 	set_process(not _blob_mats.is_empty() or not _triangle_layers.is_empty() or _animated and not _shader_layers.is_empty())
 
 func _screen_layers() -> Array:
@@ -189,6 +220,8 @@ func _layer_node(layer: Dictionary) -> Control:
 	match str(layer["type"]):
 		"color":
 			var rect := ColorRect.new()
+			if layer.has("color"):
+				rect.set_meta("paint", layer["color"])
 			_colors.append(rect)
 			return _filled(rect)
 		"tint":
@@ -264,7 +297,7 @@ func _refresh_pages() -> void:
 			shown = shown and _cover != null
 		elif entry["layer"]["type"] == "image":
 			shown = shown and node.texture != null
-		node.visible = shown
+		node.visible = shown and (_covers.is_empty() or node.get_parent() != self)
 	_redraw()
 
 func _refresh_cover() -> void:
@@ -522,12 +555,12 @@ func _update_appearance() -> void:
 	if not is_node_ready():
 		return
 	var background := ThemeEngine.get_color(ThemeEngine.Colors.Background)
-	var tint := ThemeEngine.get_color(ThemeEngine.Colors.BackgroundTint)
 	_palette = _theme_palette()
 	for rect in _colors:
-		rect.color = background
+		rect.color = Color.WHITE
+		Paint.tint(rect, Themes.paint_value(rect.get_meta("paint"), background) if rect.has_meta("paint") else ThemeEngine.get_paint(ThemeEngine.Colors.Background))
 	for rect in _tints:
-		rect.self_modulate = Color(tint, 1.0)
+		Paint.tint(rect, ThemeEngine.get_paint(ThemeEngine.Colors.BackgroundTint).mapped(func(color: Color): return Color(color, 1.0)))
 	for material in _blob_mats:
 		for index in 3:
 			material.set_shader_parameter("color_%d" % (index + 1), _palette[index])
@@ -535,7 +568,8 @@ func _update_appearance() -> void:
 		dots.set_shader_parameter("opacity", DARK_DOTS_OPACITY if ThemeEngine.dark_mode else float(DOT_DEFAULTS["opacity"]))
 	for entry in _media_layers:
 		var dim := clampf(float(entry["layer"].get("dim", 0.0)), 0.0, 1.0)
-		entry["dim"].color = Color(background, dim)
+		entry["dim"].color = Color.WHITE
+		Paint.tint(entry["dim"], ThemeEngine.get_paint(ThemeEngine.Colors.Background).mapped(func(color: Color): return Color(color, color.a * dim)))
 		entry["node"].modulate.a = clampf(float(entry["layer"].get("opacity", 1.0)), 0.0, 1.0)
 	for entry in _shader_layers:
 		for uniform: String in entry["uniforms"]:

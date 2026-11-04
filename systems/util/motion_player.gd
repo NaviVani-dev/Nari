@@ -33,7 +33,7 @@ var _refresh := false
 var _since_check := 0.0
 
 static func available() -> bool:
-	return ClassDB.class_exists("NariMotion")
+	return Native.has_class("NariMotion")
 
 static func hardware() -> bool:
 	return str(SettingsManager.performance.video_decoding) != "software"
@@ -46,7 +46,7 @@ static func create(file: String) -> MotionPlayer:
 		return null
 	var player := MotionPlayer.new()
 	player.path = file
-	player._motion = ClassDB.class_call_static("NariMotion", "open", ProjectSettings.globalize_path(file), hardware())
+	player._motion = Native.call_static("NariMotion", "open", [ProjectSettings.globalize_path(file), hardware()])
 	return player
 
 func _ready() -> void:

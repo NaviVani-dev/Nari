@@ -192,6 +192,7 @@ func _gui_input(event: InputEvent) -> void:
 		var target := clampi(selected + direction, 0, _count - 1)
 		if target != selected:
 			select(target)
+			Sfx.cursor()
 			picked.emit(target)
 		return
 	if event.is_action_pressed("ui_accept") and _count > 0:
@@ -267,6 +268,7 @@ func _pick(index: int) -> void:
 	selected = index
 	selection_changed.emit(index)
 	picked.emit(index)
+	Sfx.cursor()
 
 func _item_at(point: Vector2) -> int:
 	var best := -1

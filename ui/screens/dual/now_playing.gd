@@ -96,7 +96,7 @@ func _ready() -> void:
 	lyrics_button.pressed.connect(func():
 		if not (_show_lyrics and lyrics_visualizer.recenter()):
 			_toggle_lyrics())
-	visualizers_button.pressed.connect(func(): _show_visualizer(_visualizer + 1 if _visualizer + 1 < Visualizers.count() else -1))
+	visualizers_button.pressed.connect(func(): Visualizers.press(_visualizer, _show_visualizer))
 	queue_list.item_moved.connect(func(from: int, to: int): MediaPlayer.move_in_queue(_queue_start + from, _queue_start + to))
 	song_title.marquee = true
 	song_artist.marquee = true

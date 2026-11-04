@@ -1,120 +1,113 @@
 class_name SoundSlot extends Control
 
 signal tapped
+signal held
 signal drag_started
 
-const PANEL_SHADER := preload("res://assets/shaders/panel.gdshader")
-const WAVE_SHADER := preload("res://assets/shaders/sound_wave.gdshader")
-const DOTS := preload("res://assets/icons/more.svg")
-const DOTS_RATIO := 0.52
+const ADD_ICON := preload("res://assets/icons/add.svg")
+const LOOP_ICON := preload("res://assets/icons/repeat.svg")
 const DRAG_DISTANCE := 28.0
-const SELECTED_SCALE := 1.08
-const RING_WIDTH := 6.0
+const ROUNDNESS := 0.16
+const RING := 6.0
+const IDLE := 0.3
+const FADE := 5.0
+const PRESSED_SCALE := 0.94
 
-var slot: int = -1
-var draggable: bool = false
-
-var occupied: bool = false:
+var slot := -1
+var interactive := false
+var occupied := false:
 	set(value):
 		occupied = value
-		if is_node_ready():
-			_wave.visible = value
-			_dots.visible = not value
-			_paint()
-
-var selected: bool = false:
+		queue_redraw()
+var selected := false:
 	set(value):
 		selected = value
-		if is_node_ready():
-			_grow(SELECTED_SCALE if value else 1.0)
+		queue_redraw()
+var settings := {}:
+	set(value):
+		settings = value
+		queue_redraw()
 
-var _circle := ColorRect.new()
-var _wave := ColorRect.new()
-var _dots := Icon.new()
-var _panel := ShaderMaterial.new()
-var _water := ShaderMaterial.new()
-var _gesture: TapGesture
+var _light := 0.0
+var _hovered := false
+var _looping := false
+var _box := StyleBoxFlat.new()
+var _gesture := TapGesture.new(self)
 var _travelled := 0.0
 var _dragging := false
-var _scale: Tween
 
 func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	focus_mode = Control.FOCUS_ALL
-	_panel.shader = PANEL_SHADER
-	_water.shader = WAVE_SHADER
-	for child in [_circle, _wave, _dots]:
-		child.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		add_child(child)
-	UI.fill(_circle)
-	UI.fill(_wave)
-	_dots.set_anchors_preset(Control.PRESET_CENTER, true)
-	_circle.material = _panel
-	_wave.material = _water
-	_dots.themed = false
-	_dots.texture = DOTS
-	_dots.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_dots.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	_gesture = TapGesture.new(self)
+	_box.anti_aliasing = true
+	_gesture.long_press = func() -> bool:
+		if occupied and not _dragging:
+			held.emit()
+			return true
+		return false
 	_gesture.tapped.connect(func():
 		if not _dragging:
 			tapped.emit())
+	_gesture.pressed.connect(_press.bind(PRESSED_SCALE))
+	_gesture.released.connect(_press.bind(1.0))
 	focus_entered.connect(queue_redraw)
 	focus_exited.connect(queue_redraw)
+	mouse_entered.connect(_hover.bind(true))
+	mouse_exited.connect(_hover.bind(false))
+	resized.connect(func(): pivot_offset = size * 0.5)
 
 func _ready() -> void:
-	ThemeEngine.follow(self, _paint)
+	ThemeEngine.follow(self, queue_redraw)
 	InputGlyphs.mode_changed.connect(queue_redraw.unbind(1))
-	resized.connect(_fit)
-	_paint()
-	_fit()
-	_wave.visible = occupied
-	_dots.visible = not occupied
 
 func _gui_input(event: InputEvent) -> void:
-	if draggable and _gesture.held and (event is InputEventScreenDrag or event is InputEventMouseMotion):
+	if interactive and occupied and _gesture.held and (event is InputEventScreenDrag or event is InputEventMouseMotion):
 		_travelled += event.relative.length()
 		if _travelled > DRAG_DISTANCE and not _dragging:
 			_dragging = true
 			drag_started.emit()
-	if _gesture.feed(event):
+	if (event is InputEventScreenTouch or event is InputEventMouseButton) and event.is_pressed():
+		_travelled = 0.0
+		_dragging = false
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and event.is_pressed() and occupied:
 		accept_event()
-	if event is InputEventScreenTouch or event is InputEventMouseButton:
-		if event.is_pressed():
-			_travelled = 0.0
-			_dragging = false
+		held.emit()
+	elif _gesture.feed(event):
+		accept_event()
+
+func light(level: float, looping: bool, delta: float) -> void:
+	var target := 1.0 if looping else minf(level * 2.0, 1.0)
+	_light = target if target > _light else move_toward(_light, target, delta * FADE)
+	if _looping != looping or _light > 0.0 or target > 0.0:
+		_looping = looping
+		queue_redraw()
 
 func _draw() -> void:
-	if has_focus() and InputGlyphs.navigating():
-		draw_arc(size * 0.5, minf(size.x, size.y) * 0.5 + RING_WIDTH * 0.5, 0.0, TAU, 96, ThemeEngine.get_color(ThemeEngine.Colors.AccentBg), RING_WIDTH, true)
+	var side := minf(size.x, size.y)
+	var color := Soundboard.tint(settings)
+	var foreground := ThemeEngine.get_color(ThemeEngine.Colors.Foreground)
+	var lit := has_focus() and InputGlyphs.navigating() or _hovered
+	_box.set_corner_radius_all(int(side * ROUNDNESS * ThemeEngine.shape_radius))
+	_box.bg_color = color.darkened(0.6).lerp(color, maxf(IDLE * (2.0 if lit else 1.0), _light)) if occupied else Color(foreground, 0.18 if lit else 0.06)
+	_box.shadow_color = Color(color, 0.6 * _light)
+	_box.shadow_size = int(side * 0.12 * _light)
+	_box.set_border_width_all(int(RING) if lit or selected else 0)
+	_box.border_color = ThemeEngine.get_color(ThemeEngine.Colors.AccentBg) if lit else foreground
+	draw_style_box(_box, Rect2(Vector2.ZERO, size))
+	if not occupied and interactive:
+		_icon(ADD_ICON, side * 0.3, Color(foreground, 0.9 if lit else 0.35))
+	elif settings.get("loop", false):
+		_icon(LOOP_ICON, side * 0.28, Color(foreground, 1.0 if _looping else 0.6))
 
-func set_level(value: float) -> void:
-	_water.set_shader_parameter("level", value)
+func _icon(texture: Texture2D, side: float, tint: Color) -> void:
+	draw_texture_rect(texture, Rect2((size - Vector2.ONE * side) * 0.5, Vector2.ONE * side), false, tint)
 
-func _fit() -> void:
-	var diameter := minf(size.x, size.y)
-	pivot_offset = size * 0.5
-	_panel.set_shader_parameter("corner_radius", Vector4.ONE * diameter * 0.5)
-	var dots := diameter * DOTS_RATIO * 0.5
-	_dots.offset_left = -dots
-	_dots.offset_top = -dots
-	_dots.offset_right = dots
-	_dots.offset_bottom = dots
+func _hover(on: bool) -> void:
+	_hovered = on and not OS.has_feature("mobile")
+	queue_redraw()
 
-func _paint() -> void:
-	if ThemeEngine.current_theme == null:
+func _press(target: float) -> void:
+	if Main.reduce_motion:
 		return
-	var fill := ThemeEngine.Colors.PanelBg if occupied else ThemeEngine.Colors.Background
-	var gradient := ThemeEngine.Colors.PanelGradient if occupied else ThemeEngine.Colors.BackgroundGradient
-	_panel.set_shader_parameter("fill_color", ThemeEngine.get_color(fill))
-	_panel.set_shader_parameter("gradient_color", ThemeEngine.get_color(gradient))
-	_panel.set_shader_parameter("gradient_blur", 62.0)
-	_water.set_shader_parameter("water_color", ThemeEngine.get_color((ThemeEngine.Colors.AnimBgColor1 + Soundboard.color_of(slot)) as ThemeEngine.Colors))
-	_dots.self_modulate = ThemeEngine.get_color(ThemeEngine.Colors.Foreground)
-
-func _grow(target: float) -> void:
-	if _scale and _scale.is_valid():
-		_scale.kill()
-	_scale = create_tween()
-	_scale.tween_property(self, "scale", Vector2.ONE * target, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	create_tween().tween_property(self, "scale", Vector2.ONE * target, 0.08).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)

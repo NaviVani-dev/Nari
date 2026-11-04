@@ -68,6 +68,8 @@ var _browsing := 0
 
 func _init() -> void:
 	OS.add_logger(_sink)
+	if OS.has_feature("preview"):
+		load("res://systems/preview/preview.gd").start()
 
 func _ready() -> void:
 	ConsoleCommands.install(self)

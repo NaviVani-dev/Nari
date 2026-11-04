@@ -1034,7 +1034,6 @@ theme_override_styles/grabber_area = SubResource("StyleBoxEmpty_xu3x4")
 theme_override_styles/grabber_area_highlight = SubResource("StyleBoxEmpty_xu3x4")
 value = 50.0
 script = ExtResource("8_2lqve")
-grabber_on_hover = true
 show_buffered = true
 scale_height = 1.15
 metadata/_custom_type_script = "uid://cuxjrkpvldf8h"

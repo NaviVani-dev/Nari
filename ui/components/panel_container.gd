@@ -74,6 +74,8 @@ const GRADIENT_OPACITY := 0.75
 		padding_bottom = v
 		_setup_theme()
 
+var custom_bg_paint: Paint
+var custom_gradient_paint: Paint
 var style := StyleBoxFlat.new()
 var _material := ShaderMaterial.new()
 var _textured: StyleBoxTexture
@@ -110,8 +112,8 @@ func _fit_margins() -> void:
 func _setup_theme() -> void:
 	if not is_node_ready():
 		return
-	var _bg:Color = ThemeEngine.resolve(use_custom_colors, custom_bg_color, bg_color)
-	var _gr:Color = ThemeEngine.resolve(use_custom_colors, custom_gradient_color, gradient_color)
+	var _bg := _fill_paint()
+	var _gr := _glow_paint()
 
 	var themed: Dictionary = Themes.styles.get(_style_kind(), {}) if not Engine.is_editor_hint() else {}
 	var spacing: Dictionary = themed if not themed.is_empty() or Engine.is_editor_hint() else Themes.styles.get(_spacing_kind(), {})
@@ -161,11 +163,24 @@ func _spacing_kind() -> String:
 func _shader_kind() -> String:
 	return "panel"
 
-func _paint_fill(color: Color) -> void:
-	_material.set_shader_parameter("fill_color", color)
-	if _textured:
-		_textured.modulate_color = color if _texture_modulate else Color.WHITE
+func _fill_paint() -> Paint:
+	if use_custom_colors and custom_bg_paint:
+		return custom_bg_paint
+	return ThemeEngine.resolve_paint(use_custom_colors, custom_bg_color, bg_color)
 
-func _paint_gradient(color: Color) -> void:
-	color.a *= GRADIENT_OPACITY
-	_material.set_shader_parameter("gradient_color", color)
+func _glow_paint() -> Paint:
+	if use_custom_colors and custom_gradient_paint:
+		return custom_gradient_paint
+	return ThemeEngine.resolve_paint(use_custom_colors, custom_gradient_color, gradient_color)
+
+func _paint_fill(paint: Paint) -> void:
+	paint.bind(_material, "fill")
+	if _textured:
+		_textured.modulate_color = paint.color if _texture_modulate else Color.WHITE
+
+func _paint_gradient(paint: Paint) -> void:
+	var faded := paint.faded(GRADIENT_OPACITY)
+	_material.set_shader_parameter("gradient_color", faded.color)
+	_material.set_shader_parameter("gradient_style", faded.style())
+	if not faded.is_solid():
+		_material.set_shader_parameter("gradient_paint", faded.texture())

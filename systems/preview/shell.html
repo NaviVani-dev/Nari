@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0">
+		<title>$GODOT_PROJECT_NAME</title>
+		<style>
+html, body, #canvas {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	width: 100%;
+	height: 100%;
+}
+
+body {
+	background: transparent;
+	overflow: hidden;
+	touch-action: none;
+}
+
+#canvas {
+	display: block;
+}
+
+#canvas:focus {
+	outline: none;
+}
+		</style>
+		$GODOT_HEAD_INCLUDE
+	</head>
+	<body>
+		<canvas id="canvas"></canvas>
+		<script>
+(function () {
+	let listener = null;
+	let pending = [];
+	let bytes = new Uint8Array();
+
+	function deliver(kind, value) {
+		if (listener) {
+			listener(kind, value);
+		} else {
+			pending.push([kind, value]);
+		}
+	}
+
+	window.addEventListener('message', (event) => {
+		if (event.source !== window.parent || event.origin !== location.origin || typeof event.data?.nari !== 'string') {
+			return;
+		}
+		if (event.data.bytes) {
+			bytes = new Uint8Array(event.data.bytes);
+		}
+		deliver(event.data.nari, String(event.data.value ?? ''));
+	});
+
+	window.nariPreview = {
+		listen(callback) {
+			listener = callback;
+			pending.forEach(([kind, value]) => callback(kind, value));
+			pending = [];
+		},
+		send(kind, value) {
+			window.parent.postMessage({ nari: kind, value }, location.origin);
+		},
+		take() {
+			return bytes;
+		},
+	};
+}());
+
+(function () {
+	const STILL_LIMIT = 2048;
+	const MOVING_LIMIT = 1280;
+	const IDLE_MS = 1000;
+	const clips = new Map();
+	let lastId = 0;
+
+	function fit(clip, width, height, limit) {
+		const scale = Math.min(1, limit / Math.max(width, height, 1));
+		clip.width = Math.max(1, Math.round(width * scale));
+		clip.height = Math.max(1, Math.round(height * scale));
+		clip.canvas = document.createElement('canvas');
+		clip.canvas.width = clip.width;
+		clip.canvas.height = clip.height;
+		clip.context = clip.canvas.getContext('2d', { willReadFrequently: true });
+	}
+
+	function capture(clip, source) {
+		clip.context.clearRect(0, 0, clip.width, clip.height);
+		clip.context.drawImage(source, 0, 0, clip.width, clip.height);
+		clip.pixels = clip.context.getImageData(0, 0, clip.width, clip.height).data;
+		clip.fresh = true;
+	}
+
+	async function openVideo(clip, bytes, type) {
+		const video = document.createElement('video');
+		video.muted = true;
+		video.playsInline = true;
+		video.loop = clip.looping;
+		clip.url = URL.createObjectURL(new Blob([bytes], { type }));
+		video.src = clip.url;
+		await new Promise((resolve, reject) => {
+			video.onloadeddata = resolve;
+			video.onerror = () => reject(new Error("the browser can't play this video"));
+		});
+		fit(clip, video.videoWidth, video.videoHeight, MOVING_LIMIT);
+		clip.video = video;
+		clip.length = video.duration || 0;
+		video.onended = () => {
+			clip.ended = true;
+		};
+		capture(clip, video);
+		const watch = () => {
+			clip.changed = true;
+			video.requestVideoFrameCallback(watch);
+		};
+		if (video.requestVideoFrameCallback) {
+			video.requestVideoFrameCallback(watch);
+		}
+	}
+
+	function decodeNext(clip) {
+		const index = (clip.index + 1) % clip.count;
+		clip.decoder.decode({ frameIndex: index }).then((result) => {
+			clip.next = { index, frame: result.image };
+		}, () => {
+			clip.ended = true;
+		});
+	}
+
+	async function openImage(clip, bytes, type) {
+		if ('ImageDecoder' in window && await ImageDecoder.isTypeSupported(type)) {
+			const decoder = new ImageDecoder({ data: bytes, type });
+			await decoder.tracks.ready;
+			const track = decoder.tracks.selectedTrack;
+			const first = (await decoder.decode({ frameIndex: 0 })).image;
+			const animated = track.animated && track.frameCount > 1;
+			fit(clip, first.displayWidth, first.displayHeight, animated ? MOVING_LIMIT : STILL_LIMIT);
+			capture(clip, first);
+			clip.frameEnd = (first.duration || 100000) / 1e6;
+			clip.length = clip.frameEnd * track.frameCount;
+			first.close();
+			if (!animated) {
+				decoder.close();
+				clip.still = true;
+				return;
+			}
+			clip.decoder = decoder;
+			clip.count = track.frameCount;
+			clip.index = 0;
+			decodeNext(clip);
+			return;
+		}
+		const bitmap = await createImageBitmap(new Blob([bytes], { type }));
+		fit(clip, bitmap.width, bitmap.height, STILL_LIMIT);
+		capture(clip, bitmap);
+		bitmap.close();
+		clip.still = true;
+	}
+
+	function advanceVideo(clip, delta) {
+		const video = clip.video;
+		clip.asked = performance.now();
+		if (delta > 0 && video.paused && !clip.ended) {
+			video.play().catch(() => {});
+		}
+		const changed = clip.changed || (!video.requestVideoFrameCallback && video.currentTime !== clip.shownTime);
+		if (changed) {
+			clip.changed = false;
+			clip.shownTime = video.currentTime;
+			capture(clip, video);
+		}
+	}
+
+	function advanceImage(clip, delta) {
+		clip.time += delta;
+		if (!clip.next || clip.time < clip.frameEnd) {
+			return;
+		}
+		const { index, frame } = clip.next;
+		clip.next = null;
+		capture(clip, frame);
+		clip.frameEnd += (frame.duration || 100000) / 1e6;
+		frame.close();
+		clip.index = index;
+		if (index === clip.count - 1 && !clip.looping) {
+			clip.ended = true;
+			return;
+		}
+		if (index === 0) {
+			clip.time = 0;
+			clip.frameEnd = (frame.duration || 100000) / 1e6;
+		}
+		decodeNext(clip);
+	}
+
+	function take(clip) {
+		if (!clip.fresh) {
+			return null;
+		}
+		clip.fresh = false;
+		clip.sent = true;
+		return clip.pixels;
+	}
+
+	setInterval(() => {
+		for (const clip of clips.values()) {
+			if (clip.video && !clip.video.paused && performance.now() - clip.asked > IDLE_MS) {
+				clip.video.pause();
+			}
+		}
+	}, IDLE_MS);
+
+	window.nariMotion = {
+		open(base64, type) {
+			const id = ++lastId;
+			const clip = { width: 1, height: 1, time: 0, length: 0, looping: true, ended: false, error: '', asked: 0 };
+			clips.set(id, clip);
+			const bytes = Uint8Array.from(atob(base64), (character) => character.charCodeAt(0));
+			(type.startsWith('video/') ? openVideo : openImage)(clip, bytes, type).catch((error) => {
+				clip.error = String(error?.message || error || 'the browser could not open this file');
+			});
+			return id;
+		},
+		close(id) {
+			const clip = clips.get(id);
+			clips.delete(id);
+			clip?.video?.pause();
+			clip?.decoder?.close();
+			clip?.next?.frame.close();
+			if (clip?.url) {
+				URL.revokeObjectURL(clip.url);
+			}
+		},
+		advance(id, delta) {
+			const clip = clips.get(id);
+			if (!clip?.context) {
+				return null;
+			}
+			if (clip.video) {
+				advanceVideo(clip, delta);
+			} else if (clip.decoder && !clip.ended) {
+				advanceImage(clip, delta);
+			}
+			return take(clip);
+		},
+		advanceTo(id, seconds) {
+			const clip = clips.get(id);
+			if (clip?.video && Math.abs(clip.video.currentTime - seconds) > 1) {
+				clip.video.currentTime = seconds;
+			}
+			return this.advance(id, Math.max(seconds - (clip?.time ?? 0), 0));
+		},
+		seek(id, seconds) {
+			const clip = clips.get(id);
+			if (!clip) {
+				return;
+			}
+			clip.ended = false;
+			if (clip.video) {
+				clip.video.currentTime = seconds;
+			} else {
+				clip.time = seconds;
+				clip.frameEnd = seconds;
+			}
+		},
+		setLooping(id, looping) {
+			const clip = clips.get(id);
+			if (clip) {
+				clip.looping = looping;
+				if (clip.video) {
+					clip.video.loop = looping;
+				}
+			}
+		},
+		finished(id) {
+			const clip = clips.get(id);
+			return !clip || clip.error !== '' || (clip.still === true && clip.sent === true && !clip.fresh);
+		},
+		ended(id) {
+			return clips.get(id)?.ended ?? true;
+		},
+		position(id) {
+			const clip = clips.get(id);
+			return clip?.video ? clip.video.currentTime : clip?.time ?? 0;
+		},
+		length(id) {
+			const clip = clips.get(id);
+			return clip?.video ? clip.video.duration || 0 : clip?.length ?? 0;
+		},
+		width(id) {
+			return clips.get(id)?.width ?? 1;
+		},
+		height(id) {
+			return clips.get(id)?.height ?? 1;
+		},
+		error(id) {
+			return clips.get(id)?.error ?? '';
+		},
+	};
+}());
+
+(function () {
+	const audio = new AudioContext();
+	const sounds = new Map();
+	const playing = new Map();
+	let muted = true;
+
+	['pointerdown', 'keydown', 'touchstart'].forEach((type) => window.addEventListener(type, () => audio.resume(), true));
+	window.addEventListener('message', (event) => {
+		if (event.source === window.parent && event.origin === location.origin && event.data?.nari === 'mute') {
+			muted = event.data.value !== 'false';
+		}
+	});
+
+	window.nariSounds = {
+		load(id, base64) {
+			sounds.set(id, audio.decodeAudioData(Uint8Array.from(atob(base64), (character) => character.charCodeAt(0)).buffer).catch(() => null));
+		},
+		play(id, volume) {
+			sounds.get(id)?.then((buffer) => {
+				if (muted || !buffer) {
+					return;
+				}
+				const source = new AudioBufferSourceNode(audio, { buffer });
+				source.connect(new GainNode(audio, { gain: volume })).connect(audio.destination);
+				playing.get(id)?.stop();
+				playing.set(id, source);
+				source.start();
+			});
+		},
+	};
+}());
+		</script>
+		<script src="$GODOT_URL"></script>
+		<script>
+const GODOT_CONFIG = $GODOT_CONFIG;
+const engine = new Engine(GODOT_CONFIG);
+engine.startGame({
+	onProgress(current, total) {
+		nariPreview.send('progress', total > 0 ? String(current / total) : '');
+	},
+}).catch((error) => {
+	console.error(error);
+	nariPreview.send('failed', String(error?.message || error));
+});
+		</script>
+	</body>
+</html>
