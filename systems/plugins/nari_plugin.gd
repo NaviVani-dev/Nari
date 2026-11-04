@@ -46,7 +46,7 @@ func start(main: String) -> String:
 func _process(delta: float) -> void :
 	if _runtime:
 		_runtime.pump()
-	if _runtime and is_theme():
+	if _runtime and (is_theme() or manifest.has("skin")):
 		_runtime.emit("frame", [delta])
 
 func write_log(level: String, text: String) -> void :

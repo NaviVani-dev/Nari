@@ -2,14 +2,33 @@
 extends EditorPlugin
 
 var export_plugin: AndroidExportPlugin
+var skins_plugin: SkinsExportPlugin
 
 func _enter_tree():
 	export_plugin = AndroidExportPlugin.new()
+	skins_plugin = SkinsExportPlugin.new()
 	add_export_plugin(export_plugin)
+	add_export_plugin(skins_plugin)
 
 func _exit_tree():
 	remove_export_plugin(export_plugin)
+	remove_export_plugin(skins_plugin)
 	export_plugin = null
+	skins_plugin = null
+
+class SkinsExportPlugin extends EditorExportPlugin:
+	func _get_name():
+		return "NariSkins"
+
+	func _export_begin(_features, _debug, _path, _flags):
+		_add("res://assets/skins")
+
+	func _add(folder: String):
+		for file in DirAccess.get_files_at(folder):
+			if file != ".gdignore":
+				add_file(folder.path_join(file), FileAccess.get_file_as_bytes(folder.path_join(file)), false)
+		for directory in DirAccess.get_directories_at(folder):
+			_add(folder.path_join(directory))
 
 class AndroidExportPlugin extends EditorExportPlugin:
 	var _plugin_name = "MusicService"

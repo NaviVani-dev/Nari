@@ -24,7 +24,7 @@ func _gui_input(event: InputEvent) -> void:
 		accept_event()
 
 func _make_custom_tooltip(text: String) -> Object:
-	return SkinMenu.tooltip(text, self)
+	return SkinMenu.tooltip(text, self) if not text.is_empty() else Control.new()
 
 func _exit_tree() -> void:
 	for item in _items + _clips:
@@ -63,7 +63,12 @@ func effects_area() -> Array:
 			for box: Rect2i in boxes:
 				bounds = bounds.merge(box)
 			var area: Rect2i = (_ops[index]["area"] as Rect2i).intersection(bounds)
-			return [Rect2(Vector2(area.position) * _unit, Vector2(area.size) * _unit), int(_drawn[index][1]) * 2 + 1]
+			var parts: Array[Rect2] = []
+			for box: Rect2i in boxes:
+				var part := box.intersection(area)
+				if part.has_area():
+					parts.append(Rect2(Vector2(part.position - area.position) * _unit, Vector2(part.size) * _unit))
+			return [Rect2(Vector2(area.position) * _unit, Vector2(area.size) * _unit), int(_drawn[index][1]) * 2 + 1, parts]
 	return []
 
 func fresh(unit: float) -> bool:

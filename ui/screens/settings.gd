@@ -17,7 +17,7 @@ const DISCORD_NAMES := {"nari": "Nari", "provider": "Provider", "music": "Music"
 const WINDOW_MODES := {"windowed": "Windowed", "fullscreen": "Fullscreen", "exclusive": "Exclusive fullscreen"}
 const RESOLUTIONS := ["1280x720", "1366x768", "1600x900", "1920x1080", "2560x1440", "3840x2160"]
 const SECTION := preload("res://ui/shared/SettingSection.tscn")
-const ADDON_PAGES := ["plugins", "themes"]
+const ADDON_PAGES := ["plugins", "themes", "skins"]
 const WIDE_PAGES := ["plugins", "themes", "skins"]
 const PREVIEW_HIDDEN := ["Library", "Playback", "Lyrics", "Integrations", "Plugins", "Themes", "Dual-screen integration", "Select main screen",
 	"Avoid the notch", "Avoid Android elements", "Show on startup", "Intro on boot", "Video decoding", "Developer mode"]
@@ -75,6 +75,9 @@ func _ready() -> void:
 		Themes.install_finished.connect(_on_install_finished.bind("Theme"))
 	if _category == "appearance":
 		Themes.themes_changed.connect(_load)
+	if _category == "skins":
+		Skins.scan()
+		Skins.skins_changed.connect(_load)
 	if _category in ["appearance", "skins"]:
 		SettingsManager.changed.connect(func(section: String, key: String, _value: Variant):
 			if section == WinampPlayer.SECTION and key == "skin":
@@ -535,29 +538,26 @@ func _theme_entries() -> Array:
 
 func _skin_entries() -> Array:
 	var current := WinampSkin.current()
-	var entries: Array = []
+	var entries: Array = [_search_entry("skins"), _auto_update_entry()]
 	if DisplayServer.has_feature(DisplayServer.FEATURE_NATIVE_DIALOG_FILE):
-		entries.append({"title": "Add skins", "section": "Get more", "description": "Adds Winamp (.wsz) and Windows Media Player (.wmz) skins, or drop them on Nari", "icon": preload("res://assets/icons/add.svg"), "action": WinampSkin.pick.bind(_load)})
+		entries.append({"title": "Add skins", "section": "Get more", "description": "Adds Winamp (.wsz), Windows Media Player (.wmz) and Nari (.nsk) skins, or drop them on Nari", "icon": preload("res://assets/icons/add.svg"), "action": WinampSkin.pick.bind(_load)})
 	entries.append({"title": "Open skins folder", "section": "Get more", "description": "Where your skins are kept", "icon": preload("res://assets/icons/new_folder.svg"), "action": WinampSkin.open_folder})
-	var descriptions := {"": "The mini player with Nari's own look", WinampSkin.BUILTIN: "The classic Winamp skin made for Nari"}
-	for path in WinampSkin.choices():
+	var descriptions := {"": "The mini player with Nari's own look", WinampSkin.BUILTIN: "The classic Winamp skin made for Nari", WinampSkin.SHOWCASE: "A small Nari panel that opens queue and effects windows"}
+	var groups := WinampSkin.grouped()
+	for path: String in WinampSkin.KINDS.reduce(func(listed: Array, kind: String): return listed + groups[kind], []):
+		var manifest := Skins.manifest_of(path)
+		var id := str(manifest.get("id", ""))
 		entries.append({
-			"title": WinampSkin.label(path),
-			"description": descriptions.get(path, "Windows Media Player skin" if path.get_extension().to_lower() == "wmz" else "Winamp skin"),
+			"title": str(manifest.get("name", WinampSkin.label(path))),
+			"description": _updatable(id, descriptions.get(path, str(manifest.get("description", "")))),
 			"icon": preload("res://assets/icons/theme.svg"),
-			"section": "Installed",
+			"image": Skins.image_of(id) if not id.is_empty() else Package.placeholder(Skins.GLYPH, Themes.theme_of({})),
+			"plugin": id,
+			"section": WinampSkin.kind(path),
 			"enabled": path == current,
-			"action": _skin_menu.bind(path) if path.begins_with(WinampSkin.FOLDER) else SettingsManager.set_value.bind(WinampPlayer.SECTION, "skin", path),
+			"action": PluginInfo.open.bind(id, Skins) if path.begins_with(WinampSkin.FOLDER) else SettingsManager.set_value.bind(WinampPlayer.SECTION, "skin", path),
 		})
 	return entries
-
-func _skin_menu(path: String) -> void:
-	var dialog := Dialog.menu(WinampSkin.label(path), "Mini player skin")
-	dialog.add_option("Use", SettingsManager.set_value.bind(WinampPlayer.SECTION, "skin", path), preload("res://assets/icons/check.svg"))
-	dialog.add_option("Delete", func(): Dialog.confirm("Delete %s?" % WinampSkin.label(path), "Delete", func():
-		WinampSkin.remove(path)
-		_load(), true), preload("res://assets/icons/delete.svg"))
-	dialog.popup()
 
 func _theme_setting_entry(setting: Dictionary, id: String) -> Dictionary:
 	var key := str(setting["id"])
@@ -609,7 +609,7 @@ func _search_entry(kind: String) -> Dictionary:
 	}
 
 func _auto_update_entry() -> Dictionary:
-	var entry := SettingItem.toggle("Auto-update marketplace addons", "Updates the plugins and themes you got from the marketplace when Nari starts", preload("res://assets/icons/download.svg"), "plugins", "auto_update")
+	var entry := SettingItem.toggle("Auto-update marketplace addons", "Updates the addons you got from the marketplace when Nari starts", preload("res://assets/icons/download.svg"), "plugins", "auto_update")
 	entry["section"] = "Get more"
 	return entry
 

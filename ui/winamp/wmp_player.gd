@@ -49,7 +49,7 @@ func open(source: String) -> bool:
 	_source = source
 	_name = source.get_file()
 	_skin = ClassDB.instantiate("WmpSkin")
-	return _skin.open(ProjectSettings.globalize_path(source))
+	return _skin.open(ProjectSettings.globalize_path(WinampSkin.local(source)))
 
 func _restart() -> void:
 	_content.reparent(_layer, false)
@@ -92,7 +92,7 @@ func _ready() -> void:
 	if OS.has_feature("pc"):
 		get_window().transparent = true
 		get_tree().root.transparent_bg = true
-	_effect = str(SettingsManager.get_value(SECTION, "wmp_effect", _effect))
+	_effect = str(SettingsManager.get_value(SECTION, "wmp_effect", _effect)).replace("spectrum", "visualizer")
 	_visual = int(SettingsManager.get_value(SECTION, "wmp_visual", _visual))
 	_content.visible = false
 	_layer.add_child(_content)
@@ -133,7 +133,7 @@ func _veil() -> void:
 		SkinMenu.veil(get_tree())
 
 func _show_content(pane: WmpPane) -> void:
-	var found := pane.effects_area() if _effect != "spectrum" else []
+	var found := pane.effects_area()
 	if found.is_empty():
 		if _content.get_parent() == pane:
 			_content.visible = false
@@ -145,6 +145,10 @@ func _show_content(pane: WmpPane) -> void:
 	_content.position = area.position
 	_content.scale = Vector2.ONE * scale
 	_content.size = area.size / scale
+	var mask: Array[Rect2] = []
+	for part: Rect2 in found[2]:
+		mask.append(Rect2(part.position / scale, part.size / scale))
+	_content.mask = mask
 	_content.visible = true
 	RenderingServer.canvas_item_set_draw_index(_content.get_canvas_item(), found[1])
 	_content.show_view(_effect, _visual)
@@ -157,7 +161,7 @@ func _set_effect(effect: String, visual := -1) -> void:
 	SettingsManager.set_value(SECTION, "wmp_visual", _visual)
 
 func _step_effect(step: int) -> void:
-	var options: Array = [["spectrum", -1]]
+	var options: Array = []
 	for index in Visualizers.count():
 		options.append(["visualizer", index])
 	options.append_array([["lyrics", -1], ["cover", -1]])
@@ -420,14 +424,6 @@ func draw_op(item: RID, op: Dictionary, unit: float) -> void:
 			RenderingServer.canvas_item_add_rect(item, area, op["color"])
 		"text":
 			_draw_text(item, op, area, unit)
-		"effects":
-			if _effect != "spectrum":
-				return
-			var accent := ThemeEngine.get_color(ThemeEngine.Colors.AccentBg)
-			var slot := area.size.x / _levels.size()
-			for bar in _levels.size():
-				var height := maxf(_levels[bar] * area.size.y, unit)
-				RenderingServer.canvas_item_add_rect(item, Rect2(area.position.x + slot * bar + slot * 0.1, area.end.y - height, slot * 0.8, height), Color(accent, op["alpha"] / 255.0))
 		"wave":
 			var step := area.size.x / _wave.size()
 			for column in _wave.size():
@@ -504,8 +500,7 @@ func _store(key: String, value: Variant) -> void:
 func _menu() -> Array:
 	var sizes: Array = range(1, 4).map(func(size: int): return ["Size %dx" % size, _store.bind("zoom", size), zoom == size])
 	return [
-		["Nari view", closed.emit], [],
-		["Visualization", [["Spectrum", _set_effect.bind("spectrum"), _effect == "spectrum"], ["Visualizer", SkinMenu.visuals(_visual if _effect == "visualizer" else -1, func(target: int): _set_effect("visualizer", target))], ["Lyrics", _set_effect.bind("lyrics"), _effect == "lyrics"], ["Album art", _set_effect.bind("cover"), _effect == "cover"]]],
+		["Visualization", [["Visualizer", SkinMenu.visuals(_visual if _effect == "visualizer" else -1, func(target: int): _set_effect("visualizer", target))], ["Lyrics", _set_effect.bind("lyrics"), _effect == "lyrics"], ["Album art", _set_effect.bind("cover"), _effect == "cover"]]],
 		["Skins", SkinMenu.skins(skin_requested.emit)],
 		["Options", [["Always on top", func(): _store("on_top", not on_top), on_top], []] + sizes],
 	]

@@ -51,7 +51,7 @@ static func open(plugin_id: String, from: Node = null) -> void:
 	if link.begins_with("https://"):
 		var view := created.add_button("View source", OS.shell_open.bind(link), Dialog.Style.NORMAL, false)
 		view.icon = preload("res://assets/icons/github.svg")
-	if info.source != Marketplace and not (info._is_theme() and Themes.is_builtin(plugin_id)):
+	if info.source != Marketplace and not (info.source in [Themes, Skins] and info.source.is_builtin(plugin_id)):
 		var uninstall := created.add_button("Uninstall", info._remove, Dialog.Style.DANGER, false)
 		uninstall.icon = preload("res://assets/icons/delete.svg")
 	if info.source != Marketplace and Marketplace.has_update(plugin_id):
@@ -68,6 +68,9 @@ static func open(plugin_id: String, from: Node = null) -> void:
 
 func _is_theme() -> bool:
 	return source == Themes or (source == Marketplace and _manifest.get("kind") == "themes")
+
+func _is_skin() -> bool:
+	return source == Skins or (source == Marketplace and _manifest.get("kind") == "skins")
 
 func _store() -> Dictionary:
 	var store: Variant = _manifest.get("store", {})
@@ -96,7 +99,7 @@ func _build() -> void:
 		var readme := FileAccess.get_file_as_string(str(_manifest["path"]).path_join("README.md")) if _manifest.has("path") else ""
 		if not readme.is_empty():
 			_body.add_child(_readme(readme))
-	if not _is_theme():
+	if not _is_theme() and not _is_skin():
 		_body.add_child(_warning(_permissions_text()))
 	_body.minimum_size_changed.connect(_fit)
 	var close := NariButton.new()
@@ -496,6 +499,10 @@ func _toggle_plugin() -> void:
 	if _is_theme():
 		_toggle_theme()
 		return
+	if _is_skin():
+		Skins.use(id)
+		_paint()
+		return
 	if Plugins.is_marked(id) and Plugins.is_approved(id):
 		SettingsManager.plugins.set_enabled(id, false)
 	else:
@@ -552,11 +559,9 @@ func _store_action_text(current: bool) -> String:
 	return "Open" if current else "Install"
 
 func _size_text(path: String) -> String:
-	if not path.is_empty():
-		return _size(_weight(path))
 	if _manifest.has("size"):
 		return _size(int(_manifest["size"]))
-	return ""
+	return _size(_weight(path)) if not path.is_empty() else ""
 
 func _paint() -> void:
 	if source == Marketplace:
@@ -565,8 +570,8 @@ func _paint() -> void:
 		_toggle.disabled = Marketplace.is_installing(id)
 		UI.paint_button(_toggle, not current)
 		return
-	var enabled: bool = Themes.active_id() == id if _is_theme() else Plugins.is_marked(id) and Plugins.is_approved(id)
-	if _is_theme():
+	var enabled: bool = Themes.active_id() == id if _is_theme() else Skins.is_active(id) if _is_skin() else Plugins.is_marked(id) and Plugins.is_approved(id)
+	if _is_theme() or _is_skin():
 		_toggle.text = "Use default" if enabled else "Apply"
 	else:
 		_toggle.text = "Disable" if enabled else "Enable"

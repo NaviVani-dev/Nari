@@ -1,7 +1,7 @@
 class_name SkinMenu extends RefCounted
 
 const CHECK := "......#/.....#./#...#../.#.#.../..#...."
-const ARROW := "#.../##../###./##../#..."
+const ARROW := "....#.../....##../....###./....##../....#..."
 const TIP_FONT := 40.0
 const TIP_PADDING := 18.0
 const TIP_RADIUS := 22.0
@@ -62,8 +62,8 @@ static func build(items: Array, look: Theme) -> PopupMenu:
 	menu.force_native = true
 	menu.theme = look
 	for item: Array in items:
-		if item.is_empty():
-			menu.add_separator()
+		if item.size() < 2:
+			menu.add_separator(item[0] if item else "")
 		elif item[1] is Array:
 			var submenu := build(item[1], look)
 			menu.add_child(submenu)
@@ -95,11 +95,12 @@ static func visuals(current: int, choose: Callable, options: Array = Visualizers
 
 static func skins(choose: Callable) -> Array:
 	var current := WinampSkin.current()
+	var groups := WinampSkin.grouped()
 	var items: Array = []
-	for path in WinampSkin.choices():
-		items.append([WinampSkin.label(path), choose.bind(path), path == current])
-		if path == WinampSkin.BUILTIN:
-			items.append([])
+	for kind: String in WinampSkin.KINDS:
+		if not groups[kind].is_empty():
+			items.append([kind])
+			items.append_array(groups[kind].map(func(path: String): return [WinampSkin.label(path), choose.bind(path), path == current]))
 	items.append_array([[], ["Open skins folder", WinampSkin.open_folder]])
 	return items
 
@@ -146,9 +147,9 @@ static func theme(host: Control, colors: Dictionary, font: Font, zoom: float) ->
 	look.set_color("font_separator_color", "PopupMenu", colors["fg"])
 	look.set_color("font_hover_color", "Button", colors["hover_fg"])
 	look.set_constant("v_separation", "PopupMenu", roundi(2 * scale))
-	look.set_constant("h_separation", "PopupMenu", roundi(3 * scale))
+	look.set_constant("h_separation", "PopupMenu", roundi(6 * scale))
 	look.set_constant("item_start_padding", "PopupMenu", roundi(4 * scale))
-	look.set_constant("item_end_padding", "PopupMenu", roundi(4 * scale))
+	look.set_constant("item_end_padding", "PopupMenu", roundi(8 * scale))
 	for icon in ["checked", "radio_checked"]:
 		look.set_icon(icon, "PopupMenu", glyph(CHECK, colors["fg"], scale))
 	for icon in ["unchecked", "radio_unchecked"]:

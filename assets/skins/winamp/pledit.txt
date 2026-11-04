@@ -1,0 +1,6 @@
+[Text]
+Normal=#A9BEE4
+Current=#FFFFFF
+NormalBG=#081228
+SelectedBG=#1C4880
+Font=Nari Pixel

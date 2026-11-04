@@ -350,9 +350,10 @@ func _swap() -> void:
 	_lyrics.set_playback_position(MediaPlayer.get_position())
 
 func wear(source: String) -> void:
-	var media := WinampSkin.is_media_player(source)
+	var nari := NariSkin.is_skin(source)
+	var media := nari or WinampSkin.is_media_player(source)
 	var skin := WinampSkin.open(source) if not source.is_empty() and not media else null
-	var wmp := WmpPlayer.new() if media else null
+	var wmp: WmpPlayer = (NariSkinPlayer.new() if nari else WmpPlayer.new()) if media else null
 	if wmp and not wmp.open(source) or not source.is_empty() and not media and not skin:
 		if wmp:
 			wmp.free()
@@ -394,17 +395,24 @@ func _attach_player(player: Node) -> void:
 
 func _open_skins() -> void:
 	var current := WinampSkin.current()
-	var options := WinampSkin.choices()
-	var dialog := Dialog.menu("Skins", "Drop .wsz or .wmz files on Nari to add them")
+	var groups := WinampSkin.grouped()
+	var options: Array = WinampSkin.KINDS.reduce(func(listed: Array, kind: String): return listed + ([kind] if not groups[kind].is_empty() else []) + groups[kind], [])
+	var dialog := Dialog.menu("Skins", "Drop .wsz, .wmz or .nsk files on Nari to add them")
 	var list: ScrollList = ItemMenu.SCROLL_LIST.instantiate()
 	list.separation = 0
 	list.follow_focus = true
 	dialog.content.add_child(list)
 	dialog.add_option("Open skins folder", WinampSkin.open_folder, FOLDER_ICON)
 	dialog.popup()
-	list.set_items(options, func(path: String) -> NariButton: return dialog.make_choice(WinampSkin.label(path), path == current, wear.bind(path)))
+	list.set_items(options, func(path: String) -> NariButton:
+		if not path in WinampSkin.KINDS:
+			return dialog.make_choice(WinampSkin.label(path), path == current, wear.bind(path))
+		var header := dialog.make_option(path, Callable(), SKIN_ICON)
+		header.disabled = true
+		header.focus_mode = Control.FOCUS_NONE
+		return header)
 	list.custom_minimum_size.y = list.container.cell_height * minf(options.size(), ItemMenu.VISIBLE_OPTIONS)
-	list.focus_item(maxi(options.find(current), 0))
+	list.focus_item(maxi(options.find(current), 1))
 
 func _open_options() -> void:
 	var dialog := Dialog.menu("Mini player")

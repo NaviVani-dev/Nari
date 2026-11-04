@@ -11,7 +11,7 @@ const RECORD_FILE: = "user://marketplace.json"
 const CACHE_DIR: = "user://marketplace_cache"
 const STALE_AFTER_MS: = 600000
 const AUTO_UPDATE_DELAY: = 20.0
-const KINDS: = {"plugins": "zip", "themes": "naritheme"}
+const KINDS: = {"plugins": "zip", "themes": "naritheme", "skins": "nsk"}
 
 var manifests: = {}
 var loading: = false
@@ -84,7 +84,7 @@ func _read(index: Dictionary) -> Dictionary:
 				continue
 			var manifest: Dictionary = (entry as Dictionary).duplicate(true)
 			var api: = int(manifest.get("api", 0))
-			if api < 1 or api > (Themes.API if kind == "themes" else Plugins.API) or not Package.version_problem(manifest, str(manifest["id"])).is_empty():
+			if api < 1 or api > {"themes": Themes.API, "skins": Skins.API}.get(kind, Plugins.API) or not Package.version_problem(manifest, str(manifest["id"])).is_empty():
 				continue
 			manifest["kind"] = kind
 			manifest["store"] = {"source": manifest.get("source", ""), "license": manifest.get("license", ""), "updated": manifest.get("updated", "")}
@@ -121,7 +121,7 @@ func installed_source(id: String) -> Node:
 		return Themes
 	if Plugins.manifests.has(id):
 		return Plugins
-	return null
+	return Skins if Skins.manifests.has(id) else null
 
 func is_installed(id: String) -> bool:
 	return installed_source(id) != null
@@ -139,7 +139,7 @@ func image_of(id: String) -> Texture2D:
 	if _icons.has(id):
 		return _icons[id]
 	var manifest: Dictionary = manifests.get(id, {})
-	var glyph: DPITexture = Themes.GLYPH if manifest.get("kind") == "themes" else Plugins.GLYPH
+	var glyph: DPITexture = {"themes": Themes.GLYPH, "skins": Skins.GLYPH}.get(manifest.get("kind"), Plugins.GLYPH)
 	var icon: = ImageTexture.create_from_image(Package.placeholder(glyph, Themes.theme_of(manifest)).get_image())
 	_icons[id] = icon
 	if not str(manifest.get("icon", "")).is_empty():
@@ -197,14 +197,14 @@ func install(id: String) -> String:
 	_installing[id] = true
 	index_changed.emit()
 	var kind: String = manifest["kind"]
-	var path: = CACHE_DIR.path_join("%s.%s" % [id, KINDS[kind]])
+	var path: = CACHE_DIR.path_join("%s.%s" % [id, Skins.FORMATS.get(str(manifest.get("skin", "")), KINDS[kind])])
 	var problem: = ""
 	if not await _http.download(_download_url(manifest), path):
 		problem = "The download didn't finish, check your connection and try again"
 	elif FileAccess.get_sha256(path) != str(manifest.get("sha256", "")):
 		problem = "The download isn't the file that was reviewed, so it wasn't installed"
 	else:
-		problem = (Themes if kind == "themes" else Plugins).install(ProjectSettings.globalize_path(path))
+		problem = {"themes": Themes, "skins": Skins}.get(kind, Plugins).install(ProjectSettings.globalize_path(path))
 	DirAccess.remove_absolute(path)
 	_installing.erase(id)
 	if problem.is_empty():

@@ -526,7 +526,6 @@ func _main_menu() -> Array:
 	var skins := SkinMenu.skins(skin_requested.emit)
 	var sizes: Array = range(1, 5).map(func(size: int): return ["Size %dx" % size, store.bind("zoom", size), zoom == size])
 	return [
-		["Nari view", closed.emit], [],
 		["Equalizer", _activate.bind("eq"), eq_open], ["Playlist editor", _activate.bind("pl"), pl_open], ["Visualization", _activate.bind("vis"), vis_open], [],
 		["Skins", skins],
 		["Options", [["Always on top", _activate.bind("clutter_a"), on_top], ["Time remaining", _activate.bind("time"), remaining], []] + sizes],

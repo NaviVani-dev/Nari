@@ -740,6 +740,17 @@ impl Runtime {
             return;
         };
         self.views[index].state.now = now;
+        let measure = self.shared.measure.clone();
+        for element in self.views[index].state.elements.iter_mut().filter(|element| element.kind == Kind::Text && (element.auto_width || element.auto_height)) {
+            let (size, bold, .., mono) = super::paint::font_of(element);
+            let value = element.props.get("value").map(text_of).unwrap_or_default();
+            if element.auto_width {
+                element.width = f64::from(measure(&value, size, bold, mono)).ceil() + 1.0;
+            }
+            if element.auto_height {
+                element.height = super::paint::line_height(size);
+            }
+        }
         self.shared.event.shift = modifiers.shift;
         self.shared.event.ctrl = modifiers.ctrl;
         self.shared.event.alt = modifiers.alt;

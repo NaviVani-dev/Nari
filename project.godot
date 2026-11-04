@@ -43,6 +43,7 @@ Main="*res://globals/Main.gd"
 InputGlyphs="*res://globals/InputGlyphs.gd"
 Plugins="*res://globals/Plugins.gd"
 Marketplace="*res://globals/Marketplace.gd"
+Skins="*res://globals/Skins.gd"
 AppUpdates="*res://globals/AppUpdates.gd"
 
 [display]

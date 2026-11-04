@@ -1,8 +1,12 @@
 class_name WinampSkin extends RefCounted
 
-const BUILTIN := "res://assets/winamp/nari.wsz"
+const BUNDLED := "res://assets/skins"
+const BUILTIN := BUNDLED + "/winamp"
+const SHOWCASE := BUNDLED + "/pocket"
 const FOLDER := "user://skins"
-const EXTENSIONS: Array[String] = ["wsz", "wmz", "zip"]
+const CACHE := "user://cache/skins"
+const KINDS: Array[String] = ["Nari", "Windows Media Player", "Winamp"]
+const EXTENSIONS: Array[String] = ["wsz", "wmz", "nsk", "zip"]
 const MAX_DEPTH := 8
 const MAX_SIDE := 8192
 const SHEETS: Array[String] = ["main", "cbuttons", "titlebar", "shufrep", "posbar", "volume", "balance", "monoster", "playpaus", "numbers", "nums_ex", "text", "pledit", "eqmain", "eq_ex", "gen", "genex"]
@@ -71,6 +75,8 @@ const SPRITES := {
 }
 
 static var _default: WinampSkin
+static var _kinds := {}
+static var _copied := {}
 
 var name := ""
 var path := ""
@@ -90,39 +96,63 @@ static func default() -> WinampSkin:
 static func open(source: String) -> WinampSkin:
 	return default() if source.is_empty() or source == BUILTIN else _load(source, default())
 
-static func installed() -> Array[String]:
+static func installed(root := FOLDER) -> Array[String]:
 	var found: Array[String] = []
-	var folder := DirAccess.open(FOLDER)
+	var folder := DirAccess.open(root)
 	if not folder:
 		return found
 	for file in folder.get_files():
 		if file.get_extension().to_lower() in EXTENSIONS:
-			found.append(FOLDER.path_join(file))
+			found.append(root.path_join(file))
 	for directory in folder.get_directories():
-		found.append(FOLDER.path_join(directory))
+		found.append(root.path_join(directory))
 	found.sort_custom(func(a: String, b: String): return a.get_file().naturalnocasecmp_to(b.get_file()) < 0)
 	return found
 
 static func current() -> String:
-	return str(SettingsManager.get_value("mini_player", "skin", ""))
+	return str(SettingsManager.get_value("mini_player", "skin", "")).replace("res://assets/winamp/nari.wsz", BUILTIN)
+
+static func local(source: String) -> String:
+	if not source.begins_with("res://") or OS.has_feature("editor"):
+		return source
+	var target := CACHE.path_join(source.get_file())
+	if not _copied.has(target):
+		_copied[target] = true
+		_copy_tree(source, target)
+	return target
 
 static func choices() -> Array[String]:
-	var found: Array[String] = ["", BUILTIN]
+	var found: Array[String] = [""]
+	found.append_array(installed(BUNDLED))
 	found.append_array(installed())
 	return found
 
 static func label(source: String) -> String:
-	return "Nari" if source.is_empty() else "Nari Classic" if source == BUILTIN else source.get_file().get_basename()
+	return "Nari" if source.is_empty() else source.get_file().capitalize() if source.begins_with(BUNDLED) else source.get_file().get_basename()
+
+static func kind(source: String) -> String:
+	if not _kinds.has(source):
+		var extension := source.get_extension().to_lower()
+		_kinds[source] = KINDS[0] if source.is_empty() or source.begins_with(BUNDLED) or NariSkin.is_skin(source) else KINDS[1] if extension == "wmz" or extension != "wsz" and is_media_player(source) else KINDS[2]
+	return _kinds[source]
+
+static func grouped() -> Dictionary:
+	var groups := {}
+	for name in KINDS:
+		groups[name] = []
+	for path in choices():
+		groups[kind(path)].append(path)
+	return groups
 
 static func skinnable(source: String, loose: bool) -> bool:
 	var extension := source.get_extension().to_lower()
-	return extension in ["wsz", "wmz"] or loose and (extension == "zip" or DirAccess.dir_exists_absolute(source))
+	return extension in ["wsz", "wmz", "nsk"] or loose and (extension == "zip" or DirAccess.dir_exists_absolute(source))
 
 static func is_media_player(source: String) -> bool:
-	return ClassDB.class_exists("WmpSkin") and not source.is_empty() and source != BUILTIN and ClassDB.class_call_static("WmpSkin", "is_skin", ProjectSettings.globalize_path(source))
+	return ClassDB.class_exists("WmpSkin") and not source.is_empty() and source != BUILTIN and not NariSkin.is_skin(source) and ClassDB.class_call_static("WmpSkin", "is_skin", ProjectSettings.globalize_path(local(source)))
 
 static func pick(done: Callable) -> void:
-	DisplayServer.file_dialog_show("Add mini player skins", OS.get_system_dir(OS.SYSTEM_DIR_DOWNLOADS), "", false, DisplayServer.FILE_DIALOG_MODE_OPEN_FILES, PackedStringArray(["*.wsz, *.wmz, *.zip ; Winamp and Windows Media Player skins"]), func(status: bool, paths: PackedStringArray, _filter: int):
+	DisplayServer.file_dialog_show("Add mini player skins", OS.get_system_dir(OS.SYSTEM_DIR_DOWNLOADS), "", false, DisplayServer.FILE_DIALOG_MODE_OPEN_FILES, PackedStringArray(["*.wsz, *.wmz, *.nsk, *.zip ; Winamp, Windows Media Player and Nari skins"]), func(status: bool, paths: PackedStringArray, _filter: int):
 		if status:
 			for path in paths:
 				install(path)
@@ -132,6 +162,7 @@ static func remove(source: String) -> void:
 	OS.move_to_trash(ProjectSettings.globalize_path(source))
 	if current() == source:
 		SettingsManager.set_value("mini_player", "skin", "")
+	Skins.forget(source)
 
 static func open_folder() -> void:
 	DirAccess.make_dir_recursive_absolute(FOLDER)
@@ -144,6 +175,8 @@ static func install(source: String) -> String:
 		_copy_tree(source, target)
 	elif DirAccess.copy_absolute(source, target) != OK:
 		return ""
+	_kinds.erase(target)
+	Skins.forget(target)
 	return target
 
 static func _copy_tree(source: String, target: String) -> void:

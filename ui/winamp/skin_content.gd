@@ -12,6 +12,12 @@ var _lyrics: LyricsVisualizer = LYRICS.instantiate()
 var _cover: Cover = COVER.instantiate()
 var _square := AspectRatioContainer.new()
 var _song_id := ""
+var mask: Array[Rect2] = []:
+	set(value):
+		if value != mask:
+			mask = value
+			clip_children = CanvasItem.CLIP_CHILDREN_ONLY if mask.size() > 1 else CanvasItem.CLIP_CHILDREN_DISABLED
+			queue_redraw()
 
 func _init(interactive: bool) -> void:
 	clip_contents = true
@@ -31,6 +37,10 @@ func _ready() -> void:
 		if song_id == _song_id:
 			_lyrics.finish_loading(lyrics))
 	_follow()
+
+func _draw() -> void:
+	for box in mask:
+		draw_rect(box, Color.WHITE)
 
 func _process(_delta: float) -> void:
 	if _lyrics.is_visible_in_tree():
