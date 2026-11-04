@@ -1,0 +1,93 @@
+name: Windows ARM64
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [windows-arm64]
+  pull_request:
+    paths:
+      - '.github/workflows/windows-arm64.yml'
+      - 'scripts/**'
+      - 'addons/MusicService/**'
+      - 'export_presets.cfg'
+      - 'globals/AppUpdates.gd'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-arm64-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-2025
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-pc-windows-msvc
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            addons/MusicService/native/target
+            addons/MusicService/.build
+          key: windows-arm64-msvc-${{ hashFiles('addons/MusicService/native/Cargo.lock', 'addons/MusicService/native/build.rs', 'scripts/music_service.py', 'scripts/windows_arm64*') }}
+          restore-keys: windows-arm64-msvc-
+      - uses: msys2/setup-msys2@v2
+        id: msys
+        with:
+          msystem: MSYS
+          install: make diffutils pkgconf
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: amd64_arm64
+      - name: Test build safeguards
+        run: python -m unittest discover -s scripts/tests -v
+      - name: Build dav1d and FFmpeg
+        env:
+          MSYS2_BASH: '${{ steps.msys.outputs.msys2-location }}\usr\bin\bash.exe'
+          LIBCLANG_PATH: 'C:\Program Files\LLVM\bin'
+        run: python -c "import sys; sys.path.insert(0, 'scripts'); import music_service; music_service.build_windows_arm64_ffmpeg()"
+      - name: Build native music service
+        env:
+          LIBCLANG_PATH: 'C:\Program Files\LLVM\bin'
+        run: python -c "import sys; sys.path.insert(0, 'scripts'); import music_service; music_service.build_windows_arm64_service()"
+      - name: Install matching Godot editor and ARM64 templates
+        shell: pwsh
+        run: |
+          $version = python -c "import sys; sys.path.insert(0, 'scripts'); from common import GODOT_VERSION; print(GODOT_VERSION)"
+          $base = "https://github.com/godotengine/godot-builds/releases/download/$version-stable"
+          Invoke-WebRequest "$base/Godot_v$version-stable_win64.exe.zip" -OutFile "$env:RUNNER_TEMP/godot.zip"
+          Expand-Archive "$env:RUNNER_TEMP/godot.zip" "$env:RUNNER_TEMP/godot"
+          $editor = (Get-ChildItem "$env:RUNNER_TEMP/godot" -Filter '*_console.exe').FullName
+          "GODOT=$editor" >> $env:GITHUB_ENV
+          Invoke-WebRequest "$base/Godot_v$version-stable_export_templates.tpz" -OutFile "$env:RUNNER_TEMP/templates.zip"
+          Expand-Archive "$env:RUNNER_TEMP/templates.zip" "$env:RUNNER_TEMP/templates"
+          $destination = "$env:APPDATA/Godot/export_templates/$version.stable"
+          New-Item -ItemType Directory -Force $destination | Out-Null
+          Copy-Item "$env:RUNNER_TEMP/templates/templates/*" $destination -Recurse
+      - name: Import resources and export
+        shell: pwsh
+        run: |
+          & $env:GODOT --headless --editor --path . --import
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python scripts/build.py windows-arm64
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Nari-windows-arm64
+          path: build/Nari-windows-arm64.zip
+          if-no-files-found: error
+      - name: Upload FFmpeg diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-arm64-build-diagnostics
+          path: addons/MusicService/.build/ffmpeg/build-windows-arm64/ffbuild/config.log
+          if-no-files-found: ignore
