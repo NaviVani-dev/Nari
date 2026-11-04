@@ -32,6 +32,7 @@ driver/driver="Dummy"
 
 [autoload]
 
+Boot="*res://globals/Boot.gd"
 DevTools="*res://systems/debug/DevTools.tscn"
 SettingsManager="*res://systems/settings/settings_manager.gd"
 MediaPlayer="*uid://dbdkhh3yb1klu"
@@ -50,7 +51,12 @@ window/size/viewport_width=1920
 window/size/viewport_height=1080
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
+window/size/window_width_override.pc=1
+window/size/window_height_override.pc=1
+window/size/borderless.pc=true
+window/size/transparent.pc=true
 window/handheld/orientation=6
+window/per_pixel_transparency/allowed.pc=true
 window/per_pixel_transparency/allowed.preview=true
 
 [editor]
@@ -165,5 +171,6 @@ buffering/agile_event_flushing=true
 [rendering]
 
 renderer/rendering_method="gl_compatibility"
+viewport/transparent_background.pc=true
 viewport/transparent_background.preview=true
 textures/vram_compression/import_etc2_astc=true

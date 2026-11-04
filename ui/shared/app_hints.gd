@@ -162,7 +162,7 @@ func _apply_mode() -> void :
 	_show_header()
 	device_chip.allowed = not dual
 	_show_bottom()
-	visible = (top or dual) and Main.current_page != Main.Pages.Welcome
+	visible = (top or dual) and not Main.current_page in [Main.Pages.Welcome, Main.Pages.MiniPlayer]
 	_mount_pill()
 
 func _show_header() -> void:
@@ -208,7 +208,7 @@ func _dim(shown: bool) -> void :
 func _reserve() -> void :
 	var shown: = song_details.is_visible_in_tree() or device_chip.is_visible_in_tree() or _pill != null and _pill.is_visible_in_tree()
 	Main.set_hints_reserve(screen, row.get_combined_minimum_size().y + _base_margins.w if shown else 0.0)
-	Main.set_bar_reserve(screen, top_column.get_combined_minimum_size().y + _base_margins.y + _notch_pad if top_bar.visible or header.visible else 0.0)
+	Main.set_bar_reserve(screen, top_column.get_combined_minimum_size().y + _base_margins.y + _notch_pad if visible and (top_bar.visible or header.visible) else 0.0)
 
 func _apply_insets(insets: Vector4) -> void :
 	for side in 4:

@@ -132,6 +132,10 @@ class GeneralSection extends Section:
 		set(value):
 			close_to_tray = value
 			_store("close_to_tray", value)
+	var mini_close_opens_app: = false:
+		set(value):
+			mini_close_opens_app = value
+			_store("mini_close_opens_app", value)
 	var startup_page: = "Home":
 		set(value):
 			startup_page = value
@@ -206,6 +210,7 @@ class GeneralSection extends Section:
 		bottom_window = _fetch("bottom_window", bottom_window)
 		boot_intro = _fetch("boot_intro", SettingsManager.get_value("theme", "boot_intro", boot_intro))
 		close_to_tray = _fetch("close_to_tray", close_to_tray)
+		mini_close_opens_app = _fetch("mini_close_opens_app", mini_close_opens_app)
 		startup_page = _fetch("startup_page", startup_page)
 		offline_mode = _fetch("offline_mode", offline_mode)
 		developer_mode = _fetch("developer_mode", developer_mode)
@@ -315,6 +320,14 @@ class PlaybackSection extends Section:
 		set(value):
 			module_ending = value
 			_store("module_ending", value)
+	var balance: = 0.0:
+		set(value):
+			balance = value
+			_store("balance", value)
+	var mono: = false:
+		set(value):
+			mono = value
+			_store("mono", value)
 
 	func _init() -> void :
 		super ("playback")
@@ -331,6 +344,40 @@ class PlaybackSection extends Section:
 		soundfont = _fetch("soundfont", soundfont)
 		volume = _fetch("volume", volume)
 		module_ending = _fetch("module_ending", module_ending)
+		balance = _fetch("balance", balance)
+		mono = _fetch("mono", mono)
+
+class EqualizerSection extends Section:
+	var enabled: = false:
+		set(value):
+			enabled = value
+			_store("enabled", value)
+	var auto: = false:
+		set(value):
+			auto = value
+			_store("auto", value)
+	var preamp: = 0.0:
+		set(value):
+			preamp = value
+			_store("preamp", value)
+	var bands: Array = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]:
+		set(value):
+			bands = value
+			_store("bands", value)
+	var presets: = {}:
+		set(value):
+			presets = value
+			_store("presets", value)
+
+	func _init() -> void :
+		super ("equalizer")
+
+	func reload() -> void :
+		enabled = _fetch("enabled", enabled)
+		auto = _fetch("auto", auto)
+		preamp = _fetch("preamp", preamp)
+		bands = _fetch("bands", bands)
+		presets = _fetch("presets", presets)
 
 class PerformanceSection extends Section:
 	var max_fps: = 60:
@@ -406,6 +453,7 @@ var library: = LibrarySection.new()
 var lyrics: = LyricsSection.new()
 var theme: = ThemeSection.new()
 var playback: = PlaybackSection.new()
+var equalizer: = EqualizerSection.new()
 var performance: = PerformanceSection.new()
 var plugins: = PluginsSection.new()
 var discord: = DiscordSection.new()

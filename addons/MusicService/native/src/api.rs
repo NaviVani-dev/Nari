@@ -536,6 +536,11 @@ impl MusicService {
             .set_equalizer(bands.as_slice().iter().map(|band| (band.x, band.y)).collect());
     }
 
+    #[func(rename = setGraphicEqualizer)]
+    fn set_graphic_equalizer(&mut self, bands: PackedVector2Array, preamp: f32) {
+        self.player().set_graphic_equalizer(bands.as_slice().iter().map(|band| (band.x, band.y)).collect(), preamp);
+    }
+
     #[func(rename = pickPlugin)]
     fn pick_plugin(&mut self) {
         #[cfg(target_os = "android")]
@@ -651,6 +656,23 @@ impl MusicService {
     fn set_app_volume(&mut self, volume: f32) {
         crate::audio::set_app_volume(volume);
         self.cast.set_volume(volume);
+    }
+
+    #[func(rename = setTrayMini)]
+    fn set_tray_mini(&mut self, on: bool) {
+        if let Some(tray) = self.tray.as_ref() {
+            tray.set_mini(on);
+        }
+    }
+
+    #[func(rename = setAppBalance)]
+    fn set_app_balance(&mut self, balance: f32) {
+        crate::audio::set_app_balance(balance);
+    }
+
+    #[func(rename = setMonoAudio)]
+    fn set_mono_audio(&mut self, mono: bool) {
+        crate::audio::set_app_mono(mono);
     }
 
     #[func(rename = setNormalizeVolume)]

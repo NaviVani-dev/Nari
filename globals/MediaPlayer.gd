@@ -158,6 +158,11 @@ func set_volume(value: float, save: bool = true) -> void:
 		SettingsManager.playback.volume = value
 	volume_changed.emit(value)
 
+func _apply_channels() -> void:
+	if _native.has_method("setAppBalance"):
+		_native.setAppBalance(clampf(float(SettingsManager.playback.balance) / 100.0, -1.0, 1.0))
+		_native.setMonoAudio(bool(SettingsManager.playback.mono))
+
 func follow_output() -> void:
 	if Plugins.is_output_connected():
 		if _native and _native.has_method("setAppVolume"):
@@ -187,6 +192,9 @@ func _connect_native() -> void :
 	_native.setGapless(SettingsManager.playback.gapless)
 	_native.setSoundFont(SettingsManager.playback.soundfont)
 	_native.setModuleEnding(SettingsManager.playback.module_ending)
+	_apply_channels()
+	Equalizer.apply()
+	current_song_changed.connect(Equalizer.follow_song)
 	_native.soundfont_picked.connect(func(path: String):
 		if not path.is_empty():
 			SettingsManager.playback.soundfont = path)
@@ -201,6 +209,12 @@ func _connect_native() -> void :
 			_native.setSoundFont(value)
 		elif section == "playback" and key == "module_ending":
 			_native.setModuleEnding(value)
+		elif section == "playback" and key in ["balance", "mono"]:
+			_apply_channels()
+		elif section == "equalizer":
+			Equalizer.apply()
+			if key == "auto" and value:
+				Equalizer.follow_song(get_current_song())
 		elif section == "discord":
 			_send_discord())
 	_state =_with_effect_enum(JsonUtil.parse_dict(_native.getPlaybackStateJson()))
@@ -359,6 +373,10 @@ func _shares_genre(track: Dictionary, genres: Dictionary) -> bool:
 func set_equalizer(bands: Array) -> void :
 	if _native:
 		_native.setEqualizer(PackedVector2Array(bands))
+
+func set_graphic_equalizer(bands: PackedVector2Array, preamp: float) -> void :
+	if _native:
+		_native.setGraphicEqualizer(bands, preamp)
 
 func _context_tracks(context: Context, context_id: String) -> Array:
 	match context:

@@ -7,6 +7,9 @@ pub const TOGGLE: &str = "toggle";
 pub const NEXT: &str = "next";
 pub const PREVIOUS: &str = "previous";
 pub const QUIT: &str = "quit";
+pub const MINI: &str = "mini";
+
+static MINI_ON: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
 const FAVICON: &[u8] = include_bytes!("../../../../icon.png");
 const ICON_SIZES: [u32; 6] = [16, 22, 24, 32, 48, 64];
@@ -83,7 +86,7 @@ mod favicon {
 mod platform {
     use super::*;
     use ksni::blocking::{Handle, TrayMethods};
-    use ksni::menu::StandardItem;
+    use ksni::menu::{CheckmarkItem, StandardItem};
     use ksni::{Category, Icon, MenuItem, Status, ToolTip};
     use std::path::Path;
     use std::sync::OnceLock;
@@ -215,6 +218,15 @@ mod platform {
             );
             items.push(MenuItem::Separator);
             items.push(
+                CheckmarkItem {
+                    label: "Mini player".into(),
+                    checked: MINI_ON.load(std::sync::atomic::Ordering::Relaxed),
+                    activate: Box::new(|this: &mut Self| this.send(MINI)),
+                    ..CheckmarkItem::default()
+                }
+                .into(),
+            );
+            items.push(
                 StandardItem {
                     label: "Show Nari".into(),
                     activate: Box::new(|this: &mut Self| this.send(SHOW)),
@@ -264,6 +276,11 @@ mod platform {
             }
         }
 
+        pub fn set_mini(&self, on: bool) {
+            MINI_ON.store(on, std::sync::atomic::Ordering::Relaxed);
+            let _ = self.handle.update(|_: &mut Item| {});
+        }
+
         pub fn set_state(&self, title: String, playing: bool, cover: String) {
             let cover = cover_png(&cover);
             let _ = self.handle.update(move |item: &mut Item| {
@@ -285,7 +302,7 @@ mod platform {
     use std::sync::atomic::{AtomicBool, Ordering};
     use std::sync::{Arc, Mutex};
     use std::thread::JoinHandle;
-    use tray_icon::menu::{Menu, MenuEvent, MenuItem as WinMenuItem, PredefinedMenuItem};
+    use tray_icon::menu::{CheckMenuItem, Menu, MenuEvent, MenuItem as WinMenuItem, PredefinedMenuItem};
     use tray_icon::{Icon, TrayIconBuilder, TrayIconEvent};
     use windows_sys::Win32::UI::WindowsAndMessaging::{
         DispatchMessageW, PeekMessageW, TranslateMessage, MSG, PM_REMOVE,
@@ -321,6 +338,10 @@ mod platform {
             })
         }
 
+        pub fn set_mini(&self, on: bool) {
+            MINI_ON.store(on, Ordering::Relaxed);
+        }
+
         pub fn set_state(&self, title: String, playing: bool, _cover: String) {
             if let Ok(mut state) = self.state.lock() {
                 state.title = title;
@@ -353,12 +374,14 @@ mod platform {
         let next = WinMenuItem::new("Next", true, None);
         let show = WinMenuItem::new("Show Nari", true, None);
         let exit = WinMenuItem::new("Quit", true, None);
+        let mini = CheckMenuItem::new("Mini player", true, false, None);
         let menu = Menu::new();
         let _ = menu.append_items(&[
             &toggle,
             &previous,
             &next,
             &PredefinedMenuItem::separator(),
+            &mini,
             &show,
             &exit,
         ]);
@@ -391,6 +414,7 @@ mod platform {
                     id if *id == next.id() => NEXT,
                     id if *id == show.id() => SHOW,
                     id if *id == exit.id() => QUIT,
+                    id if *id == mini.id() => MINI,
                     _ => continue,
                 };
                 let _ = events.send(Event::TrayCommand(command.to_owned()));
@@ -406,6 +430,10 @@ mod platform {
                 ) {
                     let _ = events.send(Event::TrayCommand(SHOW.to_owned()));
                 }
+            }
+            let on = MINI_ON.load(Ordering::Relaxed);
+            if mini.is_checked() != on {
+                mini.set_checked(on);
             }
             if let Ok(state) = state.lock() {
                 if state.title != shown || state.playing != was_playing {
@@ -428,12 +456,13 @@ mod platform {
 mod platform {
     use super::*;
     use std::cell::RefCell;
-    use tray_icon::menu::{Menu, MenuEvent, MenuId, MenuItem as MacMenuItem, PredefinedMenuItem};
+    use tray_icon::menu::{CheckMenuItem, Menu, MenuEvent, MenuId, MenuItem as MacMenuItem, PredefinedMenuItem};
     use tray_icon::{Icon, TrayIcon, TrayIconBuilder};
 
     pub struct Tray {
         icon: RefCell<Option<TrayIcon>>,
         toggle: MacMenuItem,
+        mini: CheckMenuItem,
     }
 
     impl Tray {
@@ -443,14 +472,16 @@ mod platform {
             let next = MacMenuItem::new("Next", true, None);
             let show = MacMenuItem::new("Show Nari", true, None);
             let exit = MacMenuItem::new("Quit", true, None);
+            let mini = CheckMenuItem::new("Mini player", true, false, None);
             let menu = Menu::new();
-            menu.append_items(&[&toggle, &previous, &next, &PredefinedMenuItem::separator(), &show, &exit]).ok()?;
+            menu.append_items(&[&toggle, &previous, &next, &PredefinedMenuItem::separator(), &mini, &show, &exit]).ok()?;
             let commands: Vec<(MenuId, &'static str)> = vec![
                 (toggle.id().clone(), TOGGLE),
                 (previous.id().clone(), PREVIOUS),
                 (next.id().clone(), NEXT),
                 (show.id().clone(), SHOW),
                 (exit.id().clone(), QUIT),
+                (mini.id().clone(), MINI),
             ];
             MenuEvent::set_event_handler(Some(move |event: MenuEvent| {
                 if let Some((_, command)) = commands.iter().find(|(id, _)| *id == *event.id()) {
@@ -470,7 +501,12 @@ mod platform {
                     return None;
                 }
             };
-            Some(Self { icon: RefCell::new(Some(icon)), toggle })
+            Some(Self { icon: RefCell::new(Some(icon)), toggle, mini })
+        }
+
+        pub fn set_mini(&self, on: bool) {
+            MINI_ON.store(on, std::sync::atomic::Ordering::Relaxed);
+            self.mini.set_checked(on);
         }
 
         pub fn set_state(&self, title: String, playing: bool, _cover: String) {
@@ -498,6 +534,8 @@ mod platform {
         }
 
         pub fn set_state(&self, _title: String, _playing: bool, _cover: String) {}
+
+        pub fn set_mini(&self, _on: bool) {}
 
         pub fn shutdown(&self) {}
     }

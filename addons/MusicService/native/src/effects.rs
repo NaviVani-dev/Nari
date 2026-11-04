@@ -484,6 +484,7 @@ pub const MAX_BANDS: usize = 16;
 const MAX_GAIN_DB: f32 = 24.0;
 const BAND_Q: f32 = 1.0;
 const SILENT_GAIN_DB: f32 = 0.01;
+const LIMITER_KNEE: f32 = 0.8;
 
 #[derive(Clone, Copy, Default)]
 struct Biquad {
@@ -547,15 +548,16 @@ pub struct Equalizer {
     rate: f32,
     filters: Vec<Biquad>,
     preamp: f32,
+    limited: bool,
     pub version: u32,
 }
 
 impl Equalizer {
     pub fn new(rate: u32) -> Self {
-        Self { rate: rate as f32, filters: Vec::new(), preamp: 1.0, version: 0 }
+        Self { rate: rate as f32, filters: Vec::new(), preamp: 1.0, limited: false, version: 0 }
     }
 
-    pub fn configure(&mut self, bands: &[(f32, f32)], version: u32) {
+    pub fn configure(&mut self, bands: &[(f32, f32)], preamp_db: Option<f32>, version: u32) {
         self.version = version;
         let limit = self.rate * 0.45;
         let mut filters: Vec<Biquad> = Vec::new();
@@ -572,12 +574,13 @@ impl Equalizer {
             }
             filters.push(filter);
         }
-        self.preamp = 10f32.powf(-boost / 20.0);
+        self.limited = preamp_db.is_some();
+        self.preamp = 10f32.powf(preamp_db.map_or(-boost, |db| db.clamp(-MAX_GAIN_DB, MAX_GAIN_DB)) / 20.0);
         self.filters = filters;
     }
 
     pub fn process(&mut self, left: f32, right: f32) -> (f32, f32) {
-        if self.filters.is_empty() {
+        if self.filters.is_empty() && self.preamp == 1.0 {
             return (left, right);
         }
         let (mut left, mut right) = (left * self.preamp, right * self.preamp);
@@ -585,8 +588,14 @@ impl Equalizer {
             left = filter.process(0, left);
             right = filter.process(1, right);
         }
-        (left, right)
+        if self.limited { (limit(left), limit(right)) } else { (left, right) }
     }
+}
+
+fn limit(value: f32) -> f32 {
+    let room = 1.0 - LIMITER_KNEE;
+    let over = (value.abs() - LIMITER_KNEE).max(0.0);
+    value.signum() * (value.abs() - over + room * (over / room).tanh())
 }
 
 pub const MAX_STAGES: usize = 16;
@@ -797,19 +806,30 @@ mod tests {
     fn equalizer_shapes_only_the_chosen_band() {
         let rate = 48_000;
         let mut flat = Equalizer::new(rate);
-        flat.configure(&[(1000.0, 0.0), (60.0, 0.0)], 1);
+        flat.configure(&[(1000.0, 0.0), (60.0, 0.0)], None, 1);
         assert_eq!(flat.process(0.3, -0.2), (0.3, -0.2));
         let mut cut = Equalizer::new(rate);
-        cut.configure(&[(1000.0, -12.0)], 1);
+        cut.configure(&[(1000.0, -12.0)], None, 1);
         let at_band = band_level(&mut cut, 1000.0, rate);
         let mut cut = Equalizer::new(rate);
-        cut.configure(&[(1000.0, -12.0)], 1);
+        cut.configure(&[(1000.0, -12.0)], None, 1);
         let far_away = band_level(&mut cut, 60.0, rate);
         assert!(at_band < 0.25 * 0.3, "the band should drop by about 12 dB, got {at_band}");
         assert!(far_away > 0.25 * 0.9, "other frequencies should stay, got {far_away}");
         let mut boost = Equalizer::new(rate);
-        boost.configure(&[(1000.0, 12.0)], 1);
+        boost.configure(&[(1000.0, 12.0)], None, 1);
         assert!(band_level(&mut boost, 1000.0, rate) <= 0.26, "boosts are compensated so they don't clip");
+    }
+
+    #[test]
+    fn manual_preamp_is_applied_and_limited() {
+        let rate = 48_000;
+        let mut equalizer = Equalizer::new(rate);
+        equalizer.configure(&[], Some(-6.0), 1);
+        assert!((equalizer.process(0.5, 0.5).0 - 0.25).abs() < 0.01, "-6 dB should halve the signal");
+        equalizer.configure(&[(1000.0, 12.0)], Some(12.0), 2);
+        let level = band_level(&mut equalizer, 1000.0, rate);
+        assert!(level > 0.5 && level <= 1.0, "boosts stay loud but never pass full scale, got {level}");
     }
 
     fn tone(frames: usize, rate: u32) -> Vec<f32> {

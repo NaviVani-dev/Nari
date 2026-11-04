@@ -8,9 +8,10 @@ name = "nari"
 crate-type = ["cdylib"]
 
 [workspace]
-members = ["webview"]
+members = ["webview", "wmp"]
 
 [dependencies]
+nari_wmp = { path = "wmp" }
 cpal = "0.18.2"
 godot = { version = "0.5", features = ["api-4-7", "lazy-function-tables"] }
 image = { version = "0.25.10", default-features = false, features = ["jpeg", "png", "webp", "gif", "bmp"] }

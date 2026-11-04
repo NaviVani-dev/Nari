@@ -38,6 +38,21 @@ const BURST_WAIT: Duration = Duration::from_millis(2);
 const BURST_PATIENCE: u32 = 25;
 
 static APP_VOLUME: AtomicU32 = AtomicU32::new(0x3f80_0000);
+static APP_BALANCE: AtomicU32 = AtomicU32::new(0);
+static APP_MONO: AtomicBool = AtomicBool::new(false);
+
+pub fn set_app_mono(mono: bool) {
+    APP_MONO.store(mono, Ordering::Relaxed);
+}
+
+pub fn set_app_balance(balance: f32) {
+    APP_BALANCE.store(balance.clamp(-1.0, 1.0).to_bits(), Ordering::Relaxed);
+}
+
+fn app_balance() -> (f32, f32) {
+    let balance = f32::from_bits(APP_BALANCE.load(Ordering::Relaxed));
+    ((1.0 - balance).min(1.0), (1.0 + balance).min(1.0))
+}
 
 pub fn set_app_volume(volume: f32) {
     let volume = volume.clamp(0.0, 1.0);
@@ -145,6 +160,8 @@ struct Shared {
     lost: AtomicBool,
     equalizer: Mutex<Vec<(f32, f32)>>,
     equalizer_version: AtomicU32,
+    graphic: Mutex<(Vec<(f32, f32)>, f32)>,
+    graphic_version: AtomicU32,
     rack: Mutex<Vec<Stage>>,
     rack_version: AtomicU32,
     watches: Mutex<Vec<(usize, crate::stream::Watch)>>,
@@ -172,6 +189,8 @@ impl Shared {
             lost: AtomicBool::new(false),
             equalizer: Mutex::new(Vec::new()),
             equalizer_version: AtomicU32::new(0),
+            graphic: Mutex::new((Vec::new(), 0.0)),
+            graphic_version: AtomicU32::new(0),
             rack: Mutex::new(Vec::new()),
             rack_version: AtomicU32::new(0),
             watches: Mutex::new(Vec::new()),
@@ -317,6 +336,13 @@ impl Engine {
         self.shared.equalizer_version.fetch_add(1, Ordering::Release);
     }
 
+    pub fn set_graphic_equalizer(&self, bands: &[(f32, f32)], preamp: f32) {
+        if let Ok(mut graphic) = self.shared.graphic.lock() {
+            *graphic = (bands.to_vec(), preamp);
+        }
+        self.shared.graphic_version.fetch_add(1, Ordering::Release);
+    }
+
     pub fn set_rack(&self, stages: &[Stage]) {
         if let Ok(mut rack) = self.shared.rack.lock() {
             *rack = stages.to_vec();
@@ -392,6 +418,7 @@ impl Drop for Engine {
 
 struct Mix {
     shared: Arc<Shared>,
+    graphic: Equalizer,
     equalizer: Equalizer,
     rack: Rack,
     master: bool,
@@ -399,8 +426,8 @@ struct Mix {
 
 impl Mix {
     fn new(shared: Arc<Shared>, master: bool) -> Self {
-        let (equalizer, rack) = (Equalizer::new(shared.rate), Rack::new(shared.rate));
-        Self { shared, equalizer, rack, master }
+        let (graphic, equalizer, rack) = (Equalizer::new(shared.rate), Equalizer::new(shared.rate), Rack::new(shared.rate));
+        Self { shared, graphic, equalizer, rack, master }
     }
 
     fn flushes(&self) -> u64 {
@@ -414,6 +441,8 @@ impl Mix {
     fn pull(&mut self, frames: usize, mut put: impl FnMut(f32, f32)) -> (u64, Option<usize>) {
         let shared = &self.shared;
         let mut volume = f32::from_bits(shared.volume.load(Ordering::Relaxed));
+        let (pan_left, pan_right) = if self.master { app_balance() } else { (1.0, 1.0) };
+        let mono = self.master && APP_MONO.load(Ordering::Relaxed);
         if self.master {
             volume *= app_volume();
         }
@@ -421,7 +450,13 @@ impl Mix {
         let version = shared.equalizer_version.load(Ordering::Acquire);
         if version != self.equalizer.version {
             if let Ok(bands) = shared.equalizer.try_lock() {
-                self.equalizer.configure(&bands, version);
+                self.equalizer.configure(&bands, None, version);
+            }
+        }
+        let version = shared.graphic_version.load(Ordering::Acquire);
+        if version != self.graphic.version {
+            if let Ok(graphic) = shared.graphic.try_lock() {
+                self.graphic.configure(&graphic.0, Some(graphic.1), version);
             }
         }
         let version = shared.rack_version.load(Ordering::Acquire);
@@ -441,12 +476,14 @@ impl Mix {
                 while done < frames && ring.samples.len() >= CHANNELS {
                     let left = ring.samples.pop_front().unwrap_or(0.0);
                     let right = ring.samples.pop_front().unwrap_or(0.0);
+                    let (left, right) = self.graphic.process(left, right);
                     let (left, right) = self.equalizer.process(left, right);
                     let (left, right) = self.rack.process(left, right);
                     if song.is_some() {
                         heard.push((left + right) * 0.5);
                     }
-                    put(left * volume, right * volume);
+                    let (left, right) = if mono { ((left + right) * 0.5, (left + right) * 0.5) } else { (left, right) };
+                    put(left * volume * pan_left, right * volume * pan_right);
                     ring.consumed += 1;
                     done += 1;
                 }

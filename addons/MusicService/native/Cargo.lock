@@ -2529,6 +2529,7 @@ dependencies = [
  "md-5",
  "mdns-sd",
  "mlua",
+ "nari_wmp",
  "ndk-context",
  "notify",
  "num-bigint",
@@ -2589,6 +2590,14 @@ dependencies = [
  "serde_json",
  "wry",
  "x11-dl",
+]
+
+[[package]]
+name = "nari_wmp"
+version = "0.1.0"
+dependencies = [
+ "image",
+ "zip",
 ]
 
 [[package]]

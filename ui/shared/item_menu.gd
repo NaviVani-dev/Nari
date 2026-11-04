@@ -22,6 +22,7 @@ const SHUFFLE_ICON := preload("res://assets/icons/shuffle.svg")
 const LIKED_ICON := preload("res://assets/icons/like_on.svg")
 const UNLIKED_ICON := preload("res://assets/icons/like_off.svg")
 const PLUGIN_ICON := preload("res://assets/icons/plugin.svg")
+const MINI_ICON := preload("res://assets/icons/mini_player.svg")
 const VISIBLE_OPTIONS := 5.5
 
 static func track(data: Dictionary, playlist_id: String = "") -> void:
@@ -63,6 +64,8 @@ static func now_playing(data: Dictionary) -> void:
 	if link.begins_with("https://"):
 		dialog.add_option("Copy link", DisplayServer.clipboard_set.bind(link), LINK_ICON)
 	dialog.add_option("Start song radio", MediaPlayer.start_radio.bind("track", data), RADIO_ICON)
+	if not Main.mini and OS.has_feature("pc"):
+		dialog.add_option("Mini player", Main.open_mini, MINI_ICON)
 	dialog.popup()
 
 static func album(data: Dictionary, shuffle: Callable = Callable()) -> void:

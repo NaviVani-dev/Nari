@@ -16,6 +16,7 @@ const DRIFT := Vector2(0.0, 60.0)
 const DAMPING := 3.5
 const REFERENCE_HEIGHT := 1080.0
 const GROUP := "touch_fx"
+const MUTED := "no_touch_fx"
 
 var _glow: GradientTexture2D
 var _touches: Dictionary = {}
@@ -114,7 +115,7 @@ func _draw() -> void:
 		_blob(particle["position"], radius, Color(particle["color"], fade * 0.5))
 
 func _press(index: int, point: Vector2) -> void:
-	if not Themes.enabled("motion", "click"):
+	if not Themes.enabled("motion", "click") or get_tree().get_nodes_in_group(MUTED).any(func(node: CanvasItem): return node.is_visible_in_tree()):
 		return
 	_touches[index] = {"position": point, "origin": point, "emitted": point, "age": 0.0, "ripple": 0.0, "release": -1.0}
 	burst(point)

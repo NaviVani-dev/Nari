@@ -18,6 +18,7 @@ const WINDOW_MODES := {"windowed": "Windowed", "fullscreen": "Fullscreen", "excl
 const RESOLUTIONS := ["1280x720", "1366x768", "1600x900", "1920x1080", "2560x1440", "3840x2160"]
 const SECTION := preload("res://ui/shared/SettingSection.tscn")
 const ADDON_PAGES := ["plugins", "themes"]
+const WIDE_PAGES := ["plugins", "themes", "skins"]
 const PREVIEW_HIDDEN := ["Library", "Playback", "Lyrics", "Integrations", "Plugins", "Themes", "Dual-screen integration", "Select main screen",
 	"Avoid the notch", "Avoid Android elements", "Show on startup", "Intro on boot", "Video decoding", "Developer mode"]
 
@@ -37,9 +38,9 @@ var _glyph_rest := 0.0
 func _ready() -> void:
 	_category = str(data.get("category", ""))
 	if not bottom:
-		list.max_width = 0.0 if _category in ADDON_PAGES else UI.LIST_MAX_WIDTH
+		list.max_width = 0.0 if _category in WIDE_PAGES else UI.LIST_MAX_WIDTH
 		caption_description.marquee = true
-		if _category in ADDON_PAGES:
+		if _category in WIDE_PAGES:
 			showcase.hide()
 		else:
 			UI.place_detail(top, list, showcase, true)
@@ -74,6 +75,10 @@ func _ready() -> void:
 		Themes.install_finished.connect(_on_install_finished.bind("Theme"))
 	if _category == "appearance":
 		Themes.themes_changed.connect(_load)
+	if _category in ["appearance", "skins"]:
+		SettingsManager.changed.connect(func(section: String, key: String, _value: Variant):
+			if section == WinampPlayer.SECTION and key == "skin":
+				_load())
 	if _category in ADDON_PAGES:
 		Marketplace.index_changed.connect(_load)
 		Marketplace.refresh()
@@ -179,6 +184,16 @@ func _entries_of(category: String) -> Array:
 				SettingItem.toggle("Normalize volume", "Plays every song at a similar loudness", preload("res://assets/icons/sound.svg"), "playback", "normalize_volume"),
 				SettingItem.toggle("Gapless playback", "Runs tracks without pauses", preload("res://assets/icons/gapless.svg"), "playback", "gapless"),
 				SettingItem.toggle("Keep screen on", "Keeps your device from going into sleep mode while Nari is focused and playing music", preload("res://assets/icons/charge.svg"), "playback", "keep_screen_on"),
+				{
+					"title": "Equalizer",
+					"description": "Shapes the sound with 10 bands and a preamp",
+					"icon": preload("res://assets/icons/equalizer.svg"),
+					"value": Equalizer.summary,
+					"action": func(): EqualizerDialog.open(SettingItem.refresh_list.bind(list)),
+					"reset": func(): for key in ["enabled", "auto", "preamp", "bands"]: SettingsManager.equalizer.reset(key),
+				},
+				_slider("Balance", "Which side the music plays louder on", preload("res://assets/icons/headphones.svg"), "playback", "balance", Vector3(-100, 100, 5), func(amount: float): return "Center" if is_zero_approx(amount) else "%d%% %s" % [absf(amount), "left" if amount < 0.0 else "right"]),
+				SettingItem.toggle("Mono audio", "Plays the same sound on both sides", preload("res://assets/icons/speaker.svg"), "playback", "mono"),
 			]) + _section("Sound effects", [
 				_slider("Sound effects volume", "How loud Nari's sounds are", preload("res://assets/icons/sound.svg"), "playback", "sounds_volume", Vector3(0, 100, 5), func(amount: float): return "%d%%" % amount),
 				_slider("Soundboard volume", "How loud your soundboard pads are", preload("res://assets/icons/soundboard.svg"), "playback", "soundboard_volume", Vector3(0, 100, 5), func(amount: float): return "%d%%" % amount),
@@ -222,6 +237,7 @@ func _entries_of(category: String) -> Array:
 					screens.append(_choice("Window controls side", "Where the window controls go in the top bar", preload("res://assets/icons/window_minimize.svg"), "general", "window_controls_left",
 						[false, true], {false: "Right", true: "Left"}))
 				screens.append(SettingItem.toggle("Close to tray", "Closing the window keeps the music going in the system tray", preload("res://assets/icons/music_note.svg"), "general", "close_to_tray"))
+				screens.append(SettingItem.toggle("Mini player close opens Nari", "The mini player's close button goes back to the main window instead of the tray", preload("res://assets/icons/mini_player.svg"), "general", "mini_close_opens_app"))
 			var general: Array = _section("Window" if OS.has_feature("pc") else "Screens", screens) + _section("Startup", [
 				_choice("Show on startup", "The screen that opens at launch", preload("res://assets/icons/home.svg"), "general", "startup_page",
 					STARTUP_PAGES.keys(), STARTUP_PAGES),
@@ -251,7 +267,13 @@ func _entries_of(category: String) -> Array:
 				"icon": preload("res://assets/icons/background.svg"),
 				"value": func(): return str(Themes.active.get("name", "Default")),
 				"action": Main.change_page.bind(Main.Pages.Settings, {"category": "themes"}),
-			}, _adapt_entry(),
+			}] + ([{
+				"title": "Mini player skins",
+				"description": "Winamp and Windows Media Player skins for the mini player",
+				"icon": preload("res://assets/icons/mini_player.svg"),
+				"value": func(): return WinampSkin.label(WinampSkin.current()),
+				"action": Main.change_page.bind(Main.Pages.Settings, {"category": "skins"}),
+			}] if OS.has_feature("pc") else []) + [_adapt_entry(),
 				_choice("Background", "Select how much details does the background shows", preload("res://assets/icons/background.svg"), "performance", "background",
 					["full", "gradient", "simple"], {"full": "Animated", "gradient": "Gradient only", "simple": "Simple"}),
 			]) + _section("Layout", [
@@ -288,6 +310,8 @@ func _entries_of(category: String) -> Array:
 			return _plugin_entries()
 		"themes":
 			return _theme_entries()
+		"skins":
+			return _skin_entries()
 		"about":
 			return []
 		"plugin":
@@ -508,6 +532,32 @@ func _theme_entries() -> Array:
 			"settings": Main.change_page.bind(Main.Pages.Settings, {"category": "theme", "theme": id}) if active and not Themes.settings_for(id).is_empty() else Callable(),
 		})
 	return entries
+
+func _skin_entries() -> Array:
+	var current := WinampSkin.current()
+	var entries: Array = []
+	if DisplayServer.has_feature(DisplayServer.FEATURE_NATIVE_DIALOG_FILE):
+		entries.append({"title": "Add skins", "section": "Get more", "description": "Adds Winamp (.wsz) and Windows Media Player (.wmz) skins, or drop them on Nari", "icon": preload("res://assets/icons/add.svg"), "action": WinampSkin.pick.bind(_load)})
+	entries.append({"title": "Open skins folder", "section": "Get more", "description": "Where your skins are kept", "icon": preload("res://assets/icons/new_folder.svg"), "action": WinampSkin.open_folder})
+	var descriptions := {"": "The mini player with Nari's own look", WinampSkin.BUILTIN: "The classic Winamp skin made for Nari"}
+	for path in WinampSkin.choices():
+		entries.append({
+			"title": WinampSkin.label(path),
+			"description": descriptions.get(path, "Windows Media Player skin" if path.get_extension().to_lower() == "wmz" else "Winamp skin"),
+			"icon": preload("res://assets/icons/theme.svg"),
+			"section": "Installed",
+			"enabled": path == current,
+			"action": _skin_menu.bind(path) if path.begins_with(WinampSkin.FOLDER) else SettingsManager.set_value.bind(WinampPlayer.SECTION, "skin", path),
+		})
+	return entries
+
+func _skin_menu(path: String) -> void:
+	var dialog := Dialog.menu(WinampSkin.label(path), "Mini player skin")
+	dialog.add_option("Use", SettingsManager.set_value.bind(WinampPlayer.SECTION, "skin", path), preload("res://assets/icons/check.svg"))
+	dialog.add_option("Delete", func(): Dialog.confirm("Delete %s?" % WinampSkin.label(path), "Delete", func():
+		WinampSkin.remove(path)
+		_load(), true), preload("res://assets/icons/delete.svg"))
+	dialog.popup()
 
 func _theme_setting_entry(setting: Dictionary, id: String) -> Dictionary:
 	var key := str(setting["id"])

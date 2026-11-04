@@ -23,6 +23,7 @@ var locked := false
 var _dim := ColorRect.new()
 var _center := CenterContainer.new()
 var _panel := NariPanelContainer.new()
+var _scroll := SmoothScrollContainer.new()
 var _closing := false
 
 func _init() -> void:
@@ -31,7 +32,7 @@ func _init() -> void:
 	add_child(_dim)
 	UI.fill(_dim)
 	_dim.gui_input.connect(func(event: InputEvent):
-		if dismissable and (event is InputEventScreenTouch or event is InputEventMouseButton) and not event.is_pressed():
+		if dismissable and (event is InputEventScreenTouch or event is InputEventMouseButton and event.button_index in [MOUSE_BUTTON_LEFT, MOUSE_BUTTON_RIGHT]) and not event.is_pressed():
 			close())
 	_dim.add_child(_center)
 	UI.fill(_center)
@@ -49,10 +50,18 @@ func _init() -> void:
 	footer.hide()
 	var body := VBoxContainer.new()
 	body.add_theme_constant_override("separation", FOOTER_GAP)
-	body.add_child(content)
+	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
+	_scroll.allow_horizontal_scroll = false
+	_scroll.follow_focus = true
+	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_scroll.add_child(content)
+	body.add_child(_scroll)
 	body.add_child(footer)
 	panel.add_child(body)
 	_dim.resized.connect(_fit_width)
+	content.minimum_size_changed.connect(_fit_height, CONNECT_DEFERRED)
+	footer.visibility_changed.connect(_fit_height, CONNECT_DEFERRED)
 
 func _ready() -> void:
 	get_tree().node_added.connect(func(node: Node):
@@ -64,6 +73,13 @@ func _ready() -> void:
 func _fit_width() -> void:
 	if _dim.size.x > 0.0:
 		_panel.custom_minimum_size.x = minf(WIDTH, _dim.size.x - EDGE * 2.0)
+	_fit_height()
+
+func _fit_height() -> void:
+	if _dim.size.y <= 0.0:
+		return
+	var room := _dim.size.y - EDGE * 2.0 - _panel.padding * 2.0 - (footer.get_combined_minimum_size().y + FOOTER_GAP if footer.visible else 0.0)
+	_scroll.custom_minimum_size.y = minf(content.get_combined_minimum_size().y, maxf(room, 0.0))
 
 func _wrap(node: Node) -> void:
 	if node is FlowContainer:

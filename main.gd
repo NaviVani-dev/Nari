@@ -25,6 +25,9 @@ const THEME_OVERLAYS := preload("res://ui/shared/ThemeOverlays.tscn")
 const DPAD := [JOY_BUTTON_DPAD_UP, JOY_BUTTON_DPAD_DOWN, JOY_BUTTON_DPAD_LEFT, JOY_BUTTON_DPAD_RIGHT]
 const WINDOW_MODES := {"windowed": Window.MODE_WINDOWED, "fullscreen": Window.MODE_FULLSCREEN, "exclusive": Window.MODE_EXCLUSIVE_FULLSCREEN}
 const RESIZE_MARGIN := 8.0
+const MINI_SIZE := Vector2(720.0, 720.0)
+const MINI_SCALE := 0.72
+const REVEAL_FRAMES := 4
 const RESIZE_EDGES := {
 	Vector2i(-1, -1): [DisplayServer.WINDOW_EDGE_TOP_LEFT, Input.CURSOR_FDIAGSIZE], Vector2i(0, -1): [DisplayServer.WINDOW_EDGE_TOP, Input.CURSOR_VSIZE],
 	Vector2i(1, -1): [DisplayServer.WINDOW_EDGE_TOP_RIGHT, Input.CURSOR_BDIAGSIZE], Vector2i(-1, 0): [DisplayServer.WINDOW_EDGE_LEFT, Input.CURSOR_HSIZE],
@@ -48,6 +51,10 @@ var _held: InputEventJoypadButton
 var _repeat_in := 0.0
 var _scroll_targets: Array = []
 var _resize_cursor := Input.CURSOR_ARROW
+var _before_mini: Array = []
+var _reveal := 0
+var _mini_pixels := Vector2i.ZERO
+var _mini_center := false
 
 func _ready() -> void:
 	if _forward_links():
@@ -97,6 +104,10 @@ func _ready() -> void:
 		elif section == "performance" and key == "battery_saving" or section == "playback" and key == "keep_screen_on":
 			_update_idle_fps())
 	screens.second_screen_availability_changed.connect(_update_layout.unbind(1))
+	Main.mini_changed.connect(_apply_mini)
+	Main.mini_resized.connect(_resize_mini)
+	Main.tray_requested.connect(_set_window_visible.bind(false))
+	Main.window_refresh_requested.connect(_refresh_window)
 	get_window().size_changed.connect(_follow_orientation)
 	_apply_window_mode()
 	_follow_orientation()
@@ -114,6 +125,7 @@ func _ready() -> void:
 	else:
 		Main.go_startup()
 	Main.preload_pages()
+	_refresh_window()
 
 func _process(delta: float) -> void:
 	_repeat_held(delta)
@@ -143,13 +155,13 @@ func _follow_orientation() -> void:
 		window.content_scale_size = Vector2i(mobile.y, mobile.x) if window.size.y > window.size.x else mobile
 	var stretch := minf(window_size.x / window.content_scale_size.x, window_size.y / window.content_scale_size.y)
 	var largest := minf(window_size.x, window_size.y) / (MIN_UI_SIZE * stretch)
-	window.content_scale_factor = minf(scale * SettingsManager.theme.ui_scale, largest)
+	window.content_scale_factor = scale * SettingsManager.theme.ui_scale * MINI_SCALE if Main.mini else minf(scale * SettingsManager.theme.ui_scale, largest)
 	_fit_bottom_window()
 	screens.fit_main_screen()
 	_update_insets()
 
 func _apply_window_mode() -> void:
-	if not OS.has_feature("pc"):
+	if not OS.has_feature("pc") or Main.mini or not Boot.shown:
 		return
 	var window := get_window()
 	var mode: int = WINDOW_MODES.get(SettingsManager.general.window_mode, Window.MODE_WINDOWED)
@@ -161,7 +173,7 @@ func _apply_window_mode() -> void:
 func _resize_window(event: InputEventMouse) -> bool:
 	var window := get_window()
 	var edge: Array = []
-	if window.borderless and window.mode == Window.MODE_WINDOWED:
+	if window.borderless and window.mode == Window.MODE_WINDOWED and not Main.mini:
 		var area := get_viewport().get_visible_rect().size
 		var margin := RESIZE_MARGIN * area.x / maxf(window.size.x, 1.0)
 		var side := Vector2i(_edge_side(event.position.x, area.x, margin), _edge_side(event.position.y, area.y, margin))
@@ -217,7 +229,7 @@ func _refresh_motion() -> void:
 			Main.reduce_motion = Engine.has_singleton("MusicService") and Engine.get_singleton("MusicService").isReduceMotionEnabled()
 
 func _update_layout() -> void:
-	var dual: bool = bottom_view != null and SettingsManager.general.dual_screen and (screens.has_second_screen or not screens.ayn_thor_plugin)
+	var dual: bool = not Main.mini and bottom_view != null and SettingsManager.general.dual_screen and (screens.has_second_screen or not screens.ayn_thor_plugin)
 	if screens.is_swapped != (dual and SettingsManager.general.swap_screens and not bottom_view is Window):
 		screens.swap_screens()
 	Main.set_dual(dual)
@@ -226,6 +238,72 @@ func _update_layout() -> void:
 	elif bottom_view is SubViewport and not screens.ayn_thor_plugin:
 		bottom_view.render_target_update_mode = SubViewport.UPDATE_ALWAYS if dual else SubViewport.UPDATE_DISABLED
 
+func _refresh_window() -> void:
+	if not OS.has_feature("pc") or _in_tray:
+		return
+	_reveal += 1
+	var token := _reveal
+	var booting := not Boot.shown
+	if not booting:
+		Boot.native("setWindowVisible", false)
+	for frame in REVEAL_FRAMES:
+		await get_tree().process_frame
+	await RenderingServer.frame_post_draw
+	if booting:
+		if not Boot.shown:
+			await Boot.reveal()
+			_apply_window_mode()
+		return
+	if token != _reveal or _in_tray:
+		return
+	var spot := get_window().position
+	Boot.native("setWindowVisible", true)
+	get_window().position = spot
+	await get_tree().process_frame
+	if Main.mini and token == _reveal:
+		_resize_mini(_mini_pixels)
+		_mini_center = false
+
+func _apply_mini(enabled: bool) -> void:
+	Boot.native("setTrayMini", enabled)
+	_refresh_window()
+	_update_layout()
+	var window := get_window()
+	if not enabled and _before_mini.is_empty():
+		return
+	if not enabled:
+		window.always_on_top = false
+		window.size = _before_mini[1]
+		window.position = _before_mini[0]
+		window.mode = _before_mini[2]
+		_before_mini = []
+		_apply_window_mode()
+		_follow_orientation()
+		return
+	_before_mini = [window.position, window.size, window.mode]
+	_mini_pixels = Vector2i.ZERO
+	_mini_center = true
+	var area := DisplayServer.screen_get_usable_rect(window.current_screen)
+	window.mode = Window.MODE_WINDOWED
+	window.borderless = true
+	window.always_on_top = true
+	window.size = _mini_size().min(area.size)
+	window.position = area.position + (area.size - window.size) / 2
+	_follow_orientation()
+
+func _mini_size() -> Vector2i:
+	var screen := get_window().current_screen
+	return Vector2i(MINI_SIZE * maxf(float(DisplayServer.screen_get_size(screen).y), PC_SCALE_HEIGHT * 0.5) / PC_SCALE_HEIGHT * SettingsManager.theme.ui_scale * MINI_SCALE)
+
+func _resize_mini(pixels: Vector2i) -> void:
+	if _before_mini.is_empty():
+		return
+	_mini_pixels = pixels
+	var window := get_window()
+	var area := DisplayServer.screen_get_usable_rect(window.current_screen)
+	window.size = (pixels if pixels != Vector2i.ZERO else _mini_size()).min(area.size)
+	window.position = area.position + (area.size - window.size) / 2 if _mini_center else window.position.clamp(area.position, area.end - window.size)
+
 func _wake() -> void:
 	_last_input_msec = Time.get_ticks_msec()
 	if not _in_tray and Engine.max_fps != SettingsManager.performance.max_fps:
@@ -233,12 +311,12 @@ func _wake() -> void:
 
 func _update_idle_fps() -> void:
 	var fps: int = SettingsManager.performance.max_fps
-	var busy: bool = MediaPlayer.library_loading or Main.current_page == Main.Pages.Soundboard \
+	var busy: bool = MediaPlayer.library_loading or Main.mini or Main.current_page == Main.Pages.Soundboard \
 		or (Main.current_page == Main.Pages.NowPlaying and MediaPlayer.is_playing()) \
 		or get_tree().get_processed_tweens().any(func(tween: Tween): return tween.get_loops_left() != -1)
 	if _in_tray:
 		fps = TRAY_FPS
-	elif not _focused or not busy and Time.get_ticks_msec() - _last_input_msec >= IDLE_DELAY_MS:
+	elif not (_focused or Main.mini) or not busy and Time.get_ticks_msec() - _last_input_msec >= IDLE_DELAY_MS:
 		var rate := DisplayServer.screen_get_refresh_rate()
 		var full := fps
 		if full <= 0:
@@ -609,7 +687,9 @@ func _set_window_visible(visible: bool) -> void:
 		window.grab_focus()
 		if bottom_view is Window:
 			_show_bottom_window(Main.dual)
+		Main.tray_changed.emit(false)
 	elif not _in_tray:
+		Main.tray_changed.emit(true)
 		if bottom_view is Window:
 			_show_bottom_window(false)
 		if window.mode != Window.MODE_MINIMIZED:
@@ -640,6 +720,9 @@ func _on_tray_command(command: String) -> void:
 			MediaPlayer.next()
 		"previous":
 			MediaPlayer.previous()
+		"mini":
+			Main.close_mini() if Main.mini else Main.open_mini()
+			_set_window_visible(true)
 		"quit":
 			_quit()
 

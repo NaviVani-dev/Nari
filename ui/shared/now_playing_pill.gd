@@ -38,6 +38,7 @@ var room := true:
 			room = value
 			_update()
 
+var mini: NariButton
 var _return_focus: WeakRef
 var _tick := 0.0
 var _wide_width := 0.0
@@ -56,6 +57,13 @@ func _ready() -> void:
 	if shuffle:
 		shuffle.pressed.connect(func(): MediaPlayer.shuffle())
 		repeat.pressed.connect(func(): MediaPlayer.repeat())
+		if OS.has_feature("pc"):
+			mini = expand.duplicate()
+			mini.name = "Mini"
+			mini.icon = preload("res://assets/icons/mini_player.svg")
+			expand.add_sibling(mini)
+			extras.move_child(mini, expand.get_index())
+			mini.pressed.connect(Main.open_mini)
 		expand.pressed.connect(Main.open_now_playing)
 		resized.connect(_fit)
 		_fit.call_deferred()
@@ -179,7 +187,10 @@ func _link(narrow: bool) -> void:
 	for button: Control in [shuffle, previous, play, next, repeat]:
 		if button.visible:
 			row.append(button)
-	var side: Array[Control] = [volume_button, expand]
+	var side: Array[Control] = []
+	for button: Control in [volume_button, mini, expand]:
+		if button:
+			side.append(button)
 	if not narrow:
 		row.append_array(side)
 	for index in row.size():

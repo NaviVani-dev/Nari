@@ -37,6 +37,7 @@ mod updates;
 mod vault;
 mod events;
 mod webview;
+mod skins;
 #[cfg(any(windows, target_os = "macos"))]
 #[path = "../webview/src/lib.rs"]
 mod engine;

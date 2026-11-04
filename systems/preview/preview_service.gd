@@ -529,6 +529,9 @@ func _effect_changed() -> void:
 func setEqualizer(_bands: PackedVector2Array) -> void:
 	pass
 
+func setGraphicEqualizer(_bands: PackedVector2Array, _preamp: float) -> void:
+	pass
+
 func setAppVolume(_volume: float) -> void:
 	pass
 

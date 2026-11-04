@@ -95,6 +95,7 @@ pub struct Player {
     plugin_track: String,
     plugin_playing: bool,
     equalizer: Vec<(f32, f32)>,
+    graphic: (Vec<(f32, f32)>, f32),
     custom: String,
     rack: Vec<Stage>,
     seeks: u64,
@@ -141,6 +142,7 @@ impl Player {
             plugin_track: String::new(),
             plugin_playing: false,
             equalizer: Vec::new(),
+            graphic: (Vec::new(), 0.0),
             custom: String::new(),
             seeks: 0,
             rack: Vec::new(),
@@ -616,6 +618,13 @@ impl Player {
         self.equalizer = bands;
     }
 
+    pub fn set_graphic_equalizer(&mut self, bands: Vec<(f32, f32)>, preamp: f32) {
+        if let Some(engine) = self.engine.as_ref() {
+            engine.set_graphic_equalizer(&bands, preamp);
+        }
+        self.graphic = (bands, preamp);
+    }
+
     pub fn set_normalize_volume(&mut self, enabled: bool) {
         self.normalize = enabled;
         self.apply_replay_gain();
@@ -755,6 +764,7 @@ impl Player {
         engine.set_effect(self.effect);
         engine.set_factors(self.speed, self.pitch);
         engine.set_equalizer(&self.equalizer);
+        engine.set_graphic_equalizer(&self.graphic.0, self.graphic.1);
         engine.set_rack(&self.rack);
         if self.spectrum_latency >= 0 {
             engine.set_spectrum_latency(self.spectrum_latency);

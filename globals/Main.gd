@@ -4,8 +4,13 @@ signal page_changed(page: Pages, data: Dictionary)
 signal insets_changed(insets: Vector4)
 signal dual_changed(enabled: bool)
 signal header_changed
+signal mini_changed(enabled: bool)
+signal mini_resized(pixels: Vector2i)
+signal tray_requested
+signal tray_changed(hidden: bool)
+signal window_refresh_requested
 
-enum Pages { Home, Tracks, Albums, Artists, Playlists, Album, Artist, Playlist, NowPlaying, Settings, Soundboard, Welcome, Search, About, Discover, Web, Marketplace, Folders }
+enum Pages { Home, Tracks, Albums, Artists, Playlists, Album, Artist, Playlist, NowPlaying, Settings, Soundboard, Welcome, Search, About, Discover, Web, Marketplace, Folders, MiniPlayer }
 
 const PAGE_SCENES := {
 	Pages.Home: "Home",
@@ -26,6 +31,7 @@ const PAGE_SCENES := {
 	Pages.Web: "Web",
 	Pages.Marketplace: "Marketplace",
 	Pages.Folders: "Folders",
+	Pages.MiniPlayer: "MiniPlayer",
 }
 const SCREENS_PATH := "res://ui/screens/%s/%s.tscn"
 const FADE_TIME := 0.15
@@ -49,6 +55,7 @@ var header_shown := false
 var header_subtitle := ""
 var header_actions: Array = []
 var reduce_motion := false
+var mini := false
 var current_page: Pages = Pages.Home
 var current_data: Dictionary = {}
 var hints_reserve: Array[float] = [0.0, 0.0]
@@ -77,6 +84,8 @@ func _ready() -> void:
 	get_tree().node_added.connect(_on_node_added)
 	get_tree().root.gui_focus_changed.connect(_on_control_hovered)
 	get_tree().root.window_input.connect(func(_event: InputEvent): _last_input = Time.get_ticks_msec())
+	if OS.has_feature("pc"):
+		get_tree().root.files_dropped.connect(open_skins)
 	loading_held = not setup_done or SettingsManager.general.boot_intro
 	_had_song = not str(MediaPlayer.get_playback_state().get("current_id", "")).is_empty()
 	MediaPlayer.playback_changed.connect(_on_playback_changed)
@@ -163,6 +172,9 @@ func change_page(page: Pages, data: Dictionary = {}, keep_history: bool = true, 
 		return
 	if _page and page == current_page and data == current_data:
 		return
+	var leave_mini := mini and current_page == Pages.MiniPlayer and page != Pages.MiniPlayer
+	if leave_mini:
+		mini = false
 	for dialog in _dialogs.duplicate():
 		dialog.close()
 	if _page and keep_history and not _page.get("transient"):
@@ -191,6 +203,8 @@ func change_page(page: Pages, data: Dictionary = {}, keep_history: bool = true, 
 	add_child(instance)
 	_page = instance
 	page_changed.emit(page, data)
+	if leave_mini:
+		mini_changed.emit(false)
 
 func has_second_screen() -> bool:
 	return Engine.has_singleton("AynThor") and Engine.get_singleton("AynThor").has_second_screen()
@@ -364,7 +378,7 @@ func preload_pages() -> void:
 func _preload_pages() -> void:
 	for page in PAGE_SCENES:
 		var path: String = SCREENS_PATH % ["dual" if dual else "single", PAGE_SCENES[page]]
-		if _scenes.has(path):
+		if _scenes.has(path) or page == Pages.MiniPlayer and not OS.has_feature("pc"):
 			continue
 		for script: String in _scripts_of(path, {}):
 			if not ResourceLoader.has_cached(script):
@@ -471,6 +485,41 @@ func finish_intro() -> void:
 
 func open_now_playing() -> void:
 	change_page(Pages.NowPlaying)
+
+func open_mini() -> void:
+	if mini or not _top_view or not OS.has_feature("pc"):
+		return
+	mini = true
+	mini_changed.emit(true)
+	change_page(Pages.MiniPlayer)
+
+func open_skins(paths: PackedStringArray) -> void:
+	var added := ""
+	for path in paths:
+		if WinampSkin.skinnable(path, mini):
+			added = WinampSkin.install(path)
+	if added.is_empty():
+		return
+	SettingsManager.set_value(WinampPlayer.SECTION, "skin", added)
+	if mini and _page and _page.has_method("wear"):
+		_page.wear(added)
+	else:
+		open_mini()
+
+func leave_mini() -> void:
+	if SettingsManager.general.close_to_tray and not SettingsManager.general.mini_close_opens_app:
+		tray_requested.emit()
+	else:
+		close_mini()
+
+func resize_mini(pixels: Vector2i) -> void:
+	mini_resized.emit(pixels)
+
+func close_mini() -> void:
+	if not mini:
+		return
+	var entry: Dictionary = _history.pop_back() if not _history.is_empty() else {"page": Pages.NowPlaying, "data": {}, "focus": 0}
+	change_page(entry["page"], entry["data"], false, entry["focus"])
 
 func _on_playback_changed(state: Dictionary) -> void:
 	var loaded := not str(state.get("current_id", "")).is_empty()
