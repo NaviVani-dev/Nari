@@ -7,6 +7,7 @@ const FORMATS := {"winamp": "wsz", "wmp": "wmz", "nari": "nsk"}
 const KIND_FORMATS := {"Winamp": "winamp", "Windows Media Player": "wmp", "Nari": "nari"}
 const INFO := "user://cache/skin_info"
 const GLYPH := preload("res://assets/icons/mini_player.svg")
+const DECLARED := "skin_settings"
 
 var manifests := {}
 var _ids := {}
@@ -82,6 +83,30 @@ func is_active(id: String) -> bool:
 
 func use(id: String) -> void:
 	SettingsManager.set_value(WinampPlayer.SECTION, "skin", "" if is_active(id) else str(manifests.get(id, {}).get("file", "")))
+
+static func settings_section(id: String) -> String:
+	return "skin:" + id
+
+func settings_for(id: String) -> Array[Dictionary]:
+	var found := Themes.settings_of(manifests.get(id, {}))
+	var taken := found.map(func(setting: Dictionary): return str(setting["id"]))
+	found.append_array(Themes.settings_of({"settings": SettingsManager.get_value(DECLARED, id, [])}).filter(func(setting: Dictionary): return not str(setting["id"]) in taken))
+	return found
+
+func script_settings(id: String, listed: Array) -> void:
+	SettingsManager.set_value(DECLARED, id, listed)
+
+func setting_value(id: String, key: String) -> Variant:
+	for setting in settings_for(id):
+		if str(setting["id"]) == key:
+			return SettingsManager.get_value(settings_section(id), key, setting.get("default"))
+	return null
+
+func setting_label(id: String, setting: Dictionary) -> String:
+	return Themes.label_of(setting, setting_value(id, str(setting["id"])))
+
+func next_setting_value(id: String, setting: Dictionary) -> Variant:
+	return Themes.next_of(setting, setting_value(id, str(setting["id"])))
 
 func install(path: String) -> String:
 	return "" if not WinampSkin.install(path).is_empty() else "Nari could not write the skin files"

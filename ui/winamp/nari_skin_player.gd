@@ -16,6 +16,11 @@ func _window_for(key: int, primary: bool) -> Window:
 	_skin.mount(key, _panes[key])
 	return window
 
+func _menu() -> Array:
+	return super() + ([["Skin settings", func():
+		Main.close_mini()
+		Main.change_page(Main.Pages.Settings, {"category": "skin", "skin": _skin.id})]] if not Skins.settings_for(_skin.id).is_empty() else [])
+
 func _sync_views() -> void:
 	_skin.levels = _levels
 	_skin.shelve()

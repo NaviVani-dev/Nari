@@ -523,7 +523,7 @@ func close_mini() -> void:
 
 func _on_playback_changed(state: Dictionary) -> void:
 	var loaded := not str(state.get("current_id", "")).is_empty()
-	if not loading_held and loaded and not _had_song and not _opened_now_playing and not MediaPlayer.resumed and _top_view:
+	if not loading_held and loaded and not _had_song and not _opened_now_playing and not MediaPlayer.resumed and _top_view and not mini:
 		_opened_now_playing = true
 		open_now_playing.call_deferred()
 	_had_song = loaded

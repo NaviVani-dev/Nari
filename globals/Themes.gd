@@ -337,7 +337,9 @@ func setting_value(id: String, key: String) -> Variant:
 	return null
 
 func setting_label(id: String, setting: Dictionary) -> String:
-	var value: Variant = setting_value(id, str(setting["id"]))
+	return label_of(setting, setting_value(id, str(setting["id"])))
+
+static func label_of(setting: Dictionary, value: Variant) -> String:
 	if str(setting.get("type", "")) == "choice":
 		for option in _options_of(setting):
 			if str(option.get("id", "")) == str(value):
@@ -347,7 +349,9 @@ func setting_label(id: String, setting: Dictionary) -> String:
 	return "%s%s" % [str(int(number)) if is_equal_approx(number, roundf(number)) else str(number), setting.get("suffix", "")]
 
 func next_setting_value(id: String, setting: Dictionary) -> Variant:
-	var value: Variant = setting_value(id, str(setting["id"]))
+	return next_of(setting, setting_value(id, str(setting["id"])))
+
+static func next_of(setting: Dictionary, value: Variant) -> Variant:
 	if str(setting.get("type", "")) == "choice":
 		var ids: = _options_of(setting).map(func(option: Dictionary): return str(option.get("id", "")))
 		return ids[(ids.find(str(value)) + 1) % ids.size()] if not ids.is_empty() else value

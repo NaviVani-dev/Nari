@@ -5,6 +5,8 @@ const ARROW := "....#.../....##../....###./....##../....#..."
 const TIP_FONT := 40.0
 const TIP_PADDING := 18.0
 const TIP_RADIUS := 22.0
+const CONTRAST := 0.3
+const FLAT := {"PanelBg": "Background", "PanelGradient": "BackgroundGradient", "PanelFg": "Foreground"}
 
 static var _hidden: Array[Node] = []
 static var _holds := 0
@@ -31,12 +33,12 @@ static func tooltip(text: String, host: Control) -> Control:
 	var unit := host.get_tree().root.content_scale_factor / host.get_window().content_scale_factor
 	var panel := NariPanelContainer.new()
 	var label := NariLabel.new()
-	panel.bg_color = ThemeEngine.Colors.PanelBg
-	panel.gradient_color = ThemeEngine.Colors.PanelGradient
+	panel.bg_color = ThemeEngine.Colors[flat_name("PanelBg")]
+	panel.gradient_color = ThemeEngine.Colors[flat_name("PanelGradient")]
 	panel.corner_radius = TIP_RADIUS * unit
 	panel.padding = roundi(TIP_PADDING * unit)
 	label.text = text
-	label.color = ThemeEngine.Colors.PanelFg
+	label.color = ThemeEngine.Colors[flat_name("PanelFg")]
 	label.font_size = roundi(TIP_FONT * unit)
 	label.weight = 700
 	panel.add_child(label)
@@ -53,7 +55,8 @@ static func popup(host: Control, items: Array, colors: Dictionary, font: Font, z
 	var menu := build(items, theme(host, colors, font, zoom))
 	menu.popup_hide.connect(menu.queue_free)
 	host.add_child(menu)
-	menu.popup(Rect2i(DisplayServer.mouse_get_position(), Vector2i.ZERO))
+	var window := host.get_window()
+	menu.popup(Rect2i(window.position + Vector2i((window.get_final_transform() * window.get_mouse_position()).round()) if window.has_focus() else DisplayServer.mouse_get_position(), Vector2i.ZERO))
 
 static func build(items: Array, look: Theme) -> PopupMenu:
 	var menu := PopupMenu.new()
@@ -104,9 +107,20 @@ static func skins(choose: Callable) -> Array:
 	items.append_array([[], ["Open skins folder", WinampSkin.open_folder]])
 	return items
 
+static func legible(one: Color, other: Color) -> bool:
+	return absf(one.get_luminance() - other.get_luminance()) >= CONTRAST
+
+static func flat_name(name: String) -> String:
+	return name if legible(ThemeEngine.get_color(ThemeEngine.Colors.PanelFg), ThemeEngine.get_color(ThemeEngine.Colors.PanelBg)) else FLAT.get(name, name)
+
+static func flat(name: String) -> Color:
+	var found := ThemeEngine.get_color(ThemeEngine.Colors[flat_name(name)])
+	var accent := ThemeEngine.get_color(ThemeEngine.Colors.AccentBg)
+	return found if name != "AccentFg" or legible(found, accent) else Color.BLACK if accent.get_luminance() > 0.5 else Color.WHITE
+
 static func nari_colors() -> Dictionary:
-	var foreground := ThemeEngine.get_color(ThemeEngine.Colors.PanelFg)
-	return {"bg": ThemeEngine.get_color(ThemeEngine.Colors.PanelBg), "fg": foreground, "hover": ThemeEngine.get_color(ThemeEngine.Colors.AccentBg), "hover_fg": ThemeEngine.get_color(ThemeEngine.Colors.AccentFg), "line": Color(foreground, 0.4)}
+	var foreground := flat("PanelFg")
+	return {"bg": flat("PanelBg"), "fg": foreground, "hover": flat("AccentBg"), "hover_fg": flat("AccentFg"), "line": Color(foreground, 0.4)}
 
 static func theme(host: Control, colors: Dictionary, font: Font, zoom: float) -> Theme:
 	var scale := zoom / host.get_window().content_scale_factor

@@ -9,6 +9,7 @@ const GEOMETRY: Array[String] = ["x", "y", "width", "height", "shader"]
 const SKIPPED: Array[String] = ["type", "children", "image", "hover", "pressed", "disabled", "track", "fill", "thumb", "region", "frames", "fps", "kind", "visual", "command", "sound", "on_click", "on_change", "on_release", "script"]
 
 var folder := ""
+var id := ""
 var levels := PackedFloat32Array()
 var _player: WmpPlayer
 var _plugin: NariPlugin
@@ -59,6 +60,8 @@ func set_metrics(_regular: PackedFloat32Array, _bold: PackedFloat32Array, _mono:
 func start(name: String, deck: Dictionary, preferences: Dictionary) -> bool:
 	_deck = deck
 	_prefs = preferences.duplicate()
+	id = str(Skins.manifest_of(_player._source).get("id", name.get_basename()))
+	SettingsManager.changed.connect(_on_setting)
 	_plugin = NariPlugin.new()
 	_plugin.id = "skin:" + name
 	_plugin.manifest = {"id": _plugin.id, "name": name.get_basename(), "path": folder, "skin": name}
@@ -266,11 +269,24 @@ func sound(name: String) -> void:
 
 func color(name: String) -> Color:
 	var parts := name.split("@")
-	var found := ThemeEngine.get_color(ThemeEngine.Colors[parts[0]]) if ThemeEngine.Colors.has(parts[0]) else Color(parts[0])
+	var found := SkinMenu.flat(parts[0]) if ThemeEngine.Colors.has(parts[0]) else Color(parts[0])
 	return Color(found, found.a * float(parts[1])) if parts.size() > 1 else found
 
 func deck() -> Dictionary:
 	return _deck
+
+func settings(listed: Array) -> void:
+	Skins.script_settings(id, listed)
+
+func setting(key: String) -> Variant:
+	return Skins.setting_value(id, key)
+
+func set_setting(key: String, value: Variant) -> void:
+	SettingsManager.set_value(Skins.settings_section(id), key, value)
+
+func _on_setting(section: String, key: String, value: Variant) -> void:
+	if section == Skins.settings_section(id):
+		_emit.call_deferred("setting", [key, value])
 
 func library() -> Array:
 	return _library
@@ -477,8 +493,9 @@ func _apply(node: Control, key: String, value: Variant) -> void:
 		"alpha":
 			node.modulate.a = value
 		"color" when node is NariLabel or node is ThinSlider:
-			node.set("use_custom_color", not ThemeEngine.Colors.has(str(value)))
-			node.set("color" if ThemeEngine.Colors.has(str(value)) else "custom_color", ThemeEngine.Colors.get(str(value), color(str(value))))
+			var named := SkinMenu.flat_name(str(value))
+			node.set("use_custom_color", not ThemeEngine.Colors.has(named))
+			node.set("color" if ThemeEngine.Colors.has(named) else "custom_color", ThemeEngine.Colors.get(named, color(named)))
 		"color" when node is Label:
 			node.add_theme_color_override("font_color", color(str(value)))
 		_:
@@ -552,6 +569,8 @@ class Press extends BaseButton:
 			draw_texture_rect(picked if picked else texture_normal, Rect2(Vector2.ZERO, size), false)
 
 	func _make_custom_tooltip(text: String) -> Object:
+		if text.is_empty():
+			return Control.new()
 		var unit := get_global_transform_with_canvas().get_scale().x
 		var tip: NariPanelContainer = SkinMenu.tooltip(text, self)
 		tip.corner_radius = 8.0 * unit

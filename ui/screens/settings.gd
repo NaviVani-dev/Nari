@@ -322,7 +322,10 @@ func _entries_of(category: String) -> Array:
 			return plugin.settings_entries() if plugin else []
 		"theme":
 			var id := str(data.get("theme", ""))
-			return Themes.settings_for(id).map(_theme_setting_entry.bind(id))
+			return Themes.settings_for(id).map(_setting_entry.bind(id, Themes))
+		"skin":
+			var id := str(data.get("skin", ""))
+			return Skins.settings_for(id).map(_setting_entry.bind(id, Skins))
 	var categories: Array = []
 	for row in [
 		["General", "Screens and startup", preload("res://assets/icons/more.svg"), "general"],
@@ -556,18 +559,19 @@ func _skin_entries() -> Array:
 			"section": WinampSkin.kind(path),
 			"enabled": path == current,
 			"action": PluginInfo.open.bind(id, Skins) if path.begins_with(WinampSkin.FOLDER) else SettingsManager.set_value.bind(WinampPlayer.SECTION, "skin", path),
+			"settings": Main.change_page.bind(Main.Pages.Settings, {"category": "skin", "skin": id}) if path == current and not Skins.settings_for(id).is_empty() else Callable(),
 		})
 	return entries
 
-func _theme_setting_entry(setting: Dictionary, id: String) -> Dictionary:
+func _setting_entry(setting: Dictionary, id: String, owner: Object) -> Dictionary:
 	var key := str(setting["id"])
-	var section := Themes.settings_section(id)
+	var section: String = owner.settings_section(id)
 	var entry := {
 		"title": str(setting.get("name", key)),
 		"description": str(setting.get("description", "")),
 		"icon": preload("res://assets/icons/theme.svg"),
-		"value": func(): return Themes.setting_label(id, setting),
-		"action": func(): SettingsManager.set_value(section, key, Themes.next_setting_value(id, setting)),
+		"value": func(): return owner.setting_label(id, setting),
+		"action": func(): SettingsManager.set_value(section, key, owner.next_setting_value(id, setting)),
 		"reset": func(): SettingsManager.set_value(section, key, setting.get("default")),
 	}
 	var labels := Themes.setting_options(setting).map(func(option: Dictionary): return str(option.get("name", option.get("id", ""))))
@@ -575,13 +579,13 @@ func _theme_setting_entry(setting: Dictionary, id: String) -> Dictionary:
 		entry.erase("action")
 		entry["choices"] = {
 			"options": Themes.setting_options(setting).map(func(option: Dictionary): return {"value": str(option.get("id", "")), "label": str(option.get("name", option.get("id", "")))}),
-			"get": func(): return str(Themes.setting_value(id, key)),
+			"get": func(): return str(owner.setting_value(id, key)),
 			"set": func(option: Variant): SettingsManager.set_value(section, key, option),
 		}
 	if str(setting.get("type", "")) == "color":
 		entry.erase("action")
 		entry["color"] = {
-			"get": func(): return Themes.setting_value(id, key),
+			"get": func(): return owner.setting_value(id, key),
 			"set": func(color: Variant): SettingsManager.set_value(section, key, color),
 			"custom": bool(setting.get("custom", true)),
 		}
@@ -593,7 +597,7 @@ func _theme_setting_entry(setting: Dictionary, id: String) -> Dictionary:
 			"min": float(setting.get("min", 0.0)),
 			"max": float(setting.get("max", 100.0)),
 			"step": float(setting.get("step", 1.0)),
-			"get": func(): return float(Themes.setting_value(id, key)),
+			"get": func(): return float(owner.setting_value(id, key)),
 			"set": func(amount: float): SettingsManager.set_value(section, key, amount),
 			"format": func(amount: float): return _number(amount) + suffix,
 		}

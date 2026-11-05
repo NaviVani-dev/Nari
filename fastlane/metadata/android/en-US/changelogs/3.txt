@@ -1,0 +1,5 @@
+Mini player with Winamp, Windows Media Player and Nari skins
+Added sound effects
+Improved the soundboard and visualizers
+Expanded the themes API
+Initial iOS support and a Web preview
