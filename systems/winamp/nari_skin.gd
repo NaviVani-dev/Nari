@@ -25,6 +25,7 @@ var _sizing := {}
 var _textures := {}
 var _shaders := {}
 var _fonts := {}
+var _outlines := {}
 
 static func is_skin(source: String) -> bool:
 	return not source.is_empty() and (source.get_extension().to_lower() == "nsk" or FileAccess.file_exists(source.path_join(MAIN)))
@@ -316,15 +317,32 @@ func _material(name: String) -> ShaderMaterial:
 	return material
 
 func _outline(image: Image, size: Vector2i) -> PackedVector2Array:
-	var bits := BitMap.new()
-	bits.create_from_image_alpha(image, 0.5)
+	if not _outlines.has(image):
+		_outlines[image] = _solid_boxes(image)
 	var scale := Vector2(size) / Vector2(image.get_size())
 	var points := PackedVector2Array([Vector2.ZERO])
-	for polygon in bits.opaque_to_polygons(Rect2i(Vector2i.ZERO, image.get_size()), 1.0):
-		for point in polygon + PackedVector2Array([polygon[0]]):
-			points.append(point * scale)
-		points.append(Vector2.ZERO)
+	for box: Rect2 in _outlines[image]:
+		points.append_array(Transform2D.IDENTITY.scaled(scale) * PackedVector2Array([box.position, Vector2(box.end.x, box.position.y), box.end, Vector2(box.position.x, box.end.y), box.position, Vector2.ZERO]))
 	return points
+
+func _solid_boxes(image: Image) -> Array[Rect2]:
+	var boxes: Array[Rect2] = []
+	var open := {}
+	for y in image.get_height() + 1:
+		var runs := {}
+		var start := -1
+		for x in image.get_width() + 1:
+			var solid := y < image.get_height() and x < image.get_width() and image.get_pixel(x, y).a > 0.5
+			if solid and start < 0:
+				start = x
+			elif not solid and start >= 0:
+				runs[Vector2i(start, x)] = open.get(Vector2i(start, x), y)
+				start = -1
+		for run: Vector2i in open:
+			if not runs.has(run):
+				boxes.append(Rect2(run.x, open[run], run.y - run.x, y - open[run]))
+		open = runs
+	return boxes
 
 func _build(parent: Node, specs: Array) -> void:
 	for spec: Dictionary in specs:
@@ -346,7 +364,7 @@ func _make(spec: Dictionary) -> Control:
 	match str(spec.get("type", "group")):
 		"image":
 			var image := TextureRect.new()
-			image.texture = _picture(spec)
+			_picture(image, spec)
 			image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 			image.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			return image
@@ -356,8 +374,6 @@ func _make(spec: Dictionary) -> Control:
 			button.texture_hover = texture(str(spec.get("hover", "")))
 			button.texture_pressed = texture(str(spec.get("pressed", "")))
 			button.texture_disabled = texture(str(spec.get("disabled", "")))
-			button.ignore_texture_size = true
-			button.stretch_mode = TextureButton.STRETCH_SCALE
 			button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 			button.pressed.connect(_click.bind(spec))
 			return button
@@ -413,18 +429,17 @@ func _make(spec: Dictionary) -> Control:
 	group.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return group
 
-func _picture(spec: Dictionary) -> Texture2D:
-	var base := texture(str(spec.get("image", "")))
+func _picture(node: TextureRect, spec: Dictionary) -> void:
+	var base := _image(str(spec.get("image", "")))
 	var frames := int(spec.get("frames", 1))
+	node.texture = texture(str(spec.get("image", "")))
 	if not base or frames <= 1 and not spec.has("region"):
-		return base
-	var atlas := AtlasTexture.new()
+		return
 	var area: Array = spec.get("region", [0, 0, base.get_width() / frames, base.get_height()])
-	atlas.atlas = base
-	atlas.region = Rect2(area[0], area[1], area[2], area[3])
+	var shots: Array = range(frames).map(func(frame: int): return ImageTexture.create_from_image(base.get_region(Rect2i(area[0] + frame * area[2], area[1], area[2], area[3]))))
+	node.texture = shots[0]
 	if frames > 1:
-		create_tween().set_loops().tween_method(func(frame: float): atlas.region.position.x = area[0] + floorf(minf(frame, frames - 1)) * area[2], 0.0, float(frames), frames / float(spec.get("fps", 12)))
-	return atlas
+		create_tween().bind_node(node).set_loops().tween_method(func(frame: float): node.texture = shots[mini(int(frame), frames - 1)], 0.0, float(frames), frames / float(spec.get("fps", 12)))
 
 func _click(spec: Dictionary) -> void:
 	if spec.has("sound"):
@@ -513,7 +528,29 @@ func animate(node: Node, properties: Dictionary, time := 0.3, options := {}) -> 
 			tween.chain()
 	return tween
 
-class Press extends TextureButton:
+class Press extends BaseButton:
+	var texture_normal: Texture2D:
+		set(value):
+			texture_normal = value
+			queue_redraw()
+	var texture_hover: Texture2D:
+		set(value):
+			texture_hover = value
+			queue_redraw()
+	var texture_pressed: Texture2D:
+		set(value):
+			texture_pressed = value
+			queue_redraw()
+	var texture_disabled: Texture2D:
+		set(value):
+			texture_disabled = value
+			queue_redraw()
+
+	func _draw() -> void:
+		var picked: Texture2D = [texture_normal, texture_pressed, texture_hover, texture_disabled, texture_pressed][get_draw_mode()]
+		if picked or texture_normal:
+			draw_texture_rect(picked if picked else texture_normal, Rect2(Vector2.ZERO, size), false)
+
 	func _make_custom_tooltip(text: String) -> Object:
 		var unit := get_global_transform_with_canvas().get_scale().x
 		var tip: NariPanelContainer = SkinMenu.tooltip(text, self)

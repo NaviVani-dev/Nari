@@ -2558,6 +2558,7 @@ dependencies = [
  "tray-icon",
  "ureq",
  "webpki-roots",
+ "windows",
  "windows-sys 0.61.2",
  "wry",
  "xmrs",

@@ -6,7 +6,8 @@ const PALETTE := preload("res://systems/preview/preview_palette.gd")
 const BRIDGE := preload("res://systems/preview/preview_bridge.gd")
 
 static func start() -> void:
-	Package.remove("user://")
+	if OS.has_feature("web"):
+		Package.remove("user://")
 	DirAccess.make_dir_recursive_absolute("user://")
 	FileAccess.open("user://OOBE.txt", FileAccess.WRITE)
 	var settings := ConfigFile.new()

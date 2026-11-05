@@ -259,6 +259,8 @@ func _refresh_window() -> void:
 	var spot := get_window().position
 	Boot.native("setWindowVisible", true)
 	get_window().position = spot
+	if not Main.mini:
+		get_window().always_on_top = false
 	await get_tree().process_frame
 	if Main.mini and token == _reveal:
 		_resize_mini(_mini_pixels)

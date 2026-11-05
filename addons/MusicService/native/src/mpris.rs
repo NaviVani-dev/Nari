@@ -12,10 +12,10 @@ pub struct Media {
     pub seeks: u64,
 }
 
-#[cfg(any(target_os = "linux", target_os = "macos", target_os = "ios"))]
+#[cfg(any(target_os = "linux", target_os = "macos", target_os = "ios", windows))]
 pub use platform::Mpris;
 
-#[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "ios")))]
+#[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "ios", windows)))]
 pub struct Mpris;
 
 static FORWARDED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
@@ -24,7 +24,7 @@ pub fn links_forwarded() -> bool {
     FORWARDED.load(std::sync::atomic::Ordering::Relaxed)
 }
 
-#[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "ios")))]
+#[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "ios", windows)))]
 impl Mpris {
     pub fn new(_: std::sync::Weak<std::sync::Mutex<crate::player::Player>>, _: std::sync::mpsc::Sender<crate::events::Event>) -> Option<Self> {
         None
@@ -600,5 +600,146 @@ mod platform {
             assert_eq!(<&str>::try_from(&map["mpris:artUrl"]).unwrap(), "file:///tmp/covers/a%20b.jpg");
             assert_eq!(metadata(&Media::default()).len(), 1);
         }
+    }
+}
+
+#[cfg(windows)]
+mod platform {
+    use super::Media;
+    use crate::events::Event;
+    use crate::player::Player;
+    use std::sync::mpsc::{channel, Receiver, Sender};
+    use std::sync::{Mutex, MutexGuard, Weak};
+    use windows::core::{Ref, HSTRING};
+    use windows::Foundation::{TimeSpan, TypedEventHandler, Uri};
+    use windows::Media::Playback::MediaPlayer;
+    use windows::Media::{
+        MediaPlaybackStatus, MediaPlaybackType, PlaybackPositionChangeRequestedEventArgs, SystemMediaTransportControls,
+        SystemMediaTransportControlsButton, SystemMediaTransportControlsButtonPressedEventArgs, SystemMediaTransportControlsTimelineProperties,
+    };
+    use windows::Storage::Streams::RandomAccessStreamReference;
+
+    pub struct Mpris {
+        updates: Sender<Media>,
+    }
+
+    impl Mpris {
+        pub fn new(player: Weak<Mutex<Player>>, _events: Sender<Event>) -> Option<Self> {
+            let (updates, receiver) = channel();
+            std::thread::Builder::new()
+                .name("media-controls".into())
+                .spawn(move || {
+                    if let Err(error) = serve(player, receiver) {
+                        godot::global::godot_error!("MusicService media controls unavailable: {error}");
+                    }
+                })
+                .ok()?;
+            Some(Self { updates })
+        }
+
+        pub fn update(&self, media: Media) {
+            let _ = self.updates.send(media);
+        }
+    }
+
+    fn with(player: &Weak<Mutex<Player>>, action: impl FnOnce(&mut MutexGuard<'_, Player>)) {
+        if let Some(player) = player.upgrade() {
+            action(&mut player.lock().unwrap_or_else(|poisoned| poisoned.into_inner()));
+        }
+    }
+
+    fn span(milliseconds: u64) -> TimeSpan {
+        TimeSpan { Duration: milliseconds as i64 * 10_000 }
+    }
+
+    fn serve(player: Weak<Mutex<Player>>, updates: Receiver<Media>) -> windows::core::Result<()> {
+        let host = MediaPlayer::new()?;
+        host.CommandManager()?.SetIsEnabled(false)?;
+        let controls = host.SystemMediaTransportControls()?;
+        controls.SetIsEnabled(true)?;
+        controls.SetIsPlayEnabled(true)?;
+        controls.SetIsPauseEnabled(true)?;
+        controls.SetIsStopEnabled(true)?;
+        let weak = player.clone();
+        controls.ButtonPressed(&TypedEventHandler::new(
+            move |_: Ref<SystemMediaTransportControls>, args: Ref<SystemMediaTransportControlsButtonPressedEventArgs>| {
+                let button = args.ok()?.Button()?;
+                with(&weak, |player| match button {
+                    SystemMediaTransportControlsButton::Play => player.resume(),
+                    SystemMediaTransportControlsButton::Pause | SystemMediaTransportControlsButton::Stop => player.pause(),
+                    SystemMediaTransportControlsButton::Next => player.next(),
+                    SystemMediaTransportControlsButton::Previous => player.previous(),
+                    _ => {}
+                });
+                Ok(())
+            },
+        ))?;
+        let weak = player.clone();
+        controls.PlaybackPositionChangeRequested(&TypedEventHandler::new(
+            move |_: Ref<SystemMediaTransportControls>, args: Ref<PlaybackPositionChangeRequestedEventArgs>| {
+                let target = args.ok()?.RequestedPlaybackPosition()?.Duration / 10_000;
+                with(&weak, |player| player.seek_to(target.clamp(0, i32::MAX as i64) as i32));
+                Ok(())
+            },
+        ))?;
+        let mut shown = String::new();
+        while let Ok(mut media) = updates.recv() {
+            if let Some(latest) = updates.try_iter().last() {
+                media = latest;
+            }
+            if let Err(error) = show(&controls, &player, &media, &mut shown) {
+                godot::global::godot_warn!("MusicService media controls didn't update: {error}");
+            }
+        }
+        Ok(())
+    }
+
+    fn show(controls: &SystemMediaTransportControls, player: &Weak<Mutex<Player>>, media: &Media, shown: &mut String) -> windows::core::Result<()> {
+        controls.SetIsNextEnabled(media.has_next)?;
+        controls.SetIsPreviousEnabled(media.has_song)?;
+        controls.SetPlaybackStatus(match (media.has_song, media.playing) {
+            (false, _) => MediaPlaybackStatus::Stopped,
+            (true, true) => MediaPlaybackStatus::Playing,
+            (true, false) => MediaPlaybackStatus::Paused,
+        })?;
+        let updater = controls.DisplayUpdater()?;
+        if !media.has_song {
+            shown.clear();
+            updater.ClearAll()?;
+            return updater.Update();
+        }
+        let key = format!("{}\n{}\n{}\n{}\n{}", media.id, media.title, media.artists.join(", "), media.album, media.art);
+        if *shown != key {
+            updater.ClearAll()?;
+            updater.SetType(MediaPlaybackType::Music)?;
+            let music = updater.MusicProperties()?;
+            music.SetTitle(&HSTRING::from(media.title.as_str()))?;
+            music.SetArtist(&HSTRING::from(media.artists.join(", ")))?;
+            music.SetAlbumTitle(&HSTRING::from(media.album.as_str()))?;
+            if !media.art.is_empty() {
+                updater.SetThumbnail(&RandomAccessStreamReference::CreateFromUri(&Uri::CreateUri(&HSTRING::from(file_url(&media.art)))?)?)?;
+            }
+            updater.Update()?;
+            *shown = key;
+        }
+        let position = player.upgrade().map(|player| player.lock().unwrap_or_else(|poisoned| poisoned.into_inner()).position()).unwrap_or(0);
+        let timeline = SystemMediaTransportControlsTimelineProperties::new()?;
+        timeline.SetStartTime(span(0))?;
+        timeline.SetMinSeekTime(span(0))?;
+        timeline.SetEndTime(span(media.length_ms))?;
+        timeline.SetMaxSeekTime(span(media.length_ms))?;
+        timeline.SetPosition(span(position.min(media.length_ms)))?;
+        controls.UpdateTimelineProperties(&timeline)
+    }
+
+    fn file_url(path: &str) -> String {
+        let mut url = String::from("file:///");
+        for byte in path.replace('\\', "/").trim_start_matches('/').bytes() {
+            match byte {
+                b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'/' | b':' | b'-' | b'_' | b'.' | b'~' => url.push(byte as char),
+                _ => url.push_str(&format!("%{byte:02X}")),
+            }
+        }
+        url
     }
 }

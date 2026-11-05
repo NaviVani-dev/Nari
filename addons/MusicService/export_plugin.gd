@@ -20,8 +20,9 @@ class SkinsExportPlugin extends EditorExportPlugin:
 	func _get_name():
 		return "NariSkins"
 
-	func _export_begin(_features, _debug, _path, _flags):
-		_add("res://assets/skins")
+	func _export_begin(features, _debug, _path, _flags):
+		if "pc" in features:
+			_add("res://assets/skins")
 
 	func _add(folder: String):
 		for file in DirAccess.get_files_at(folder):

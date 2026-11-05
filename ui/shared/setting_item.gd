@@ -43,6 +43,7 @@ func _ready() -> void:
 
 func refresh() -> void:
 	glyph.texture = entry.get("icon")
+	glyph.use_custom_color = entry.has("photo")
 	title.text = str(entry.get("title", ""))
 	description.text = " ".join(str(entry.get("description", "")).split("\n", false)).replace("\r", "")
 	var current: Callable = entry.get("value", Callable())

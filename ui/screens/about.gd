@@ -9,6 +9,10 @@ const LINKS := [
 	["Privacy Policy", "Read how Nari handles your data", preload("res://assets/icons/privacy.svg"), "https://www.narimusic.com/privacy/"],
 	["Ko-fi", "Support Nari's development", preload("res://assets/icons/like_on.svg"), "https://ko-fi.com/navivani_dev"],
 ]
+const CREDITS := [
+	["NaviVani", "Creator of Nari, main dev and designer", preload("res://assets/images/credits/navivani.png"), "https://github.com/NaviVani-dev"],
+	["Anti", "Sound effects", preload("res://assets/images/credits/anti.png"), "https://tristan-serva-com.l.ink/"],
+]
 const GODOT_LOGO := preload("res://assets/icons/godot.png")
 const FOOTER_FONT_SIZE := 38
 const FOOTER_LOGO_SIZE := 48.0
@@ -19,13 +23,15 @@ const FOOTER_LOGO_SIZE := 48.0
 
 func _ready() -> void:
 	version.text = "Version %s" % ProjectSettings.get_setting("application/config/version", "1.0")
-	var entries: Array = LINKS.map(func(link: Array) -> Dictionary:
-		return {"title": link[0], "description": link[1], "icon": link[2], "action": OS.shell_open.bind(link[3])})
+	var entries: Array = SettingsScreen.sectioned(CREDITS.map(func(link: Array) -> Dictionary:
+		return {"title": link[0], "description": link[1], "icon": link[2], "photo": true, "section": "Credits", "action": OS.shell_open.bind(link[3])}) + LINKS.map(func(link: Array) -> Dictionary:
+		return {"title": link[0], "description": link[1], "icon": link[2], "section": "Links", "action": OS.shell_open.bind(link[3])}))
 	if links is StairScroll:
-		links.set_items(entries, func(entry: Dictionary) -> Control: return SettingItem.create(entry, func(): pass))
+		links.container.headers = SettingsScreen.headers_of(entries)
+		links.set_items(entries, func(entry: Dictionary) -> Control: return SettingsScreen.create_entry(entry, func(): pass))
 	else:
 		for entry: Dictionary in entries:
-			links.add_child(SettingItem.create(entry, func(): pass))
+			links.add_child(SettingsScreen.create_entry(entry, func(): pass))
 	links.get_parent().get_parent().add_child(_footer())
 	if Main.reduce_motion:
 		return
@@ -64,6 +70,6 @@ func _footer() -> Control:
 
 func focus_content() -> void:
 	if links is StairScroll:
-		links.focus_item(0)
+		links.focus_item(1)
 	elif links.get_child_count() > 0:
-		(links.get_child(0) as Control).grab_focus()
+		(links.get_child(1) as Control).grab_focus()
