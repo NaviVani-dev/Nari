@@ -7,7 +7,7 @@ import struct
 import sys
 from pathlib import Path
 
-from common import (ROOT, JOBS, android_ndk, android_sdk, build_image, container_engine, download, download_tarball,
+from common import (ROOT, JOBS, TOOLS, android_ndk, android_sdk, build_image, container_engine, download, download_tarball,
                     extract_zip, fail, gradle, info, output, outside_project, run, run_in_container, work_dir)
 
 PLUGIN = ROOT / "addons" / "MusicService"
@@ -36,6 +36,9 @@ IOS_TARGET = "aarch64-apple-ios"
 IOS_MINIMUM = "17.0"
 WINDOWS_TARGET = "x86_64-pc-windows-gnu"
 WINDOWS_ARM64_TARGET = "aarch64-pc-windows-msvc"
+WINDOWS_ARM64_MINGW_TARGET = "aarch64-pc-windows-gnullvm"
+LLVM_MINGW = "https://github.com/mstorsjo/llvm-mingw/releases/download/20261104/llvm-mingw-20261104-ucrt-ubuntu-22.04-x86_64.tar.xz"
+LLVM_MINGW_SHA256 = "919380403de87dca3c581c2053230cd298af5e891286628ba0613b7fed370926"
 ANDROID_API = 26
 LINUX_IMAGE = "music-service-linux-builder"
 MACOS_IMAGE = "nari-macos-builder"
@@ -305,8 +308,8 @@ def validate_arm64_files(files):
                 if binary.read(4) != b"PE\0\0":
                     raise ValueError("missing PE header")
                 machine, = struct.unpack("<H", binary.read(2))
-                if machine != 0xAA64:
-                    raise ValueError(f"machine 0x{machine:04X}, expected ARM64 (0xAA64)")
+                if machine not in (0xAA64, 0xA64E):
+                    raise ValueError(f"machine 0x{machine:04X}, expected ARM64 (0xAA64) or ARM64X (0xA64E)")
         except (OSError, ValueError, struct.error) as error:
             fail(f"{path}: {error}. Rebuild with `just build plugins-windows-arm64`.")
 
@@ -360,15 +363,35 @@ def build_windows_arm64_ffmpeg():
 
 
 def build_windows_arm64():
+    if platform.system() != "Windows":
+        build_windows_arm64_mingw()
+        return
     build_windows_arm64_ffmpeg()
     build_windows_arm64_service()
 
 
-def build_windows_arm64_service():
+def build_windows_arm64_mingw():
+    root = TOOLS / "llvm-mingw-20261104"
+    if not (root / "bin").is_dir():
+        download_tarball(LLVM_MINGW, root, LLVM_MINGW_SHA256)
+    env = {"PATH": f"{root / 'bin'}{os.pathsep}{os.environ['PATH']}",
+           "BINDGEN_EXTRA_CLANG_ARGS_aarch64_pc_windows_gnullvm": f"--target=aarch64-w64-mingw32 --sysroot={root}"}
+    fetch_sources()
+    dav1d = build_dav1d("windows-arm64", "aarch64", env=env, cross={
+        "system": "windows", "c": "aarch64-w64-mingw32-clang", "ar": "aarch64-w64-mingw32-ar", "ranlib": "aarch64-w64-mingw32-ranlib",
+        "strip": "aarch64-w64-mingw32-strip"})
+    build_ffmpeg("windows-arm64", "--enable-cross-compile", "--arch=aarch64", "--target-os=mingw32",
+                 "--cross-prefix=aarch64-w64-mingw32-", *WINDOWS_FFMPEG_OPTIONS, dav1d=dav1d, env=env)
+    run("rustup", "target", "add", WINDOWS_ARM64_MINGW_TARGET)
+    build_windows_arm64_service(WINDOWS_ARM64_MINGW_TARGET, env)
+    shutil.copy(root / "aarch64-w64-mingw32" / "bin" / "libunwind.dll", BIN / "windows" / "arm64")
+
+
+def build_windows_arm64_service(target=WINDOWS_ARM64_TARGET, env=None):
     prefix = ffmpeg_prefix("windows-arm64")
-    cargo_build("--locked", "--target", WINDOWS_ARM64_TARGET,
-                env={"FFMPEG_DIR": prefix, "OPENMPT_SOURCE": openmpt_source()})
-    release = cargo_target_dir() / WINDOWS_ARM64_TARGET / "release"
+    cargo_build("--locked", "--target", target,
+                env={**(env or {}), "FFMPEG_DIR": prefix, "OPENMPT_SOURCE": openmpt_source()})
+    release = cargo_target_dir() / target / "release"
     out = BIN / "windows" / "arm64"
     out.mkdir(parents=True, exist_ok=True)
     loaders = sorted(release.glob("build/webview2-com-sys-*/out/arm64/WebView2Loader.dll"),
@@ -569,6 +592,7 @@ def build():
     test()
     build_linux()
     build_windows()
+    build_windows_arm64()
     build_android()
     build_macos()
     build_ios()

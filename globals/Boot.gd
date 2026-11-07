@@ -3,7 +3,7 @@ extends Node
 const FALLBACK := 10.0
 const FILL := 0.85
 
-var shown := not OS.has_feature("pc")
+var shown := not OS.has_feature("pc") or OS.has_feature("movie")
 
 func _init() -> void:
 	if not shown:

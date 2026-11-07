@@ -17,7 +17,7 @@ const DESKTOP_ASSETS := {
 	"Windows.arm64": "Nari-windows-arm64.zip",
 	"macOS": "Nari-macos.zip",
 }
-const APK_ASSET := "Nari.apk"
+const APK_ASSET := "Nari-android.apk"
 const FILE_MODE := FileAccess.UNIX_READ_OWNER | FileAccess.UNIX_WRITE_OWNER | FileAccess.UNIX_READ_GROUP | FileAccess.UNIX_READ_OTHER
 const EXECUTABLE_MODE := FILE_MODE | FileAccess.UNIX_EXECUTE_OWNER | FileAccess.UNIX_EXECUTE_GROUP | FileAccess.UNIX_EXECUTE_OTHER
 

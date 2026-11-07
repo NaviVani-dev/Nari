@@ -36,11 +36,12 @@ fn openmpt() {
     if std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("windows")
         && std::env::var("CARGO_CFG_TARGET_ENV").as_deref() == Ok("gnu")
     {
+        let stdlib = if std::env::var("CARGO_CFG_TARGET_ABI").as_deref() == Ok("llvm") { "c++" } else { "stdc++" };
         cpp.cpp_link_stdlib(None);
-        let output = cpp.get_compiler().to_command().arg("-print-file-name=libstdc++.a").output().expect("the C++ compiler can't be run");
+        let output = cpp.get_compiler().to_command().arg(format!("-print-file-name=lib{stdlib}.a")).output().expect("the C++ compiler can't be run");
         let archive = PathBuf::from(String::from_utf8_lossy(&output.stdout).trim());
         println!("cargo:rustc-link-search=native={}", archive.parent().unwrap().display());
-        println!("cargo:rustc-link-lib=static=stdc++");
+        println!("cargo:rustc-link-lib=static={stdlib}");
     }
     cpp.files(sources.map(|source| root.join(source))).compile("openmpt");
     c.files(["miniz/miniz.c", "minimp3/minimp3.c", "stb_vorbis/stb_vorbis.c"].map(|source| root.join("include").join(source)))

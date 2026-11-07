@@ -13,7 +13,19 @@ to `windows-arm64` and relevant pull requests. Download the
 The workflow cross-compiles on Windows x64 with the ARM64 MSVC tools. A successful
 build verifies binary architecture, but does not replace testing on an ARM PC.
 
-## Build locally
+## Build on Linux
+
+`just build` includes this target. It downloads a checksum-verified llvm-mingw into
+`build/tools`, adds the `aarch64-pc-windows-gnullvm` Rust target and cross-compiles the
+native libraries. To build only this target:
+
+```text
+just build plugins-windows-arm64 windows-arm64
+```
+
+The export downloads Godot's ARM64 Windows template if it isn't installed.
+
+## Build on Windows
 
 Install these prerequisites:
 
@@ -41,8 +53,6 @@ initial MSVC path to avoid requiring a separate assembler. dav1d is linked stati
 into FFmpeg for AV1 decoding, and the Windows hardware-decoding options from `dev`
 are enabled. The second command
 creates `build/Nari-windows-arm64.zip`. Add `--debug` to export a debug executable.
-These targets are explicit: the existing `all` build is unchanged because it
-uses a different toolchain environment.
 
 The exporter rejects missing libraries and non-ARM64 PE files before packaging,
 including an accidentally copied x64 WebView2 loader. The Android-only AynThor

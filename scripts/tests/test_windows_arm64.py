@@ -66,7 +66,7 @@ class WindowsArm64Tests(unittest.TestCase):
         self.assertEqual(presets, re.findall(r'^\[preset\.(\d+)\.options\]$', text, re.M))
         self.assertIn('name="iOS"', text)
         self.assertIn("ios", build.ALL)
-        self.assertNotIn("windows-arm64", build.ALL)
+        self.assertIn("windows-arm64", build.ALL)
         self.assertEqual(len(re.findall(r'^name="Windows \(arm64\)"$', text, re.M)), 1)
         changed = override_preset(text, "Windows (arm64)", {"custom_features": '"channel_github"'})
         block = next(block for block in re.split(r'(?m)^(?=\[preset\.\d+\]$)', changed)

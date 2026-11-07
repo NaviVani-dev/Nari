@@ -114,7 +114,7 @@ modules:
         dest: addons/MusicService/.build/libopenmpt
       - type: file
         url: https://github.com/NaviVani-dev/Nari/releases/download/v1.2.0/Nari.pck
-        sha256: 794a4970e0d8264347b5cc6efba50a1d24eefb1382b816b13511579da8b67b43
+        sha256: 6416f67607b8ac1a02ad6681b6e53bcc028ee247d14c8071f1a83666ce6b28c3
       - type: script
         dest-filename: nari.sh
         commands:

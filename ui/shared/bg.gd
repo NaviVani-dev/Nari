@@ -13,6 +13,7 @@ const SHADER_SCALE := 2
 const LOW_RES := ["color", "blobs", "tint", "shader"]
 const FITS := {"cover": TextureRect.STRETCH_KEEP_ASPECT_COVERED, "contain": TextureRect.STRETCH_KEEP_ASPECT_CENTERED, "stretch": TextureRect.STRETCH_SCALE, "tile": TextureRect.STRETCH_TILE}
 const TRIANGLE_REACH := 1.3
+const LOOP_TIME := 100.0
 const TRIANGLE_RECT := Rect2(-1.0, -1.0, 2.0, 2.0)
 const BLOBS_SHADER := preload("res://assets/shaders/gradientblobs.gdshader")
 const TRIANGLES_SHADER := preload("res://assets/shaders/triangles.gdshader")
@@ -467,11 +468,11 @@ func _update_blobs() -> void:
 		var lifetime := _time * speed * frequency + _hash(blob_seed * 3.13, offset)
 		var cycle := floorf(lifetime)
 		var progress := lifetime - cycle
-		var cycle_seed := blob_seed + cycle * 51.135
+		var cycle_seed := blob_seed + fposmod(cycle, LOOP_TIME * speed * frequency) * 51.135
 		var deviation := (_hash(cycle_seed * 9.91, offset) - 0.5) * movement_variation
 		var heading := (flow + side * deviation).normalized()
 		var lateral := (_hash(cycle_seed * 12.9898, offset) - 0.5) * 2.0
-		var wobble := sin(_time * 0.35 + cycle_seed) * 0.07 * movement_variation
+		var wobble := sin(progress / (speed * frequency) * 0.35 + cycle_seed) * 0.07 * movement_variation
 		var center := Vector2(0.5, 0.5) + heading * (progress * 2.4 - 1.2) + side * (lateral + wobble)
 		var radius := maxf(blob_size * lerpf(1.0 - size_variation, 1.0 + size_variation, _hash(cycle_seed * 15.31, offset)), 0.001)
 		var stretch_x := lerpf(0.75, 1.35, _hash(cycle_seed * 2.33 * 12.9898, offset))
@@ -516,18 +517,18 @@ func _update_triangles() -> void:
 		var life := _time * speed + _hash(triangle_seed * 3.71, offset, 127.1)
 		var cycle := floorf(life)
 		var progress := life - cycle
-		var cycle_seed := triangle_seed + cycle * 53.117
+		var cycle_seed := triangle_seed + fposmod(cycle, LOOP_TIME * speed) * 53.117
 		if _hash(cycle_seed * 9.73, offset, 127.1) > spawn_chance:
 			continue
 		var deviation := (_hash(cycle_seed * 6.31, offset, 127.1) - 0.5) * movement_variation
 		var heading := (flow + side * deviation).normalized()
 		var lateral := (_hash(cycle_seed * 11.19, offset, 127.1) - 0.5) * 2.25
-		var drift := sin(_time * 0.18 + cycle_seed) * 0.035 * movement_variation
+		var drift := sin(progress / speed * 0.18 + cycle_seed) * 0.035 * movement_variation
 		var center := Vector2(0.5, 0.5) + heading * (progress * 2.7 - 1.35) + side * (lateral + drift)
 		var radius := triangle_size * lerpf(1.0 - size_variation, 1.0 + size_variation, _hash(cycle_seed * 15.91, offset, 127.1))
 		var spin := rotation_speed * lerpf(1.0 - rotation_variation, 1.0 + rotation_variation, _hash(cycle_seed * 37.13, offset, 127.1))
 		var way := 1.0 if _hash(cycle_seed * 29.71, offset, 127.1) >= 0.5 else -1.0
-		var angle := _hash(cycle_seed * 21.31, offset, 127.1) * TAU + _time * spin * way
+		var angle := _hash(cycle_seed * 21.31, offset, 127.1) * TAU + progress / speed * spin * way
 		var width_scale := maxf(lerpf(1.0 - width_variation, 1.0 + width_variation, _hash(cycle_seed * 43.71, offset, 127.1)), 0.05)
 		var height_scale := maxf(lerpf(1.0 - height_variation, 1.0 + height_variation, _hash(cycle_seed * 61.93, offset, 127.1)), 0.05)
 		var alpha := smoothstep(0.0, 0.08, progress) * (1.0 - smoothstep(0.90, 1.0, progress)) * opacity

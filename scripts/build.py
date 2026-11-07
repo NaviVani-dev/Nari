@@ -16,7 +16,7 @@ import aynthor
 import ios
 import metadata
 import music_service
-from common import BUILD, ROOT, TEMPLATES, TOOLS, download, extract_zip, fail, godot, info, preset_overrides, run, warn, work_dir
+from common import BUILD, ROOT, TEMPLATES, TOOLS, download, download_zip_member, extract_zip, fail, godot, info, preset_overrides, run, warn, work_dir
 
 CARGO_GENERATOR = ("https://raw.githubusercontent.com/flatpak/flatpak-builder-tools/"
                    "74697c75b630d7330e77250fc13cb5ea688d9479/cargo/flatpak-cargo-generator.py")
@@ -30,8 +30,7 @@ DESKTOP = {
 }
 LINUX_ARCHITECTURES = {"linux": ("amd64", "x86_64"), "linux-arm64": ("arm64", "aarch64")}
 APPIMAGETOOL = "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-{}.AppImage"
-# ARM64 Windows uses a separate MSVC environment; keep it opt-in.
-ALL = ["metadata", "plugins", *[target for target in DESKTOP if target != "windows-arm64"], "android", "aab", "ios", "pck"]
+ALL = ["metadata", "plugins", *DESKTOP, "android", "aab", "ios", "pck"]
 WEBPAGE_PREVIEW = Path(os.environ.get("NARI_WEBPAGE", ROOT.parent / "Nari-Webpage")) / "public" / "preview"
 FLATPAK_URL = "https://cdn.narimusic.com/flatpak/repo/"
 FLATHUB_REPO = "https://flathub.org/repo/flathub.flatpakrepo"
@@ -53,14 +52,31 @@ def godot_export(preset, destination, debug=False, channel="github", options=Non
         run(godot(), "--headless", "--path", ROOT, "--export-debug" if debug else "--export-release", preset, destination)
 
 
+def windows_arm64_template(debug):
+    name = f"windows_{'debug' if debug else 'release'}_arm64.exe"
+    installed = ios.godot_data_dir() / "export_templates" / f"{ios.GODOT_VERSION}.stable" / name
+    if installed.exists():
+        return installed
+    path = TOOLS / name
+    if not path.exists():
+        download_zip_member(ios.TEMPLATES_URL, f"templates/{name}", path)
+    return path
+
+
 def export_desktop(target, debug):
+    options = {}
     if target == "windows-arm64":
         music_service.validate_windows_arm64()
+        template = f'"{windows_arm64_template(debug).as_posix()}"'
+        options = {"custom_template/debug": template, "custom_template/release": template}
     preset, archive, exported = DESKTOP[target]
     staging = BUILD / "staging" / target
     shutil.rmtree(staging, ignore_errors=True)
-    godot_export(preset, staging / exported, debug)
+    godot_export(preset, staging / exported, debug, options=options)
     if target == "windows-arm64":
+        for library in (music_service.BIN / "windows" / "arm64").glob("*.dll"):
+            if not (staging / library.name).exists():
+                shutil.copy(library, staging)
         music_service.validate_arm64_files([staging / exported, *staging.rglob("*.dll")])
         for notice in ("FFMPEG-NOTICE.txt", "DAV1D-COPYING.txt"):
             shutil.copy(music_service.BIN / notice, staging)
@@ -296,8 +312,8 @@ def build_flatpak():
 
 def main():
     parser = argparse.ArgumentParser(usage="build.py [target ...] [--debug]")
-    parser.add_argument("targets", nargs="*", choices=[*ALL, "windows-arm64", "plugins-windows-arm64", "test", "flatpak", "preview", "all"], metavar="target",
-                        help=f"{', '.join(ALL)}, windows-arm64, plugins-windows-arm64, test, flatpak, preview or all (default)")
+    parser.add_argument("targets", nargs="*", choices=[*ALL, "plugins-windows-arm64", "test", "flatpak", "preview", "all"], metavar="target",
+                        help=f"{', '.join(ALL)}, plugins-windows-arm64, test, flatpak, preview or all (default)")
     parser.add_argument("--debug", action="store_true", help="export debug builds instead of release")
     args = parser.parse_args()
 
@@ -316,7 +332,7 @@ def main():
         elif target in DESKTOP:
             export_desktop(target, args.debug)
         elif target == "android":
-            godot_export("Android", BUILD / "Nari.apk", args.debug, options={
+            godot_export("Android", BUILD / "Nari-android.apk", args.debug, options={
                 "permissions/custom_permissions": SIDELOAD_PERMISSIONS, "architectures/x86_64": "false"})
         elif target == "aab":
             export_aab()
